@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOSS</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0D1117;
+  color: #E8EDF2;
+  font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  background: #080A0F;
+  border-bottom: 1px solid rgba(0,255,204,0.15);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo {
+  color: #00FFCC;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.3em;
+}
+.status {
+  font-size: 10px;
+  color: #6A7A8A;
+  letter-spacing: 0.1em;
+}
+.status.ok { color: #27AE60; }
+.status.err { color: #E74C3C; }
+#chat {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.msg.user {
+  background: rgba(0,255,204,0.1);
+  border: 1px solid rgba(0,255,204,0.3);
+  align-self: flex-end;
+  color: #E8EDF2;
+}
+.msg.boss {
+  background: #1A1F28;
+  border: 1px solid rgba(255,255,255,0.05);
+  align-self: flex-start;
+  color: #C8D4E0;
+}
+.msg.error {
+  background: rgba(231,76,60,0.1);
+  border: 1px solid rgba(231,76,60,0.3);
+  align-self: center;
+  color: #E74C3C;
+  font-size: 12px;
+}
+.msg.thinking {
+  color: #4A5560;
+  font-style: italic;
+}
+footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(0,255,204,0.1);
+  background: #080A0F;
+  display: flex;
+  gap: 8px;
+}
+#input {
+  flex: 1;
+  background: #1A1F28;
+  border: 1px solid rgba(0,255,204,0.2);
+  color: #E8EDF2;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+}
+#input:focus { border-color: #00FFCC; }
+#send {
+  background: #00FFCC;
+  color: #0D1117;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+}
+#send:disabled { opacity: 0.4; cursor: not-allowed; }
+.config {
+  padding: 20px;
+  display: none;
+}
+.config.open { display: block; }
+.config label {
+  display: block;
+  font-size: 11px;
+  color: #6A7A8A;
+  margin-bottom: 6px;
+  letter-spacing: 0.1em;
+}
+.config input {
+  width: 100%;
+  background: #1A1F28;
+  border: 1px solid rgba(0,255,204,0.2);
+  color: #E8EDF2;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-family: monospace;
+  font-size: 13px;
+}
+.btn-config {
+  background: transparent;
+  border: 1px solid #6A7A8A;
+  color: #6A7A8A;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">BOSS</div>
+  <div style="display:flex;gap:12px;align-items:center">
+    <div id="status" class="status">CARREGANDO...</div>
+    <button class="btn-config" onclick="toggleConfig()">⚙</button>
+  </div>
+</header>
+
+<div id="config" class="config">
+  <label>GROQ API KEY (console.groq.com/keys)</label>
+  <input type="password" id="apiKeyInput" placeholder="gsk_...">
+  <button class="btn-config" onclick="salvarKey()">SALVAR</button>
+</div>
+
+<div id="chat">
+  <div class="msg boss">BOSS online. Contexto carregado do GitHub. Pronto pra trabalhar.</div>
+</div>
+
+<footer>
+  <textarea id="input" rows="1" placeholder="Pergunta algo ao BOSS..."></textarea>
+  <button id="send" onclick="enviar()">ENVIAR</button>
+</footer>
+
+<script>
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODELO = 'qwen/qwen3.8-27b';
+const REPO_RAW = 'https://raw.githubusercontent.com/lexpaker-arch/BOSS/main/contexto';
+
+let apiKey = localStorage.getItem('boss_groq_key') || '';
+let historico = [];
+let contextoCache = { projetos: '', decisoes: '' };
+
+async function carregarContexto() {
+  try {
+    const [projetos, decisoes] = await Promise.all([
+      fetch(`${REPO_RAW}/projetos.md`).then(r => r.ok ? r.text() : ''),
+      fetch(`${REPO_RAW}/decisoes.md`).then(r => r.ok ? r.text() : '')
+    ]);
+    contextoCache.projetos = projetos;
+    contextoCache.decisoes = decisoes;
+    atualizarStatus(true);
+  } catch (e) {
+    console.error('Erro contexto:', e);
+    atualizarStatus(false);
+  }
+}
+
+function atualizarStatus(ok) {
+  const el = document.getElementById('status');
+  if (ok && apiKey) {
+    el.textContent = '● ONLINE';
+    el.className = 'status ok';
+  } else if (ok) {
+    el.textContent = '● SEM CHAVE';
+    el.className = 'status err';
+  } else {
+    el.textContent = '● OFFLINE';
+    el.className = 'status err';
+  }
+}
+
+function toggleConfig() {
+  const c = document.getElementById('config');
+  c.classList.toggle('open');
+  if (c.classList.contains('open') && apiKey) {
+    document.getElementById('apiKeyInput').value = apiKey;
+  }
+}
+
+function salvarKey() {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (!v) return;
+  apiKey = v;
+  localStorage.setItem('boss_groq_key', v);
+  atualizarStatus(true);
+  toggleConfig();
+  addMsg('boss', 'Chave salva. Pode perguntar.');
+}
+
+function addMsg(tipo, texto) {
+  const chat = document.getElementById('chat');
+  const div = document.createElement('div');
+  div.className = `msg ${tipo}`;
+  div.textContent = texto;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function buildSystemPrompt() {
+  return `Voce e o BOSS, assistente pessoal do Alex (Lexpaker).
+Voce ajuda no desenvolvimento de projetos, tira duvidas, sugere solucoes e lembra de decisoes.
+Responda em portugues brasileiro, direto e sem enrolacao.
+
+=== PROJETOS ATIVOS ===
+${contextoCache.projetos || '(nenhum carregado)'}
+
+=== DECISOES TRAVADAS ===
+${contextoCache.decisoes || '(nenhuma carregada)'}
+
+Se a pergunta envolver algum projeto acima, use o contexto. Se nao souber, diga que nao sabe.`;
+}
+
+async function enviar() {
+  const input = document.getElementById('input');
+  const texto = input.value.trim();
+  if (!texto) return;
+  if (!apiKey) {
+    addMsg('error', 'Configure a chave do Groq primeiro (⚙).');
+    return;
+  }
+
+  input.value = '';
+  addMsg('user', texto);
+  historico.push({ role: 'user', content: texto });
+
+  const thinking = addMsg('thinking', 'BOSS pensando...');
+  document.getElementById('send').disabled = true;
+
+  try {
+    const messages = [
+      { role: 'system', content: buildSystemPrompt() },
+      ...historico.slice(-10)
+    ];
+
+    const resp = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: MODELO,
+        messages,
+        max_tokens: 500,
+        temperature: 0.3
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`HTTP ${resp.status}: ${err.slice(0, 200)}`);
+    }
+
+    const data = await resp.json();
+    const resposta = data.choices?.[0]?.message?.content?.trim() || '(sem resposta)';
+
+    thinking.remove();
+    addMsg('boss', resposta);
+    historico.push({ role: 'assistant', content: resposta });
+
+    // Limita histórico local a 30 mensagens
+    if (historico.length > 30) historico = historico.slice(-30);
+  } catch (e) {
+    thinking.remove();
+    addMsg('error', `Erro: ${e.message}`);
+  } finally {
+    document.getElementById('send').disabled = false;
+    input.focus();
+  }
+}
+
+document.getElementById('input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    enviar();
+  }
+});
+
+// Init
+carregarContexto().then(() => atualizarStatus(true));
+</script>
+
+</body>
+</html>
