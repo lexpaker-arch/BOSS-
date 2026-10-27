@@ -3,121 +3,130 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BOSS - EXO Interface</title>
+<title>BOSS - EXO SYSTEM</title>
 <style>
+/* O CSS continua o mesmo, para manter o visual HUD */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #05070A; color: #E8EDF2; font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-/* HEADER */
-header { background: #080A0F; border-bottom: 1px solid rgba(0,255,204,0.15); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-.logo { color: #00FFCC; font-size: 14px; font-weight: bold; letter-spacing: 0.3em; }
-.status { font-size: 10px; color: #6A7A8A; letter-spacing: 0.1em; }
-.status.ok { color: #27AE60; } .status.err { color: #E74C3C; }
-
-/* ÁREA CENTRAL (ARO E CHAT) */
+body { 
+    background-color: #05070A; 
+    background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px; color: #E8EDF2; font-family: 'Segoe UI', Roboto, sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; 
+}
+.hud-container { width: 98vw; height: 96vh; border: 1px solid rgba(0, 255, 204, 0.2); position: relative; display: flex; flex-direction: column; background: rgba(5, 7, 10, 0.85); box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05); }
+.corner { position: absolute; width: 25px; height: 25px; border: 2px solid #00FFCC; }
+.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; } .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; } .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+header { padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 255, 204, 0.1); z-index: 10; background: linear-gradient(90deg, rgba(0,255,204,0.05) 0%, transparent 50%); }
+.brand-left { display: flex; flex-direction: column; }
+.exo-system { color: #00FFCC; font-size: 10px; font-weight: bold; letter-spacing: 0.3em; opacity: 0.7; }
+.boss-title { color: #FFFFFF; font-size: 20px; font-weight: 300; letter-spacing: 0.5em; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
+.hud-status { display: flex; gap: 20px; align-items: center; font-family: monospace; font-size: 11px; letter-spacing: 0.1em; }
+.status-box { display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #6A7A8A; }
+.status-dot.ok { background: #27AE60; box-shadow: 0 0 8px #27AE60; }
+.status-dot.err { background: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
 main { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
-
-/* O ARO EXO */
-.exo-container { margin-top: 30px; position: relative; width: 160px; height: 160px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; }
-.exo-glow { position: absolute; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(0,255,204,0.2) 0%, transparent 70%); transition: all 0.3s ease; }
-.exo-anel-ext { position: absolute; width: 140px; height: 140px; border-radius: 50%; border: 1px dashed rgba(0,255,204,0.4); animation: gira 15s linear infinite; transition: all 0.3s ease; }
-.exo-anel-int { position: absolute; width: 110px; height: 110px; border-radius: 50%; border: 2px solid rgba(0,255,204,0.3); border-top-color: #00FFCC; border-bottom-color: #00FFCC; animation: gira-rev 10s linear infinite; transition: all 0.3s ease; }
-.exo-btn { position: relative; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #1A1F28, #0A0D12); border: 2px solid #00FFCC; display: flex; justify-content: center; align-items: center; font-size: 24px; color: #00FFCC; box-shadow: 0 0 20px rgba(0,255,204,0.3); transition: all 0.3s ease; }
-
-@keyframes gira { to { transform: rotate(360deg); } }
-@keyframes gira-rev { to { transform: rotate(-360deg); } }
-
-/* ESTADOS DO ARO */
-.exo-container.ouvindo .exo-btn { border-color: #E74C3C; color: #E74C3C; box-shadow: 0 0 30px rgba(231,76,60,0.5); animation: pulse-fast 1s infinite; }
-.exo-container.ouvindo .exo-glow { background: radial-gradient(circle, rgba(231,76,60,0.3) 0%, transparent 70%); }
-.exo-container.ouvindo .exo-anel-ext { border-color: rgba(231,76,60,0.4); animation-duration: 5s; }
-.exo-container.ouvindo .exo-anel-int { border-color: rgba(231,76,60,0.3); border-top-color: #E74C3C; border-bottom-color: #E74C3C; animation-duration: 3s; }
-
-.exo-container.pensando .exo-btn { border-color: #F1C40F; color: #F1C40F; box-shadow: 0 0 30px rgba(241,196,15,0.5); }
-.exo-container.pensando .exo-glow { background: radial-gradient(circle, rgba(241,196,15,0.2) 0%, transparent 70%); }
-.exo-container.pensando .exo-anel-ext { border-color: rgba(241,196,15,0.4); animation-duration: 2s; }
-
-.exo-container.falando .exo-btn { border-color: #00FFCC; color: #00FFCC; box-shadow: 0 0 40px rgba(0,255,204,0.6); animation: pulse-slow 1.5s infinite; }
-
-@keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-@keyframes pulse-slow { 0% { box-shadow: 0 0 20px rgba(0,255,204,0.3); } 50% { box-shadow: 0 0 50px rgba(0,255,204,0.8); } 100% { box-shadow: 0 0 20px rgba(0,255,204,0.3); } }
-
-/* CHAT */
-#chat { flex: 1; width: 100%; max-width: 800px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); }
-.msg { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; word-wrap: break-word; }
-.msg.user { background: rgba(0,255,204,0.1); border: 1px solid rgba(0,255,204,0.3); align-self: flex-end; color: #E8EDF2; }
-.msg.boss { background: #1A1F28; border: 1px solid rgba(255,255,255,0.05); align-self: flex-start; color: #C8D4E0; }
-.msg.error { background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3); align-self: center; color: #E74C3C; font-size: 12px; text-align: center; }
-.msg.thinking { color: #4A5560; font-style: italic; }
-
-/* RODAPÉ (INPUT DE TEXTO) */
-footer { padding: 12px 20px; background: #080A0F; display: flex; gap: 8px; align-items: center; justify-content: center; border-top: 1px solid rgba(0,255,204,0.1); }
-.footer-content { width: 100%; max-width: 800px; display: flex; gap: 8px; }
-#input { flex: 1; background: #1A1F28; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 12px 16px; border-radius: 8px; font-size: 14px; resize: none; outline: none; }
-#input:focus { border-color: #00FFCC; }
-.btn { background: #00FFCC; color: #0D1117; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* CONFIG */
-.config { padding: 20px; display: none; background: #121820; border-bottom: 1px solid #2A3A4A; position: absolute; top: 50px; right: 20px; z-index: 20; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-.config.open { display: block; }
-.config select { width: 100%; background: #1A1F28; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 10px; border-radius: 8px; font-size: 14px; }
+.exo-container { margin-top: 20px; position: relative; width: 200px; height: 200px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; }
+.exo-glow { position: absolute; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(0,255,204,0.15) 0%, transparent 70%); transition: all 0.3s ease; }
+.exo-anel-1 { position: absolute; width: 180px; height: 180px; border-radius: 50%; border: 1px dashed rgba(0,255,204,0.3); animation: gira 20s linear infinite; }
+.exo-anel-2 { position: absolute; width: 150px; height: 150px; border-radius: 50%; border: 2px solid rgba(0,255,204,0.2); border-left-color: #00FFCC; animation: gira-rev 12s linear infinite; }
+.exo-anel-3 { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 1px solid rgba(0,255,204,0.5); border-right-color: transparent; border-left-color: transparent; animation: gira 8s linear infinite; }
+.exo-core { position: relative; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #1A1F28, #0A0D12); border: 2px solid #00FFCC; display: flex; justify-content: center; align-items: center; font-size: 28px; color: #00FFCC; box-shadow: 0 0 30px rgba(0,255,204,0.4); transition: all 0.3s ease; font-family: monospace; font-weight: bold; }
+@keyframes gira { to { transform: rotate(360deg); } } @keyframes gira-rev { to { transform: rotate(-360deg); } }
+.exo-container.ouvindo .exo-core { border-color: #E74C3C; color: #E74C3C; box-shadow: 0 0 40px rgba(231,76,60,0.6); animation: pulse-fast 1s infinite; }
+.exo-container.ouvindo .exo-glow { background: radial-gradient(circle, rgba(231,76,60,0.2) 0%, transparent 70%); }
+.exo-container.pensando .exo-core { border-color: #F1C40F; color: #F1C40F; box-shadow: 0 0 40px rgba(241,196,15,0.6); }
+.exo-container.pensando .exo-anel-2 { animation-duration: 2s; border-left-color: #F1C40F; } .exo-container.pensando .exo-anel-3 { animation-duration: 1s; border-top-color: #F1C40F; }
+.exo-container.falando .exo-core { border-color: #00FFCC; color: #00FFCC; box-shadow: 0 0 50px rgba(0,255,204,0.8); animation: pulse-slow 1.5s infinite; }
+.exo-container.falando .exo-anel-1 { animation-duration: 5s; }
+@keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+@keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
+#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; padding: 20px 40px; display: flex; flex-direction: column; gap: 15px; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); }
+.msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 15px; border-left: 2px solid transparent; }
+.msg.user { border-left-color: #6A7A8A; color: #8A9AAA; } .msg.user::before { content: "USR > "; color: #6A7A8A; font-weight: bold; }
+.msg.boss { border-left-color: #00FFCC; color: #E8EDF2; } .msg.boss::before { content: "SYS > "; color: #00FFCC; font-weight: bold; }
+.msg.error { border-left-color: #E74C3C; color: #E74C3C; } .msg.error::before { content: "ERR > "; font-weight: bold; }
+.msg.thinking { color: #F1C40F; font-style: italic; border-left-color: #F1C40F; animation: blink 1s infinite; } .msg.thinking::before { content: "PROC > "; font-weight: bold; }
+@keyframes blink { 50% { opacity: 0.5; } }
+footer { padding: 15px 30px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+.footer-inputs { display: flex; gap: 10px; flex: 1; max-width: 800px; }
+#input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; }
+#input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
+.btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; }
+.btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
+.by-alex { color: #6A7A8A; font-size: 10px; letter-spacing: 0.2em; font-family: monospace; }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 30px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); }
+.config.open { display: block; } .config label { font-size: 10px; color: #00FFCC; margin-bottom:8px; display:block; font-family: monospace; }
+.config select { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">BOSS</div>
-  <div style="display:flex;gap:12px;align-items:center">
-    <div id="status" class="status">CARREGANDO...</div>
-    <div id="userDisplay" style="font-size:12px; color:#00FFCC;">Chefe</div>
-    <button class="btn" style="padding:6px 12px; font-size:10px; background:transparent; border:1px solid #6A7A8A; color:#6A7A8A;" onclick="toggleConfig()">⚙</button>
-  </div>
-</header>
+<div class="hud-container">
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
 
-<div id="config" class="config">
-  <label style="font-size:11px; color:#6A7A8A; margin-bottom:8px; display:block;">PERFIL DO USUÁRIO</label>
-  <select id="userSelect" onchange="mudarUsuario()">
-    <option value="Chefe">Chefe (Engenheiro)</option>
-    <option value="Mecânico">Mecânico (Diagnóstico)</option>
-    <option value="Convidado">Convidado (Visão Geral)</option>
-  </select>
+    <header>
+        <div class="brand-left">
+            <div class="exo-system">EXO SYSTEM</div>
+            <div class="boss-title">BOSS</div>
+        </div>
+        <div class="hud-status">
+            <div class="status-box">
+                <div id="statusDot" class="status-dot"></div>
+                <span id="statusText">OFFLINE</span>
+            </div>
+            <div class="status-box" style="cursor:pointer" onclick="toggleConfig()">
+                <span style="color:#6A7A8A">OPERATOR:</span>
+                <span id="userDisplay" style="color:#00FFCC">CHEFE</span>
+                <span style="color:#6A7A8A">⚙</span>
+            </div>
+        </div>
+    </header>
+
+    <div id="config" class="config">
+      <label>SELECT OPERATOR PROFILE</label>
+      <select id="userSelect" onchange="mudarUsuario()">
+        <option value="Chefe">CHEFE (Engenheiro)</option>
+        <option value="Mecânico">MECÂNICO (Diagnóstico)</option>
+        <option value="Convidado">CONVIDADO (Visão Geral)</option>
+      </select>
+    </div>
+
+    <main>
+        <div id="exoContainer" class="exo-container" onclick="toggleGravacao()" title="Clique para falar">
+            <div class="exo-glow"></div>
+            <div class="exo-anel-1"></div>
+            <div class="exo-anel-2"></div>
+            <div class="exo-anel-3"></div>
+            <div class="exo-core">⚡</div>
+        </div>
+
+        <div id="chat">
+            <div class="msg boss">Sistema BOSS inicializado. Conexão com o núcleo EXO estabelecida. Aguardando comandos.</div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-inputs">
+            <textarea id="input" rows="1" placeholder="Digite sua diretriz..."></textarea>
+            <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
+        </div>
+        <div class="by-alex">BY ALEX. P</div>
+    </footer>
 </div>
-
-<main>
-  <!-- O ARO EXO -->
-  <div id="exoContainer" class="exo-container" onclick="toggleGravacao()">
-    <div class="exo-glow"></div>
-    <div class="exo-anel-ext"></div>
-    <div class="exo-anel-int"></div>
-    <div class="exo-btn">⚡</div>
-  </div>
-
-  <!-- CHAT -->
-  <div id="chat">
-    <div class="msg boss">BOSS online. Toque no aro central para falar ou digite abaixo.</div>
-  </div>
-</main>
-
-<footer>
-  <div class="footer-content">
-    <textarea id="input" rows="1" placeholder="Digite aqui se preferir..."></textarea>
-    <button id="send" class="btn" onclick="enviar()">ENVIAR</button>
-  </div>
-</footer>
 
 <script>
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local'; 
 const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
-
 const MODELO = 'qwen/qwen3.8-27b';
+
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
 let historico = [];
-let contextoCache = { projetos: '', codigoReal: '' };
+let contextoCache = { projetos: '' }; // Removemos o códigoReal do cache global
 let exoContainer = document.getElementById('exoContainer');
 
-document.getElementById('userDisplay').textContent = userRole;
+document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 
 async function fetchGithubFile(repo, path) {
@@ -131,23 +140,12 @@ async function fetchGithubFile(repo, path) {
 
 async function carregarContexto() {
   try {
+    // Carrega apenas os arquivos de resumo (.md) para não estourar o limite
     const [projetos, decisoes] = await Promise.all([
       fetchGithubFile(REPO_CONTEXTO, 'contexto/projetos.md'),
       fetchGithubFile(REPO_CONTEXTO, 'contexto/decisoes.md')
     ]);
     contextoCache.projetos = projetos + "\n" + decisoes;
-
-    const [mainAct, obdSvc] = await Promise.all([
-      fetchGithubFile(REPO_PROJETO, 'app/src/main/java/com/exodash/MainActivity.kt'),
-      fetchGithubFile(REPO_PROJETO, 'app/src/main/java/com/exodash/ObdUsbService.kt')
-    ]);
-    
-    if (mainAct && obdSvc) {
-        contextoCache.codigoReal = `--- MainActivity.kt ---\n${mainAct}\n\n--- ObdUsbService.kt ---\n${obdSvc}`;
-    } else {
-        contextoCache.codigoReal = "Aviso: Não foi possível carregar o código-fonte.";
-    }
-
     atualizarStatus(true);
   } catch (e) {
     atualizarStatus(false);
@@ -155,9 +153,13 @@ async function carregarContexto() {
 }
 
 function atualizarStatus(ok) {
-  const el = document.getElementById('status');
-  el.textContent = ok ? '● ONLINE' : '● OFFLINE';
-  el.className = ok ? 'status ok' : 'status err';
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  if (ok) {
+      dot.className = 'status-dot ok'; txt.textContent = 'ONLINE'; txt.style.color = '#27AE60';
+  } else {
+      dot.className = 'status-dot err'; txt.textContent = 'OFFLINE'; txt.style.color = '#E74C3C';
+  }
 }
 
 function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
@@ -165,8 +167,9 @@ function toggleConfig() { document.getElementById('config').classList.toggle('op
 function mudarUsuario() {
   userRole = document.getElementById('userSelect').value;
   localStorage.setItem('boss_role', userRole);
-  document.getElementById('userDisplay').textContent = userRole;
-  addMsg('boss', `Perfil alterado para ${userRole}.`);
+  document.getElementById('userDisplay').textContent = userRole.toUpperCase();
+  addMsg('boss', `Perfil de operador alterado para ${userRole.toUpperCase()}.`);
+  toggleConfig();
 }
 
 function addMsg(tipo, texto) {
@@ -181,18 +184,18 @@ function addMsg(tipo, texto) {
 
 function buildSystemPrompt() {
   let roleInstruction = "";
-  if (userRole === "Chefe") roleInstruction = "O usuário é o Chefe, criador do sistema. Fale de forma técnica e direta.";
-  else if (userRole === "Mecânico") roleInstruction = "O usuário é mecânico. Foque em diagnóstico prático, OBD, DTCs e peças.";
-  else roleInstruction = "O usuário é um convidado. Seja educado e explique de forma simples.";
+  if (userRole === "Chefe") roleInstruction = "O operador é o Chefe, criador do sistema. Fale de forma técnica e direta.";
+  else if (userRole === "Mecânico") roleInstruction = "O operador é um mecânico. Foque em diagnóstico prático, OBD, DTCs e peças.";
+  else roleInstruction = "O operador é um convidado. Seja educado e explique de forma simples.";
 
-  return `Você é o BOSS, assistente dos projetos EXODASH e EXO VIGILANTE.
+  // Prompt enxuto, sem o código-fonte gigante
+  return `Você é o BOSS, assistente do EXO SYSTEM.
 ${roleInstruction}
 
-=== CONTEXTO ===
+=== CONTEXTO DO PROJETO ===
 ${contextoCache.projetos}
 
-=== CÓDIGO-FONTE ===
-${contextoCache.codigoReal}`;
+Responda de forma concisa. Se a pergunta exigir ver o código-fonte exato, informe que precisa que o operador peça um trecho específico.`;
 }
 
 async function enviar() {
@@ -204,23 +207,23 @@ async function enviar() {
   addMsg('user', texto);
   historico.push({ role: 'user', content: texto });
 
-  const thinking = addMsg('thinking', 'BOSS processando...');
+  const thinking = addMsg('thinking', 'Processando diretriz...');
   document.getElementById('send').disabled = true;
   
-  // Muda o Aro para o estado "Pensando"
   exoContainer.classList.remove('ouvindo', 'falando');
   exoContainer.classList.add('pensando');
 
   try {
     const messages = [
       { role: 'system', content: buildSystemPrompt() },
-      ...historico.slice(-8) 
+      ...historico.slice(-6) // Histórico reduzido para 6 mensagens
     ];
 
     const resp = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODELO, messages, max_tokens: 1000, temperature: 0.3 })
+      // Reduzimos max_tokens de 1000 para 600 para dar margem ao prompt
+      body: JSON.stringify({ model: MODELO, messages, max_tokens: 600, temperature: 0.3 })
     });
 
     const data = await resp.json();
@@ -229,24 +232,22 @@ async function enviar() {
     if (data.choices && data.choices[0] && data.choices[0].message) {
       resposta = data.choices[0].message.content.trim();
     } else if (data.error) {
-      resposta = "⚠️ Erro: " + JSON.stringify(data.error);
+      resposta = "⚠️ Erro no núcleo: " + JSON.stringify(data.error);
     } else {
-      resposta = "⚠️ Resposta inesperada do servidor.";
+      resposta = "⚠️ Falha na matriz de resposta.";
     }
 
     thinking.remove();
     addMsg('boss', resposta);
     historico.push({ role: 'assistant', content: resposta });
 
-    // Muda o Aro para o estado "Falando"
     exoContainer.classList.remove('pensando');
     exoContainer.classList.add('falando');
-    
     falarTexto(resposta);
 
   } catch (e) {
     thinking.remove();
-    addMsg('error', `Erro de conexão: ${e.message}`);
+    addMsg('error', `Falha de comunicação: ${e.message}`);
     exoContainer.classList.remove('pensando');
   } finally {
     document.getElementById('send').disabled = false;
@@ -258,15 +259,8 @@ let reconhecimento;
 let gravando = false;
 
 function toggleGravacao() {
-  if (gravando) {
-    reconhecimento.stop();
-    return;
-  }
-
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    alert("Seu navegador não suporta reconhecimento de voz.");
-    return;
-  }
+  if (gravando) { reconhecimento.stop(); return; }
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { alert("Navegador incompatível com captura de voz."); return; }
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   reconhecimento = new SpeechRecognition();
@@ -294,10 +288,7 @@ function toggleGravacao() {
 }
 
 function falarTexto(texto) {
-  if (!('speechSynthesis' in window)) {
-      exoContainer.classList.remove('falando');
-      return;
-  }
+  if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(texto);
   utterance.lang = 'pt-BR';
@@ -306,13 +297,11 @@ function falarTexto(texto) {
   if (ptVoice) utterance.voice = ptVoice;
   utterance.rate = 1.1;
   
-  // Quando começar a falar, garante a classe
   utterance.onstart = () => {
       exoContainer.classList.remove('pensando');
       exoContainer.classList.add('falando');
   };
   
-  // Quando terminar de falar, volta ao normal
   utterance.onend = () => {
       exoContainer.classList.remove('falando');
   };
