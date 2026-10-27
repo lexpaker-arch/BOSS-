@@ -1,26 +1,17 @@
+# Projetos Ativos - EXODRIVE Sistemas Automotivos
 
-# Projetos Ativos
+A EXODRIVE é o ecossistema de tecnologia automotiva focado em otimização, segurança invisível e inteligência artificial local. 
 
-## EXODASH
-- Launcher automotivo Android
-- Focus MK1 2001 (1.8 16V Zetec)
-- OBD USB + ELM327 (ISO 9141-2)
-- IA offline (BossBrain) + online (Groq/Qwen)
-- Layout metálico aprovado, aguardando teste OBD real
-- Repo: github.com/lexpaker-arch/EXODASH--Local
+## 1. EXODASH
+- Interface (Launcher) e diagnóstico embarcado.
+- Carro foco: Ford Focus MK1 2001 (1.8 Zetec).
+- Funcionalidades: OBD2, DTCs, Assistente por voz e Follow-up contínuo de 10s.
 
-## EXO VIGILANTE
-- Imobilizador por relé oculto em circuito de fusível
-- App no celular + multimídia (Android)
-- Comunicação: HC-05 Bluetooth Classic (SPP)
-- Comandos: A00101A2 (armar), A00100A1 (desarmar)
-- Modo latch obrigatório
-- Failsafe: porta-fusível de emergência
-- Status: aguardando placa de 4 canais
+## 2. EXO VIGILANTE
+- Módulo de segurança (hardware + software).
+- Conceito: Imobilizador invisível via relé Bluetooth oculto no circuito do fusível.
+- UX: Sem tokens complexos no app. A segurança está no segredo físico (falso fusível).
+- Status: Aguardando placa de relé Bluetooth (4 canais).
 
-## BOSS
-- Este projeto
-- Assistente pessoal com memória no GitHub
-- Groq como IA primária
-- Interface web (PWA)
-- Interação por voz com modo Follow-up (escuta contínua de 10s após a resposta).
+## 3. BOSS
+- Assistente de IA e consultor de engenharia do ecossistema EXODRIVE.
