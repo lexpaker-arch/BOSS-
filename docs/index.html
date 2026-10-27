@@ -51,12 +51,18 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; posi
 
 #chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); }
 .msg-wrapper { display: flex; align-items: flex-start; gap: 8px; }
-.msg { font-family: monospace; font-size: 13px; line-height: 1.5; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; flex: 1; }
+.msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; flex: 1; }
 .msg.user { border-left-color: #6A7A8A; color: #8A9AAA; } .msg.user::before { content: "USR > "; color: #6A7A8A; font-weight: bold; }
 .msg.boss { border-left-color: #00FFCC; color: #E8EDF2; } .msg.boss::before { content: "SYS > "; color: #00FFCC; font-weight: bold; }
 .msg.error { border-left-color: #E74C3C; color: #E74C3C; } .msg.error::before { content: "ERR > "; font-weight: bold; }
 .msg.thinking { color: #F1C40F; font-style: italic; border-left-color: #F1C40F; animation: blink 1s infinite; } .msg.thinking::before { content: "PROC > "; font-weight: bold; }
 @keyframes blink { 50% { opacity: 0.5; } }
+
+/* Estilos para a formatação do Markdown na tela */
+.msg b { color: #FFFFFF; font-weight: bold; }
+.msg h1, .msg h2, .msg h3 { color: #00FFCC; margin: 10px 0 5px 0; font-size: 14px; text-transform: uppercase; }
+.msg code { background: rgba(0,255,204,0.1); padding: 2px 4px; border-radius: 3px; color: #00FFCC; font-family: monospace; }
+.msg ul, .msg ol { margin-left: 20px; margin-bottom: 10px; }
 
 .btn-play { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; margin-top: 4px; transition: all 0.2s; }
 .btn-play:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
@@ -160,7 +166,6 @@ let arquivoAnexado = '';
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 
-// Destrava o áudio no celular
 document.body.addEventListener('click', function unlockAudio() {
     const u = new SpeechSynthesisUtterance(' ');
     u.volume = 0.1;
@@ -233,25 +238,41 @@ function limparHistorico() {
     }
 }
 
+// Transforma Markdown em HTML bonito para a tela
+function formatarTexto(texto) {
+    let html = texto
+        .replace(/### (.*?)\n/g, '<h3>$1</h3>')
+        .replace(/## (.*?)\n/g, '<h2>$1</h2>')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+    return html;
+}
+
 function addMsg(tipo, texto, salvar = true) {
   const chat = document.getElementById('chat');
-  
-  // Wrapper para alinhar o texto e o botão de play
   const wrapper = document.createElement('div');
   wrapper.className = 'msg-wrapper';
 
   const div = document.createElement('div');
   div.className = `msg ${tipo}`;
-  div.textContent = texto;
+  
+  // Se for o BOSS, aplica a formatação HTML. Se for o user, mostra texto puro.
+  if (tipo === 'boss') {
+      div.innerHTML = formatarTexto(texto);
+  } else {
+      div.textContent = texto;
+  }
+  
   wrapper.appendChild(div);
 
-  // Se for mensagem do BOSS, adiciona o botão de play
   if (tipo === 'boss') {
       const btnPlay = document.createElement('button');
       btnPlay.className = 'btn-play';
       btnPlay.innerHTML = '🔊';
       btnPlay.title = 'Ouvir mensagem';
-      btnPlay.onclick = () => falarTexto(texto); // Chama a voz
+      btnPlay.onclick = () => falarTexto(texto); 
       wrapper.appendChild(btnPlay);
   }
 
@@ -263,7 +284,7 @@ function addMsg(tipo, texto, salvar = true) {
       if(historico.length > 20) historico = historico.slice(-20);
       localStorage.setItem('boss_historico', JSON.stringify(historico));
   }
-  return wrapper; // Retorna o wrapper para podermos deletar a mensagem de "pensando"
+  return wrapper; 
 }
 
 function lerArquivo(event) {
@@ -354,7 +375,7 @@ async function enviar() {
 
     exoContainer.classList.remove('pensando');
     exoContainer.classList.add('falando');
-    falarTexto(resposta); // A limpeza do markdown é feita dentro da função
+    falarTexto(resposta); 
 
   } catch (e) {
     thinking.remove();
@@ -398,7 +419,6 @@ function toggleGravacao() {
   reconhecimento.start();
 }
 
-// Função que limpa o Markdown antes de falar
 function limparMarkdown(texto) {
   return texto
     .replace(/[*_~`#]/g, '') 
