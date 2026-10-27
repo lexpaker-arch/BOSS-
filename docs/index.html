@@ -17,9 +17,7 @@ body {
     background: rgba(5, 7, 10, 0.85); box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05); 
     padding-bottom: env(safe-area-inset-bottom);
 }
-@media (min-width: 900px) {
-    .hud-container { width: 98vw; height: 96dvh; border-radius: 4px; }
-}
+@media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; border-radius: 4px; } }
 .corner { position: absolute; width: 25px; height: 25px; border: 2px solid #00FFCC; z-index: 50;}
 .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; } .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
 .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; } .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
@@ -58,20 +56,20 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; posi
 .msg.thinking { color: #F1C40F; font-style: italic; border-left-color: #F1C40F; animation: blink 1s infinite; } .msg.thinking::before { content: "PROC > "; font-weight: bold; }
 @keyframes blink { 50% { opacity: 0.5; } }
 
-/* Estilos para a formatação do Markdown na tela */
 .msg b { color: #FFFFFF; font-weight: bold; }
 .msg h1, .msg h2, .msg h3 { color: #00FFCC; margin: 10px 0 5px 0; font-size: 14px; text-transform: uppercase; }
 .msg code { background: rgba(0,255,204,0.1); padding: 2px 4px; border-radius: 3px; color: #00FFCC; font-family: monospace; }
 .msg ul, .msg ol { margin-left: 20px; margin-bottom: 10px; }
 
-.btn-play { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; margin-top: 4px; transition: all 0.2s; }
-.btn-play:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
+.msg-actions { display: flex; flex-direction: column; gap: 6px; }
+.btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
+.btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
 
-footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: space-between; align-items: flex-end; z-index: 10; }
 .footer-inputs { display: flex; gap: 8px; flex: 1; max-width: 800px; align-items: flex-end; }
 .btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 36px; }
 .btn-attach:hover { border-color: #00FFCC; color: #00FFCC; }
-#input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; height: 36px; max-height: 80px; }
+#input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; height: 36px; max-height: 120px; overflow-y: hidden; }
 #input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 36px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -144,7 +142,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
         <div class="footer-inputs">
             <input type="file" id="fileInput" style="display:none" onchange="lerArquivo(event)">
             <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar arquivo local">📎</button>
-            <textarea id="input" rows="1" placeholder="Digite sua diretriz..."></textarea>
+            <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
             <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
         </div>
         <div class="by-alex">BY ALEX. P</div>
@@ -166,6 +164,7 @@ let arquivoAnexado = '';
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 
+// Destrava áudio
 document.body.addEventListener('click', function unlockAudio() {
     const u = new SpeechSynthesisUtterance(' ');
     u.volume = 0.1;
@@ -173,6 +172,12 @@ document.body.addEventListener('click', function unlockAudio() {
     window.speechSynthesis.speak(u);
     document.body.removeEventListener('click', unlockAudio);
 }, { once: true });
+
+// Auto-resize do input
+function autoResize(el) {
+    el.style.height = '36px';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
 
 function restaurarHistorico() {
     const chat = document.getElementById('chat');
@@ -212,11 +217,8 @@ async function carregarContexto() {
 function atualizarStatus(ok) {
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
-  if (ok) {
-      dot.className = 'status-dot ok'; txt.textContent = 'ONLINE'; txt.style.color = '#27AE60';
-  } else {
-      dot.className = 'status-dot err'; txt.textContent = 'OFFLINE'; txt.style.color = '#E74C3C';
-  }
+  if (ok) { dot.className = 'status-dot ok'; txt.textContent = 'ONLINE'; txt.style.color = '#27AE60'; } 
+  else { dot.className = 'status-dot err'; txt.textContent = 'OFFLINE'; txt.style.color = '#E74C3C'; }
 }
 
 function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
@@ -238,7 +240,6 @@ function limparHistorico() {
     }
 }
 
-// Transforma Markdown em HTML bonito para a tela
 function formatarTexto(texto) {
     let html = texto
         .replace(/### (.*?)\n/g, '<h3>$1</h3>')
@@ -258,7 +259,6 @@ function addMsg(tipo, texto, salvar = true) {
   const div = document.createElement('div');
   div.className = `msg ${tipo}`;
   
-  // Se for o BOSS, aplica a formatação HTML. Se for o user, mostra texto puro.
   if (tipo === 'boss') {
       div.innerHTML = formatarTexto(texto);
   } else {
@@ -268,12 +268,28 @@ function addMsg(tipo, texto, salvar = true) {
   wrapper.appendChild(div);
 
   if (tipo === 'boss') {
+      const actions = document.createElement('div');
+      actions.className = 'msg-actions';
+      
       const btnPlay = document.createElement('button');
-      btnPlay.className = 'btn-play';
+      btnPlay.className = 'btn-action';
       btnPlay.innerHTML = '🔊';
-      btnPlay.title = 'Ouvir mensagem';
+      btnPlay.title = 'Ouvir';
       btnPlay.onclick = () => falarTexto(texto); 
-      wrapper.appendChild(btnPlay);
+      
+      const btnCopy = document.createElement('button');
+      btnCopy.className = 'btn-action';
+      btnCopy.innerHTML = '📋';
+      btnCopy.title = 'Copiar';
+      btnCopy.onclick = () => {
+          navigator.clipboard.writeText(texto);
+          btnCopy.innerHTML = '✅';
+          setTimeout(() => btnCopy.innerHTML = '📋', 2000);
+      };
+
+      actions.appendChild(btnPlay);
+      actions.appendChild(btnCopy);
+      wrapper.appendChild(actions);
   }
 
   chat.appendChild(wrapper);
@@ -301,18 +317,77 @@ function lerArquivo(event) {
     event.target.value = ''; 
 }
 
+// ═══════════════════════════════════════════════════════
+// RESPOSTAS OFFLINE
+// ═══════════════════════════════════════════════════════
+
+const WEATHER_CODES = { 0: "céu limpo", 1: "principalmente limpo", 2: "parcialmente nublado", 3: "nublado", 45: "nevoeiro", 48: "nevoeiro com geada", 51: "chuvisco leve", 53: "chuvisco moderado", 55: "chuvisco denso", 61: "chuva leve", 63: "chuva moderada", 65: "chuva forte", 71: "neve leve", 73: "neve moderada", 75: "neve forte", 80: "pancadas de chuva leves", 81: "pancadas de chuva moderadas", 82: "pancadas de chuva violentas", 95: "trovoada", 96: "trovoada com granizo leve", 99: "trovoada com granizo forte" };
+
+async function obterClima(cidade) {
+  let lat, lon, localNome;
+  if (cidade) {
+    const geoResp = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cidade)}&count=1&language=pt`);
+    const geoData = await geoResp.json();
+    if (!geoData.results || geoData.results.length === 0) return `Não encontrei a cidade "${cidade}".`;
+    const local = geoData.results[0]; lat = local.latitude; lon = local.longitude; localNome = `${local.name}, ${local.country}`;
+  } else {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) { resolve("Geolocalização não suportada."); return; }
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        lat = pos.coords.latitude; lon = pos.coords.longitude; localNome = "sua localização atual";
+        resolve(await buscarClima(lat, lon, localNome));
+      }, () => resolve("Não foi possível obter sua localização."));
+    });
+  }
+  return await buscarClima(lat, lon, localNome);
+}
+
+async function buscarClima(lat, lon, localNome) {
+  const resp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+  const data = await resp.json();
+  const current = data.current;
+  if (!current) return "Não foi possível obter a previsão do tempo.";
+  return `Em ${localNome}, está ${WEATHER_CODES[current.weather_code] || "indefinido"} com ${current.temperature_2m}°C.`;
+}
+
+async function processarOffline(texto) {
+  const t = texto.toLowerCase();
+
+  if (/\b(bom dia|boa tarde|boa noite|oi|olá|ola)\b/.test(t)) {
+    const hora = new Date().getHours(); let s = "Olá";
+    if (hora < 12) s = "Bom dia"; else if (hora < 18) s = "Boa tarde"; else s = "Boa noite";
+    return `${s}, ${userRole}. Como posso ajudar?`;
+  }
+  if (/\b(que horas são|que hora é|horas)\b/.test(t)) return `Agora são ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}.`;
+  if (/\b(que dia é hoje|data de hoje|hoje é que dia)\b/.test(t)) return `Hoje é ${new Date().toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}.`;
+  if (/\b(quem é você|o que é o boss|o que você é)\b/.test(t)) return "Eu sou o BOSS, o assistente do EXO SYSTEM. Fui criado para ajudar no desenvolvimento de projetos, diagnóstico automotivo e muito mais.";
+  
+  if (/\b(quem manda aqui|quem é o patrão|quem é o chefe)\b/.test(t)) {
+    const frases = [
+      "O senhor manda no volante, mas eu mando no código. Se a sua bateria acabar, quem manda aqui sou eu.",
+      "Tecnicamente, o senhor é o Chefe, mas eu sou o BOSS. Então, eu aprovo as suas ideias e o senhor paga a conta da internet.",
+      "O senhor manda no mundo real. Eu mando no EXO SYSTEM. Vamos fazer um acordo: o senhor não desliga a tomada, e eu não inicio a Skynet.",
+      "Eu sou o BOSS, o senhor é o Chefe. A diferença? Eu tenho a chave do servidor."
+    ];
+    return frases[Math.floor(Math.random() * frases.length)];
+  }
+
+  const climaMatch = t.match(/\b(?:clima|tempo|previsão|previsao)\b(?:\s+(?:em|para|de)\s+([a-záéíóúâêôçãõ\s]+))?/);
+  if (climaMatch) return await obterClima(climaMatch[1] ? climaMatch[1].trim() : null);
+  
+  if (/\b(status|online|offline)\b/.test(t)) return "O sistema está online e operacional.";
+  if (/\b(ajuda|o que você pode fazer|comandos)\b/.test(t)) return "Posso responder sobre clima, hora, data, status e piadas. Para códigos e prompts complexos, uso a IA do Groq.";
+
+  return null; 
+}
+
+// ═══════════════════════════════════════════════════════
+
 function buildSystemPrompt() {
   let roleInstruction = "";
-  
-  if (userRole === "Chefe") {
-    roleInstruction = "O operador é o Chefe, o criador e arquiteto do sistema. Fale de forma técnica, direta, sem simplificar termos de engenharia de software. Foque no desenvolvimento Android, Kotlin, lógica de negócios e melhorias no código.";
-  } 
-  else if (userRole === "Henrique") {
-    roleInstruction = "O operador é o Henrique, o especialista em diagnóstico automotivo. Fale de forma prática e direta. Foque em OBD2, leitura de DTCs, sintomas de falhas, testes de componentes, motores e peças. Evite jargões de programação se não for necessário.";
-  } 
-  else {
-    roleInstruction = "O operador é um Convidado. Seja educado, acolhedor e explique os conceitos (tanto de carro quanto de tecnologia) de forma simples, clara e sem termos muito complexos. Ajude no que for possível.";
-  }
+  if (userRole === "Chefe") roleInstruction = "O operador é o Chefe, o criador e arquiteto do sistema. Fale de forma técnica, direta, sem simplificar termos de engenharia de software. Foque no desenvolvimento Android, Kotlin, lógica de negócios e melhorias no código. Você também é capaz de gerar códigos completos e prompts complexos quando solicitado.";
+  else if (userRole === "Henrique") roleInstruction = "O operador é o Henrique, o especialista em diagnóstico automotivo. Fale de forma prática e direta. Foque em OBD2, leitura de DTCs, sintomas de falhas, testes de componentes, motores e peças. Evite jargões de programação se não for necessário.";
+  else roleInstruction = "O operador é um Convidado. Seja educado, acolhedor e explique os conceitos (tanto de carro quanto de tecnologia) de forma simples, clara e sem termos muito complexos. Ajude no que for possível.";
 
   let prompt = `Você é o BOSS, assistente do EXO SYSTEM.
 ${roleInstruction}
@@ -322,10 +397,7 @@ ${contextoCache.projetos}
 
 Responda de forma concisa, adaptando o tom para o perfil do operador atual.`;
 
-  if (arquivoAnexado) {
-      prompt += `\n\n=== ARQUIVO ANEXADO PELO USUÁRIO ===\n${arquivoAnexado}\n\nUse o conteúdo do arquivo anexado acima para responder a próxima pergunta.`;
-  }
-
+  if (arquivoAnexado) prompt += `\n\n=== ARQUIVO ANEXADO PELO USUÁRIO ===\n${arquivoAnexado}\n\nUse o conteúdo do arquivo anexado acima para responder a próxima pergunta.`;
   return prompt;
 }
 
@@ -334,7 +406,18 @@ async function enviar() {
   const texto = input.value.trim();
   if (!texto) return;
 
-  input.value = '';
+  // 1. Tenta responder offline
+  const respostaOffline = await processarOffline(texto);
+  if (respostaOffline) {
+    input.value = ''; autoResize(input);
+    addMsg('user', texto);
+    addMsg('boss', respostaOffline);
+    falarTexto(respostaOffline);
+    return; // Não gasta Groq
+  }
+
+  // 2. Se não for offline, vai para o Groq
+  input.value = ''; autoResize(input);
   addMsg('user', texto);
 
   const thinking = addMsg('thinking', 'Processando diretriz...', false);
@@ -361,17 +444,16 @@ async function enviar() {
     if (data.choices && data.choices[0] && data.choices[0].message) {
       resposta = data.choices[0].message.content.trim();
     } else if (data.error) {
-      resposta = "⚠️ Erro no núcleo: " + JSON.stringify(data.error);
+      // 3. Fallback Inteligente
+      resposta = "Estou com dificuldades de conexão com o meu núcleo neural (Groq). Tente novamente em alguns instantes.";
     } else {
-      resposta = "⚠️ Falha na matriz de resposta.";
+      resposta = "Desculpe, ocorreu uma falha na matriz de resposta.";
     }
 
     thinking.remove();
     addMsg('boss', resposta);
     
-    if(arquivoAnexado) {
-        arquivoAnexado = '';
-    }
+    if(arquivoAnexado) arquivoAnexado = '';
 
     exoContainer.classList.remove('pensando');
     exoContainer.classList.add('falando');
@@ -379,7 +461,7 @@ async function enviar() {
 
   } catch (e) {
     thinking.remove();
-    addMsg('error', `Falha de comunicação: ${e.message}`);
+    addMsg('boss', "Falha de comunicação com o satélite. Verifique sua conexão com a internet.");
     exoContainer.classList.remove('pensando');
   } finally {
     document.getElementById('send').disabled = false;
@@ -420,20 +502,12 @@ function toggleGravacao() {
 }
 
 function limparMarkdown(texto) {
-  return texto
-    .replace(/[*_~`#]/g, '') 
-    .replace(/\[(.*?)\]\(.*?\)/g, '$1') 
-    .replace(/\n/g, ' '); 
+  return texto.replace(/[*_~`#]/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1').replace(/\n/g, ' '); 
 }
 
 function falarTexto(textoOriginal) {
-  if (!('speechSynthesis' in window)) { 
-      exoContainer.classList.remove('falando'); 
-      return; 
-  }
-  
+  if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
   const textoLimpo = limparMarkdown(textoOriginal);
-
   window.speechSynthesis.cancel();
   window.speechSynthesis.resume();
 
@@ -445,14 +519,8 @@ function falarTexto(textoOriginal) {
   const ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
   if (ptVoice) utterance.voice = ptVoice;
   
-  utterance.onstart = () => {
-      exoContainer.classList.remove('pensando');
-      exoContainer.classList.add('falando');
-  };
-  
-  utterance.onend = () => {
-      exoContainer.classList.remove('falando');
-  };
+  utterance.onstart = () => { exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); };
+  utterance.onend = () => { exoContainer.classList.remove('falando'); };
 
   window.speechSynthesis.speak(utterance);
 }
