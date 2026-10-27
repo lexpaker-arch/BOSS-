@@ -90,7 +90,7 @@ footer { padding: 15px 30px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
       <label>OPERATOR PROFILE</label>
       <select id="userSelect" onchange="mudarUsuario()">
         <option value="Chefe">CHEFE (Engenheiro)</option>
-        <option value="Mecânico">MECÂNICO (Diagnóstico)</option>
+        <option value="Mecânico">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
       <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO</button>
@@ -241,23 +241,31 @@ function lerArquivo(event) {
 
 function buildSystemPrompt() {
   let roleInstruction = "";
-  if (userRole === "Chefe") roleInstruction = "O operador é o Chefe, criador do sistema. Fale de forma técnica e direta.";
-  else if (userRole === "Mecânico") roleInstruction = "O operador é um mecânico. Foque em diagnóstico prático, OBD, DTCs e peças.";
-  else roleInstruction = "O operador é um convidado. Seja educado e explique de forma simples.";
+  
+  if (userRole === "Chefe") {
+    roleInstruction = "O operador é o Chefe, o criador e arquiteto do sistema. Fale de forma técnica, direta, sem simplificar termos de engenharia de software. Foque no desenvolvimento Android, Kotlin, lógica de negócios e melhorias no código.";
+  } 
+  else if (userRole === "Henrique") {
+    roleInstruction = "O operador é o Henrique, o especialista em diagnóstico automotivo. Fale de forma prática e direta. Foque em OBD2, leitura de DTCs, sintomas de falhas, testes de componentes, motores e peças. Evite jargões de programação se não for necessário.";
+  } 
+  else {
+    roleInstruction = "O operador é um Convidado. Seja educado, acolhedor e explique os conceitos (tanto de carro quanto de tecnologia) de forma simples, clara e sem termos muito complexos. Ajude no que for possível.";
+  }
 
   let prompt = `Você é o BOSS, assistente do EXO SYSTEM.
 ${roleInstruction}
 
-=== CONTEXTO DO PROJETO ===
+=== CONTEXTO DO PROJETO (Base de Conhecimento) ===
 ${contextoCache.projetos}
 
-Responda de forma concisa.`;
+Responda de forma concisa, adaptando o tom para o perfil do operador atual.`;
 
   if (arquivoAnexado) {
       prompt += `\n\n=== ARQUIVO ANEXADO PELO USUÁRIO ===\n${arquivoAnexado}\n\nUse o conteúdo do arquivo anexado acima para responder a próxima pergunta.`;
   }
 
   return prompt;
+}
 }
 
 async function enviar() {
