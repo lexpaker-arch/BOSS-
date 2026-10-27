@@ -23,3 +23,4 @@
 - Assistente pessoal com memória no GitHub
 - Groq como IA primária
 - Interface web (PWA)
+- Interação por voz com modo Follow-up (escuta contínua de 10s após a resposta).
