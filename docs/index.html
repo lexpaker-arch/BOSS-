@@ -90,7 +90,7 @@ footer { padding: 15px 30px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
       <label>OPERATOR PROFILE</label>
       <select id="userSelect" onchange="mudarUsuario()">
         <option value="Chefe">CHEFE (Engenheiro)</option>
-        <option value="Mecânico">HENRIQUE (Diagnóstico)</option>
+        <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
       <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO</button>
@@ -102,13 +102,10 @@ footer { padding: 15px 30px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
             <div class="exo-anel-1"></div>
             <div class="exo-anel-2"></div>
             <div class="exo-anel-3"></div>
-            <!-- Raio removido daqui -->
             <div class="exo-core"></div>
         </div>
 
-        <div id="chat">
-            <!-- As mensagens vão aqui -->
-        </div>
+        <div id="chat"></div>
     </main>
 
     <footer>
@@ -137,16 +134,22 @@ let arquivoAnexado = '';
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 
-// Restaura o histórico visual ao carregar a página
+// Destrava o áudio no celular ao primeiro clique na tela
+document.body.addEventListener('click', function unlockAudio() {
+    const u = new SpeechSynthesisUtterance('');
+    window.speechSynthesis.speak(u);
+    document.body.removeEventListener('click', unlockAudio);
+}, { once: true });
+
 function restaurarHistorico() {
     const chat = document.getElementById('chat');
-    chat.innerHTML = ''; // Limpa a tela
+    chat.innerHTML = '';
     if (historico.length === 0) {
-        addMsg('boss', 'Sistema BOSS inicializado. Conexão com o núcleo EXO estabelecida.');
+        addMsg('boss', 'Sistema BOSS inicializado. Conexão com o núcleo EXO estabelecida.', false);
     } else {
         historico.forEach(m => {
             const tipo = m.role === 'user' ? 'user' : 'boss';
-            addMsg(tipo, m.content, false); // false significa que não salva de novo no localStorage
+            addMsg(tipo, m.content, false);
         });
     }
 }
@@ -210,32 +213,25 @@ function addMsg(tipo, texto, salvar = true) {
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
   
-  // Salva no histórico local (se for uma mensagem real do user ou boss)
   if (salvar && tipo !== 'thinking' && tipo !== 'error') {
       historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
-      // Mantém apenas as últimas 20 mensagens no localStorage para não encher
       if(historico.length > 20) historico = historico.slice(-20);
       localStorage.setItem('boss_historico', JSON.stringify(historico));
   }
   return div;
 }
 
-// LER ARQUIVO LOCAL
 function lerArquivo(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = function(e) {
         const texto = e.target.result;
-        // Limita a 50.000 caracteres para não estourar o limite de tokens da API
         arquivoAnexado = texto.substring(0, 50000); 
         addMsg('boss', `[Arquivo "${file.name}" anexado. Faça sua pergunta sobre ele.]`);
         document.getElementById('input').focus();
     };
     reader.readAsText(file);
-    
-    // Limpa o input file para permitir anexar o mesmo arquivo duas vezes
     event.target.value = ''; 
 }
 
@@ -265,7 +261,6 @@ Responda de forma concisa, adaptando o tom para o perfil do operador atual.`;
   }
 
   return prompt;
-}
 }
 
 async function enviar() {
@@ -308,10 +303,8 @@ async function enviar() {
     thinking.remove();
     addMsg('boss', resposta);
     
-    // Limpa o arquivo anexado após a resposta
     if(arquivoAnexado) {
         arquivoAnexado = '';
-        // Opcional: avisar que o anexo foi limpo
     }
 
     exoContainer.classList.remove('pensando');
@@ -365,10 +358,11 @@ function falarTexto(texto) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(texto);
   utterance.lang = 'pt-BR';
-  const voices = window.speechSynthesis.getVoices();
-  const ptVoice = voices.find(v => v.lang.includes('pt-BR'));
-  if (ptVoice) utterance.voice = ptVoice;
   utterance.rate = 1.1;
+  
+  const voices = window.speechSynthesis.getVoices();
+  const ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+  if (ptVoice) utterance.voice = ptVoice;
   
   utterance.onstart = () => {
       exoContainer.classList.remove('pensando');
@@ -379,14 +373,15 @@ function falarTexto(texto) {
       exoContainer.classList.remove('falando');
   };
 
-  window.speechSynthesis.speak(utterance);
+  setTimeout(() => {
+      window.speechSynthesis.speak(utterance);
+  }, 100);
 }
 
 document.getElementById('input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
 });
 
-// Inicialização
 carregarContexto();
 restaurarHistorico();
 </script>
