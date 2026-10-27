@@ -537,24 +537,12 @@ function falarTexto(textoOriginal) {
   const iniciarFala = () => {
       const voices = window.speechSynthesis.getVoices();
       
-      // Tenta achar voz masculina
-      let vozMasculina = voices.find(v => 
-          v.lang.includes('pt') && 
-          (v.name.toLowerCase().includes('masculin') || 
-           v.name.toLowerCase().includes('male') || 
-           v.name.toLowerCase().includes('daniel') || 
-           v.name.toLowerCase().includes('felipe') ||
-           v.name.toLowerCase().includes('ricardo'))
-      );
-
-      if (vozMasculina) {
-          utterance.voice = vozMasculina;
-      } else {
-          // Se não achar, usa a feminina e abaixa o tom
-          let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
-          if (ptVoice) utterance.voice = ptVoice;
-          utterance.pitch = 0.6; 
-      }
+      // Busca a voz padrão de português (feminina natural do Google)
+      let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+      if (ptVoice) utterance.voice = ptVoice;
+      
+      // Tom de voz natural
+      utterance.pitch = 1.0; 
 
       utterance.onstart = () => {
           exoContainer.classList.remove('pensando');
