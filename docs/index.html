@@ -173,7 +173,6 @@ document.body.addEventListener('click', function unlockAudio() {
     document.body.removeEventListener('click', unlockAudio);
 }, { once: true });
 
-// Auto-resize do input
 function autoResize(el) {
     el.style.height = '36px';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -444,7 +443,6 @@ async function enviar() {
     if (data.choices && data.choices[0] && data.choices[0].message) {
       resposta = data.choices[0].message.content.trim();
     } else if (data.error) {
-      // 3. Fallback Inteligente
       resposta = "Estou com dificuldades de conexão com o meu núcleo neural (Groq). Tente novamente em alguns instantes.";
     } else {
       resposta = "Desculpe, ocorreu uma falha na matriz de resposta.";
@@ -507,22 +505,61 @@ function limparMarkdown(texto) {
 
 function falarTexto(textoOriginal) {
   if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
+  
   const textoLimpo = limparMarkdown(textoOriginal);
   window.speechSynthesis.cancel();
-  window.speechSynthesis.resume();
 
   const utterance = new SpeechSynthesisUtterance(textoLimpo);
-  utterance.lang = 'pt-BR';
-  utterance.rate = 1.1;
-  
-  const voices = window.speechSynthesis.getVoices();
-  const ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
-  if (ptVoice) utterance.voice = ptVoice;
-  
-  utterance.onstart = () => { exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); };
-  utterance.onend = () => { exoContainer.classList.remove('falando'); };
+  utterance.lang = 'pt-BR'; 
+  utterance.rate = 1.05; 
+  utterance.volume = 1.0;
 
-  window.speechSynthesis.speak(utterance);
+  const iniciarFala = () => {
+      const voices = window.speechSynthesis.getVoices();
+      
+      // 1. Tenta achar uma voz masculina (Daniel, Felipe, Male, etc.)
+      let vozMasculina = voices.find(v => 
+          v.lang.includes('pt') && 
+          (v.name.toLowerCase().includes('masculin') || 
+           v.name.toLowerCase().includes('male') || 
+           v.name.toLowerCase().includes('daniel') || 
+           v.name.toLowerCase().includes('felipe') ||
+           v.name.toLowerCase().includes('ricardo'))
+      );
+
+      if (vozMasculina) {
+          utterance.voice = vozMasculina;
+      } else {
+          // 2. Se não achar, usa a feminina e ABAIXA O TOM (Pitch)
+          let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+          if (ptVoice) utterance.voice = ptVoice;
+          utterance.pitch = 0.6; // Deixa a voz mais grave e imponente
+      }
+
+      utterance.onstart = () => {
+          exoContainer.classList.remove('pensando');
+          exoContainer.classList.add('falando');
+      };
+      utterance.onend = () => {
+          exoContainer.classList.remove('falando');
+      };
+      utterance.onerror = (e) => {
+          console.error("Erro no TTS:", e);
+          exoContainer.classList.remove('falando');
+      };
+      
+      window.speechSynthesis.speak(utterance);
+  };
+
+  // O Chrome mobile carrega as vozes de forma assíncrona
+  if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+          iniciarFala();
+          window.speechSynthesis.onvoiceschanged = null; 
+      };
+  } else {
+      iniciarFala();
+  }
 }
 
 document.getElementById('input').addEventListener('keydown', (e) => {
