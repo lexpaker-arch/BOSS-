@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOSS - EXO SYSTEM</title>
 <style>
-/* O CSS continua o mesmo, para manter o visual HUD */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { 
     background-color: #05070A; 
@@ -31,33 +30,37 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; posi
 .exo-anel-1 { position: absolute; width: 180px; height: 180px; border-radius: 50%; border: 1px dashed rgba(0,255,204,0.3); animation: gira 20s linear infinite; }
 .exo-anel-2 { position: absolute; width: 150px; height: 150px; border-radius: 50%; border: 2px solid rgba(0,255,204,0.2); border-left-color: #00FFCC; animation: gira-rev 12s linear infinite; }
 .exo-anel-3 { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 1px solid rgba(0,255,204,0.5); border-right-color: transparent; border-left-color: transparent; animation: gira 8s linear infinite; }
-.exo-core { position: relative; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #1A1F28, #0A0D12); border: 2px solid #00FFCC; display: flex; justify-content: center; align-items: center; font-size: 28px; color: #00FFCC; box-shadow: 0 0 30px rgba(0,255,204,0.4); transition: all 0.3s ease; font-family: monospace; font-weight: bold; }
+.exo-core { position: relative; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #1A1F28, #0A0D12); border: 2px solid #00FFCC; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px rgba(0,255,204,0.4); transition: all 0.3s ease; }
 @keyframes gira { to { transform: rotate(360deg); } } @keyframes gira-rev { to { transform: rotate(-360deg); } }
-.exo-container.ouvindo .exo-core { border-color: #E74C3C; color: #E74C3C; box-shadow: 0 0 40px rgba(231,76,60,0.6); animation: pulse-fast 1s infinite; }
+.exo-container.ouvindo .exo-core { border-color: #E74C3C; box-shadow: 0 0 40px rgba(231,76,60,0.6); animation: pulse-fast 1s infinite; }
 .exo-container.ouvindo .exo-glow { background: radial-gradient(circle, rgba(231,76,60,0.2) 0%, transparent 70%); }
-.exo-container.pensando .exo-core { border-color: #F1C40F; color: #F1C40F; box-shadow: 0 0 40px rgba(241,196,15,0.6); }
+.exo-container.pensando .exo-core { border-color: #F1C40F; box-shadow: 0 0 40px rgba(241,196,15,0.6); }
 .exo-container.pensando .exo-anel-2 { animation-duration: 2s; border-left-color: #F1C40F; } .exo-container.pensando .exo-anel-3 { animation-duration: 1s; border-top-color: #F1C40F; }
-.exo-container.falando .exo-core { border-color: #00FFCC; color: #00FFCC; box-shadow: 0 0 50px rgba(0,255,204,0.8); animation: pulse-slow 1.5s infinite; }
+.exo-container.falando .exo-core { border-color: #00FFCC; box-shadow: 0 0 50px rgba(0,255,204,0.8); animation: pulse-slow 1.5s infinite; }
 .exo-container.falando .exo-anel-1 { animation-duration: 5s; }
 @keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
 #chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; padding: 20px 40px; display: flex; flex-direction: column; gap: 15px; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); }
-.msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 15px; border-left: 2px solid transparent; }
+.msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 15px; border-left: 2px solid transparent; word-wrap: break-word; }
 .msg.user { border-left-color: #6A7A8A; color: #8A9AAA; } .msg.user::before { content: "USR > "; color: #6A7A8A; font-weight: bold; }
 .msg.boss { border-left-color: #00FFCC; color: #E8EDF2; } .msg.boss::before { content: "SYS > "; color: #00FFCC; font-weight: bold; }
 .msg.error { border-left-color: #E74C3C; color: #E74C3C; } .msg.error::before { content: "ERR > "; font-weight: bold; }
 .msg.thinking { color: #F1C40F; font-style: italic; border-left-color: #F1C40F; animation: blink 1s infinite; } .msg.thinking::before { content: "PROC > "; font-weight: bold; }
 @keyframes blink { 50% { opacity: 0.5; } }
 footer { padding: 15px 30px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-.footer-inputs { display: flex; gap: 10px; flex: 1; max-width: 800px; }
-#input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; }
+.footer-inputs { display: flex; gap: 10px; flex: 1; max-width: 800px; align-items: flex-end; }
+.btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 12px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; }
+.btn-attach:hover { border-color: #00FFCC; color: #00FFCC; }
+#input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; height: 36px; max-height: 120px; }
 #input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
-.btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; }
+.btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 36px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
 .by-alex { color: #6A7A8A; font-size: 10px; letter-spacing: 0.2em; font-family: monospace; }
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 30px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 30px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 250px; }
 .config.open { display: block; } .config label { font-size: 10px; color: #00FFCC; margin-bottom:8px; display:block; font-family: monospace; }
-.config select { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; }
+.config select { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 15px; }
+.btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; }
+.btn-clear:hover { background: rgba(231, 76, 60, 0.1); }
 </style>
 </head>
 <body>
@@ -84,12 +87,13 @@ footer { padding: 15px 30px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
     </header>
 
     <div id="config" class="config">
-      <label>SELECT OPERATOR PROFILE</label>
+      <label>OPERATOR PROFILE</label>
       <select id="userSelect" onchange="mudarUsuario()">
         <option value="Chefe">CHEFE (Engenheiro)</option>
         <option value="Mecânico">MECÂNICO (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
+      <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO</button>
     </div>
 
     <main>
@@ -98,16 +102,19 @@ footer { padding: 15px 30px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
             <div class="exo-anel-1"></div>
             <div class="exo-anel-2"></div>
             <div class="exo-anel-3"></div>
-            <div class="exo-core">⚡</div>
+            <!-- Raio removido daqui -->
+            <div class="exo-core"></div>
         </div>
 
         <div id="chat">
-            <div class="msg boss">Sistema BOSS inicializado. Conexão com o núcleo EXO estabelecida. Aguardando comandos.</div>
+            <!-- As mensagens vão aqui -->
         </div>
     </main>
 
     <footer>
         <div class="footer-inputs">
+            <input type="file" id="fileInput" style="display:none" onchange="lerArquivo(event)">
+            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar arquivo local">📎</button>
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..."></textarea>
             <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
         </div>
@@ -122,12 +129,27 @@ const REPO_CONTEXTO = 'lexpaker-arch/BOSS-';
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
-let historico = [];
-let contextoCache = { projetos: '' }; // Removemos o códigoReal do cache global
+let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
+let contextoCache = { projetos: '' }; 
 let exoContainer = document.getElementById('exoContainer');
+let arquivoAnexado = '';
 
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
+
+// Restaura o histórico visual ao carregar a página
+function restaurarHistorico() {
+    const chat = document.getElementById('chat');
+    chat.innerHTML = ''; // Limpa a tela
+    if (historico.length === 0) {
+        addMsg('boss', 'Sistema BOSS inicializado. Conexão com o núcleo EXO estabelecida.');
+    } else {
+        historico.forEach(m => {
+            const tipo = m.role === 'user' ? 'user' : 'boss';
+            addMsg(tipo, m.content, false); // false significa que não salva de novo no localStorage
+        });
+    }
+}
 
 async function fetchGithubFile(repo, path) {
     try {
@@ -140,7 +162,6 @@ async function fetchGithubFile(repo, path) {
 
 async function carregarContexto() {
   try {
-    // Carrega apenas os arquivos de resumo (.md) para não estourar o limite
     const [projetos, decisoes] = await Promise.all([
       fetchGithubFile(REPO_CONTEXTO, 'contexto/projetos.md'),
       fetchGithubFile(REPO_CONTEXTO, 'contexto/decisoes.md')
@@ -172,14 +193,50 @@ function mudarUsuario() {
   toggleConfig();
 }
 
-function addMsg(tipo, texto) {
+function limparHistorico() {
+    if(confirm("Apagar todo o histórico de conversas?")) {
+        historico = [];
+        localStorage.removeItem('boss_historico');
+        restaurarHistorico();
+        toggleConfig();
+    }
+}
+
+function addMsg(tipo, texto, salvar = true) {
   const chat = document.getElementById('chat');
   const div = document.createElement('div');
   div.className = `msg ${tipo}`;
   div.textContent = texto;
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
+  
+  // Salva no histórico local (se for uma mensagem real do user ou boss)
+  if (salvar && tipo !== 'thinking' && tipo !== 'error') {
+      historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
+      // Mantém apenas as últimas 20 mensagens no localStorage para não encher
+      if(historico.length > 20) historico = historico.slice(-20);
+      localStorage.setItem('boss_historico', JSON.stringify(historico));
+  }
   return div;
+}
+
+// LER ARQUIVO LOCAL
+function lerArquivo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const texto = e.target.result;
+        // Limita a 50.000 caracteres para não estourar o limite de tokens da API
+        arquivoAnexado = texto.substring(0, 50000); 
+        addMsg('boss', `[Arquivo "${file.name}" anexado. Faça sua pergunta sobre ele.]`);
+        document.getElementById('input').focus();
+    };
+    reader.readAsText(file);
+    
+    // Limpa o input file para permitir anexar o mesmo arquivo duas vezes
+    event.target.value = ''; 
 }
 
 function buildSystemPrompt() {
@@ -188,14 +245,19 @@ function buildSystemPrompt() {
   else if (userRole === "Mecânico") roleInstruction = "O operador é um mecânico. Foque em diagnóstico prático, OBD, DTCs e peças.";
   else roleInstruction = "O operador é um convidado. Seja educado e explique de forma simples.";
 
-  // Prompt enxuto, sem o código-fonte gigante
-  return `Você é o BOSS, assistente do EXO SYSTEM.
+  let prompt = `Você é o BOSS, assistente do EXO SYSTEM.
 ${roleInstruction}
 
 === CONTEXTO DO PROJETO ===
 ${contextoCache.projetos}
 
-Responda de forma concisa. Se a pergunta exigir ver o código-fonte exato, informe que precisa que o operador peça um trecho específico.`;
+Responda de forma concisa.`;
+
+  if (arquivoAnexado) {
+      prompt += `\n\n=== ARQUIVO ANEXADO PELO USUÁRIO ===\n${arquivoAnexado}\n\nUse o conteúdo do arquivo anexado acima para responder a próxima pergunta.`;
+  }
+
+  return prompt;
 }
 
 async function enviar() {
@@ -205,9 +267,8 @@ async function enviar() {
 
   input.value = '';
   addMsg('user', texto);
-  historico.push({ role: 'user', content: texto });
 
-  const thinking = addMsg('thinking', 'Processando diretriz...');
+  const thinking = addMsg('thinking', 'Processando diretriz...', false);
   document.getElementById('send').disabled = true;
   
   exoContainer.classList.remove('ouvindo', 'falando');
@@ -216,13 +277,12 @@ async function enviar() {
   try {
     const messages = [
       { role: 'system', content: buildSystemPrompt() },
-      ...historico.slice(-6) // Histórico reduzido para 6 mensagens
+      ...historico.slice(-6) 
     ];
 
     const resp = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Reduzimos max_tokens de 1000 para 600 para dar margem ao prompt
       body: JSON.stringify({ model: MODELO, messages, max_tokens: 600, temperature: 0.3 })
     });
 
@@ -239,7 +299,12 @@ async function enviar() {
 
     thinking.remove();
     addMsg('boss', resposta);
-    historico.push({ role: 'assistant', content: resposta });
+    
+    // Limpa o arquivo anexado após a resposta
+    if(arquivoAnexado) {
+        arquivoAnexado = '';
+        // Opcional: avisar que o anexo foi limpo
+    }
 
     exoContainer.classList.remove('pensando');
     exoContainer.classList.add('falando');
@@ -313,7 +378,9 @@ document.getElementById('input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
 });
 
+// Inicialização
 carregarContexto();
+restaurarHistorico();
 </script>
 </body>
 </html>
