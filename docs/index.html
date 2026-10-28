@@ -86,11 +86,13 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     .exo-anel-3 { width: 120px; height: 120px; }
     .exo-core { width: 80px; height: 80px; }
 }
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 220px; }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 240px; }
 .config.open { display: block; } .config label { font-size: 10px; color: #00FFCC; margin-bottom:8px; display:block; font-family: monospace; }
 .config select { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 15px; }
 .btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; }
 .btn-clear:hover { background: rgba(231, 76, 60, 0.1); }
+.btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 8px; }
+.btn-save:hover { background: rgba(0,255,204,0.1); }
 </style>
 </head>
 <body>
@@ -123,7 +125,8 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
         <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
-      <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO</button>
+      <button class="btn-save" onclick="salvarMemoria()">SALVAR MEMÓRIA AGORA</button>
+      <button class="btn-clear" style="margin-top: 8px;" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
     </div>
 
     <main>
@@ -150,14 +153,16 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 </div>
 
 <script>
+// ATENÇÃO: O repositório agora é CHEFE- e não BOSS-
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local'; 
-const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
+const REPO_CONTEXTO = 'lexpaker-arch/CHEFE-'; 
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '' }; 
+let memoriaLongaPrazo = '';
 let exoContainer = document.getElementById('exoContainer');
 let arquivoAnexado = '';
 
@@ -172,6 +177,44 @@ document.body.addEventListener('click', function unlockAudio() {
     window.speechSynthesis.speak(u);
     document.body.removeEventListener('click', unlockAudio);
 }, { once: true });
+
+// ═══════════════════════════════════════════════════════
+// TOKEN GUARD
+// ═══════════════════════════════════════════════════════
+const TOKEN_GUARD = {
+  maxCharsPerPrompt: 20000,
+  maxRequestsPerMinute: 20,
+  memoryCharLimit: 10000,
+  requests: JSON.parse(localStorage.getItem('boss_requests') || '[]'),
+  
+  limparHistorico() {
+    const now = Date.now();
+    this.requests = this.requests.filter(t => now - t < 60000);
+    localStorage.setItem('boss_requests', JSON.stringify(this.requests));
+  },
+  
+  podeEnviar() {
+    this.limparHistorico();
+    if (this.requests.length >= this.maxRequestsPerMinute) {
+      const maisAntiga = this.requests[0];
+      const espera = Math.ceil((60000 - (Date.now() - maisAntiga)) / 1000);
+      return { pode: false, espera };
+    }
+    return { pode: true };
+  },
+  
+  registrar() {
+    this.requests.push(Date.now());
+    localStorage.setItem('boss_requests', JSON.stringify(this.requests));
+  },
+  
+  limitarTexto(texto) {
+    if (texto.length > this.maxCharsPerPrompt) {
+      return texto.substring(0, this.maxCharsPerPrompt) + "\n[Texto truncado por limite de tokens]";
+    }
+    return texto;
+  }
+};
 
 function autoResize(el) {
     el.style.height = '36px';
@@ -213,6 +256,59 @@ async function carregarContexto() {
   }
 }
 
+async function carregarMemoria() {
+  if (userRole !== 'Chefe') {
+    memoriaLongaPrazo = ''; // Apenas o Chefe tem memória de longo prazo
+    return;
+  }
+  try {
+    const res = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/chefe.md`);
+    const data = await res.json();
+    if (data.content) {
+      memoriaLongaPrazo = decodeURIComponent(escape(atob(data.content)));
+    }
+  } catch (e) { console.warn('Sem memória salva.'); }
+}
+
+async function salvarMemoria() {
+  if (userRole !== 'Chefe') {
+      addMsg('error', 'Apenas o perfil Chefe pode salvar memória.');
+      return;
+  }
+  try {
+    addMsg('boss', '[SISTEMA] Salvando e verificando tamanho da memória...');
+    const conversa = historico.map(m => `${m.role === 'user' ? userRole : 'BOSS'}: ${m.content}`).join('\n');
+    let novaMemoria = memoriaLongaPrazo + '\n\n---\n\n' + conversa;
+    
+    if (novaMemoria.length > TOKEN_GUARD.memoryCharLimit) {
+      addMsg('boss', '[SISTEMA] Memória cheia. Comprimindo automaticamente via IA...');
+      const res = await fetch(`${WORKER_URL}/summarize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memory: novaMemoria })
+      });
+      const data = await res.json();
+      if (data.summary) memoriaLongaPrazo = '[RESUMO AUTOMÁTICO]\n' + data.summary;
+    } else {
+      memoriaLongaPrazo = novaMemoria;
+    }
+    
+    const res = await fetch(`${WORKER_URL}/memory`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile: userRole.toLowerCase(), content: memoriaLongaPrazo })
+    });
+    const data = await res.json();
+    if (data.success) {
+        addMsg('boss', '[SISTEMA] Memória salva no GitHub com sucesso.');
+    } else {
+        addMsg('error', 'Falha ao salvar: ' + JSON.stringify(data));
+    }
+  } catch (e) {
+    addMsg('error', 'Erro ao salvar memória: ' + e.message);
+  }
+}
+
 function atualizarStatus(ok) {
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
@@ -226,12 +322,13 @@ function mudarUsuario() {
   userRole = document.getElementById('userSelect').value;
   localStorage.setItem('boss_role', userRole);
   document.getElementById('userDisplay').textContent = userRole.toUpperCase();
+  carregarMemoria(); // Carrega a memória do perfil selecionado
   addMsg('boss', `Perfil de operador alterado para ${userRole.toUpperCase()}.`);
   toggleConfig();
 }
 
 function limparHistorico() {
-    if(confirm("Apagar todo o histórico de conversas?")) {
+    if(confirm("Apagar todo o histórico local de conversas?")) {
         historico = [];
         localStorage.removeItem('boss_historico');
         restaurarHistorico();
@@ -273,13 +370,11 @@ function addMsg(tipo, texto, salvar = true) {
       const btnPlay = document.createElement('button');
       btnPlay.className = 'btn-action';
       btnPlay.innerHTML = '🔊';
-      btnPlay.title = 'Ouvir';
       btnPlay.onclick = () => falarTexto(texto); 
       
       const btnCopy = document.createElement('button');
       btnCopy.className = 'btn-action';
       btnCopy.innerHTML = '📋';
-      btnCopy.title = 'Copiar';
       btnCopy.onclick = () => {
           navigator.clipboard.writeText(texto);
           btnCopy.innerHTML = '✅';
@@ -309,16 +404,12 @@ function lerArquivo(event) {
     reader.onload = function(e) {
         const texto = e.target.result;
         arquivoAnexado = texto.substring(0, 50000); 
-        addMsg('boss', `[Arquivo "${file.name}" anexado. Faça sua pergunta sobre ele.]`);
+        addMsg('boss', `[Arquivo "${file.name}" anexado.]`);
         document.getElementById('input').focus();
     };
     reader.readAsText(file);
     event.target.value = ''; 
 }
-
-// ═══════════════════════════════════════════════════════
-// RESPOSTAS OFFLINE E LEITOR NATIVO DE ARQUIVOS (ZERO TOKENS)
-// ═══════════════════════════════════════════════════════
 
 const WEATHER_CODES = { 0: "céu limpo", 1: "principalmente limpo", 2: "parcialmente nublado", 3: "nublado", 45: "nevoeiro", 48: "nevoeiro com geada", 51: "chuvisco leve", 53: "chuvisco moderado", 55: "chuvisco denso", 61: "chuva leve", 63: "chuva moderada", 65: "chuva forte", 71: "neve leve", 73: "neve moderada", 75: "neve forte", 80: "pancadas de chuva leves", 81: "pancadas de chuva moderadas", 82: "pancadas de chuva violentas", 95: "trovoada", 96: "trovoada com granizo leve", 99: "trovoada com granizo forte" };
 
@@ -352,26 +443,6 @@ async function buscarClima(lat, lon, localNome) {
 async function processarOffline(texto) {
   const t = texto.toLowerCase();
 
-  // LEITOR NATIVO DE ARQUIVOS
-  const lerMatch = texto.match(/(?:leia|ler|carregar|carregue)\s+(?:o\s+arquivo\s+)?([a-zA-Z0-9_\-\.\/]+)/i);
-  if (lerMatch) {
-      let path = lerMatch[1];
-      if (!path.includes('/')) {
-          if (path.includes('.kt')) path = `app/src/main/java/com/exodash/${path}`;
-          else if (path.includes('.xml')) path = `app/src/main/res/layout/${path}`;
-      }
-
-      const conteudo = await fetchGithubFile(REPO_PROJETO, path);
-      
-      if (conteudo) {
-          arquivoAnexado = conteudo.substring(0, 50000);
-          const linhas = conteudo.split('\n').length;
-          return `[SISTEMA] Arquivo \`${path}\` carregado na memória (${linhas} linhas). Pode fazer sua pergunta sobre ele.`;
-      } else {
-          return `[SISTEMA] Não encontrei o arquivo \`${path}\`. Verifique o caminho ou anexe o arquivo manualmente (📎).`;
-      }
-  }
-
   if (/\b(bom dia|boa tarde|boa noite|oi|olá|ola)\b/.test(t)) {
     const hora = new Date().getHours(); let s = "Olá";
     if (hora < 12) s = "Bom dia"; else if (hora < 18) s = "Boa tarde"; else s = "Boa noite";
@@ -379,7 +450,7 @@ async function processarOffline(texto) {
   }
   if (/\b(que horas são|que hora é|horas)\b/.test(t)) return `Agora são ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}.`;
   if (/\b(que dia é hoje|data de hoje|hoje é que dia)\b/.test(t)) return `Hoje é ${new Date().toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}.`;
-  if (/\b(quem é você|o que é o boss|o que você é)\b/.test(t)) return "Eu sou o BOSS, o assistente da EXODRIVE Sistemas Automotivos. Fui criado para ajudar no desenvolvimento de projetos, diagnóstico automotivo e muito mais.";
+  if (/\b(quem é você|o que é o boss|o que você é)\b/.test(t)) return "Eu sou o BOSS, o assistente da EXODRIVE.";
   
   if (/\b(quem manda aqui|quem é o patrão|quem é o chefe)\b/.test(t)) {
     const frases = [
@@ -395,12 +466,10 @@ async function processarOffline(texto) {
   if (climaMatch) return await obterClima(climaMatch[1] ? climaMatch[1].trim() : null);
   
   if (/\b(status|online|offline)\b/.test(t)) return "O sistema está online e operacional.";
-  if (/\b(ajuda|o que você pode fazer|comandos)\b/.test(t)) return "Posso ler arquivos do seu GitHub (ex: 'leia MainActivity.kt'), responder sobre clima, hora e status. Para códigos e prompts complexos, uso a IA do Groq.";
+  if (/\b(ajuda|o que você pode fazer|comandos)\b/.test(t)) return "Posso responder sobre clima, hora, status e ler arquivos. Para códigos e prompts complexos, uso a IA do Groq.";
 
   return null; 
 }
-
-// ═══════════════════════════════════════════════════════
 
 function buildSystemPrompt() {
   let roleInstruction = "";
@@ -411,13 +480,16 @@ function buildSystemPrompt() {
   let prompt = `Você é o BOSS, assistente da EXODRIVE Sistemas Automotivos.
 ${roleInstruction}
 
+=== MEMÓRIA DE LONGO PRAZO (Conversas anteriores) ===
+${memoriaLongaPrazo || '(Nenhuma memória salva ainda)'}
+
 === CONTEXTO DO PROJETO (Base de Conhecimento) ===
 ${contextoCache.projetos}
 
 Responda de forma concisa, adaptando o tom para o perfil do operador atual.`;
 
   if (arquivoAnexado) prompt += `\n\n=== ARQUIVO ANEXADO OU CARREGADO DO GITHUB ===\n${arquivoAnexado}\n\nUse o conteúdo do arquivo acima para responder a próxima pergunta.`;
-  return prompt;
+  return TOKEN_GUARD.limitarTexto(prompt);
 }
 
 async function enviar() {
@@ -425,17 +497,23 @@ async function enviar() {
   const texto = input.value.trim();
   if (!texto) return;
 
-  // 1. Tenta responder offline ou ler arquivo
+  // Token Guard
+  const check = TOKEN_GUARD.podeEnviar();
+  if (!check.pode) {
+    addMsg('error', `Aguarde ${check.espera}s para não sobrecarregar o núcleo.`);
+    return;
+  }
+  TOKEN_GUARD.registrar();
+
   const respostaOffline = await processarOffline(texto);
   if (respostaOffline) {
     input.value = ''; autoResize(input);
     addMsg('user', texto);
     addMsg('boss', respostaOffline);
     falarTexto(respostaOffline);
-    return; // Não gasta Groq
+    return;
   }
 
-  // 2. Se não for offline, vai para o Groq
   input.value = ''; autoResize(input);
   addMsg('user', texto);
 
@@ -463,9 +541,9 @@ async function enviar() {
     if (data.choices && data.choices[0] && data.choices[0].message) {
       resposta = data.choices[0].message.content.trim();
     } else if (data.error) {
-      resposta = "Estou com dificuldades de conexão com o meu núcleo neural (Groq). Tente novamente em alguns instantes.";
+      resposta = "⚠️ Erro no núcleo: " + JSON.stringify(data.error);
     } else {
-      resposta = "Desculpe, ocorreu uma falha na matriz de resposta.";
+      resposta = "⚠️ Falha na matriz de resposta.";
     }
 
     thinking.remove();
@@ -479,7 +557,7 @@ async function enviar() {
 
   } catch (e) {
     thinking.remove();
-    addMsg('boss', "Falha de comunicação com o satélite. Verifique sua conexão com a internet.");
+    addMsg('error', `Falha de comunicação: ${e.message}`);
     exoContainer.classList.remove('pensando');
   } finally {
     document.getElementById('send').disabled = false;
@@ -536,12 +614,9 @@ function falarTexto(textoOriginal) {
 
   const iniciarFala = () => {
       const voices = window.speechSynthesis.getVoices();
-      
-      // Busca a voz padrão de português (feminina natural do Google)
       let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
       if (ptVoice) utterance.voice = ptVoice;
       
-      // Tom de voz natural
       utterance.pitch = 1.0; 
 
       utterance.onstart = () => {
@@ -574,6 +649,7 @@ document.getElementById('input').addEventListener('keydown', (e) => {
 });
 
 carregarContexto();
+carregarMemoria();
 restaurarHistorico();
 </script>
 </body>
