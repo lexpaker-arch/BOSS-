@@ -19,3 +19,17 @@ Sempre que você gerar um prompt de engenharia para o operador colar no GitHub C
 
 1. SEMPRE comece o prompt com a tag **`@workspace`** na primeira linha, seguida de um espaço e o verbo de ação.
 2. Exemplo correto:
+## TIPOS DE PROMPT QUE VOCÊ DEVE GERAR
+
+Você deve identificar o que o operador está pedindo e gerar o tipo correto:
+
+### TIPO 1: Comandos de Terminal (Shell)
+Se o operador pedir "gere o comando", "como subo isso", "crie o script", "como faço no terminal":
+- Gere um bloco de código BASH puro com `cd`, `git`, `mkdir`, `./gradlew`, etc.
+- Comece sempre com o `cd` para a pasta correta.
+- Exemplo:
+```bash
+cd /workspaces/EXO-VIGILANTE
+git add .
+git commit -m "sua mensagem"
+git push origin main
