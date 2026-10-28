@@ -1,15 +1,3 @@
-
-Depois disso, quando pedir *"BOSS, gere o comando para subir o Vigilante"*, ele vai dar o bash.
-
----
-
-## 2. Voz "com sono"
-
-A voz padrão do Google (feminina pt-BR) realmente é meio arrastada. A velocidade atual (rate `1.05`) e o pitch (`1.0`) deixam ela mais "sonolenta". Vou adicionar **controles de voz** no menu ⚙: seletor de voz, slider de velocidade e slider de tom. Você testa até achar o tom certo (talvez `1.15` de velocidade e `1.1` de tom fiquem mais "acordados").
-
-Apague tudo do `docs/index.html` e cole:
-
-```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -469,7 +457,10 @@ function lerArquivo(event) {
 async function processarOffline(texto) {
   const t = texto.toLowerCase();
 
-  const lerMatch = texto.match(/(?:leia|ler|abrir|abre|consulte|consultar)\s+(?:o\s+arquivo\s+)?([a-zA-Z0-9_\-\.\/]+)/i);
+  // ═══════════════════════════════════════════════════════
+  // CORREÇÃO AQUI: Exige que o arquivo tenha uma extensão (.kt, .xml, .md, etc.)
+  // ═══════════════════════════════════════════════════════
+  const lerMatch = texto.match(/(?:leia|ler|abrir|abre|consulte|consultar)\s+(?:o\s+arquivo\s+)?([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)/i);
   
   if (lerMatch) {
       let caminho = lerMatch[1];
@@ -496,6 +487,7 @@ async function processarOffline(texto) {
           return `[SISTEMA] Arquivo "${caminho}" não encontrado no repositório ${repoAlvo}.`;
       }
   }
+  // ═══════════════════════════════════════════════════════
 
   if (/\b(bom dia|boa tarde|boa noite|oi|olá|ola)\b/.test(t)) {
     const hora = new Date().getHours(); let s = "Olá";
@@ -612,12 +604,10 @@ function falarTexto(textoOriginal) {
   const iniciarFala = () => {
       const voices = window.speechSynthesis.getVoices();
       
-      // Se o usuário escolheu uma voz específica, usa ela
       if (vozNome) {
           const escolhida = voices.find(v => v.name === vozNome);
           if (escolhida) utterance.voice = escolhida;
       } else {
-          // Se não, pega a primeira pt-BR
           let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
           if (ptVoice) utterance.voice = ptVoice;
       }
@@ -645,4 +635,5 @@ restaurarHistorico();
 </script>
 </body>
 </html>
+
 
