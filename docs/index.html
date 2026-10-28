@@ -187,6 +187,32 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     border: none;
     font-size: 18px;
 }
+
+/* ═══════════════════════════════════════════════════════ */
+/* TEMA PRETO ABSOLUTO (AMOLED) */
+/* ═══════════════════════════════════════════════════════ */
+.hud-container.theme-black {
+    background-color: #000000;
+    border-color: #222222;
+}
+.hud-container.theme-black header {
+    background: #000000;
+    border-bottom: 1px solid #222222;
+}
+.hud-container.theme-black .footer-inputs {
+    background: #111111;
+    border: 1px solid #333333;
+}
+.hud-container.theme-black .msg.boss {
+    background: #111111;
+    color: #E8EDF2;
+    border: 1px solid #222;
+}
+.hud-container.theme-black .msg.user {
+    background: #008B8B; /* Verde escuro para contrastar com o preto */
+    color: #FFFFFF;
+}
+.hud-container.theme-black .msg b { color: #00FFCC; }
 </style>
 </head>
 <body>
@@ -224,6 +250,12 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
       <select id="layoutSelect" onchange="mudarLayout()">
         <option value="orb">JARVIS (Aro Central)</option>
         <option value="chat">DISCRETO (Chat Linear)</option>
+      </select>
+
+      <label>TEMA DE CORES</label>
+      <select id="themeSelect" onchange="mudarTema()">
+        <option value="default">Padrão (Ardósia)</option>
+        <option value="black">Preto Absoluto (AMOLED)</option>
       </select>
 
       <label>ESCUTA CONTÍNUA (FOLLOW-UP)</label>
@@ -268,6 +300,7 @@ const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
 let layoutModo = localStorage.getItem('boss_layout') || 'orb';
+let temaModo = localStorage.getItem('boss_theme') || 'default';
 let followUpAtivo = localStorage.getItem('boss_followup') === 'on';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '' }; 
@@ -279,22 +312,38 @@ let arquivoAnexado = '';
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 document.getElementById('layoutSelect').value = layoutModo;
+document.getElementById('themeSelect').value = temaModo;
 document.getElementById('followUpSelect').value = followUpAtivo ? 'on' : 'off';
 
-function aplicarLayout() {
+function aplicarLayoutETema() {
     const hud = document.getElementById('hudContainer');
+    
+    // Layout
     if (layoutModo === 'chat') {
         hud.classList.add('layout-chat');
     } else {
         hud.classList.remove('layout-chat');
     }
+
+    // Tema
+    if (temaModo === 'black') {
+        hud.classList.add('theme-black');
+    } else {
+        hud.classList.remove('theme-black');
+    }
 }
-aplicarLayout();
+aplicarLayoutETema();
 
 function mudarLayout() {
     layoutModo = document.getElementById('layoutSelect').value;
     localStorage.setItem('boss_layout', layoutModo);
-    aplicarLayout();
+    aplicarLayoutETema();
+}
+
+function mudarTema() {
+    temaModo = document.getElementById('themeSelect').value;
+    localStorage.setItem('boss_theme', temaModo);
+    aplicarLayoutETema();
 }
 
 function mudarFollowUp() {
@@ -803,7 +852,6 @@ function falarTexto(textoOriginal) {
       utterance.onend = () => {
           exoContainer.classList.remove('falando');
           if (followUpAtivo) {
-              // Delay para garantir que o alto-falante ficou em silêncio total antes de abrir o mic
               setTimeout(() => {
                   iniciarEscuta(true);
               }, 800);
