@@ -1,3 +1,15 @@
+
+Depois disso, quando pedir *"BOSS, gere o comando para subir o Vigilante"*, ele vai dar o bash.
+
+---
+
+## 2. Voz "com sono"
+
+A voz padrão do Google (feminina pt-BR) realmente é meio arrastada. A velocidade atual (rate `1.05`) e o pitch (`1.0`) deixam ela mais "sonolenta". Vou adicionar **controles de voz** no menu ⚙: seletor de voz, slider de velocidade e slider de tom. Você testa até achar o tom certo (talvez `1.15` de velocidade e `1.1` de tom fiquem mais "acordados").
+
+Apague tudo do `docs/index.html` e cole:
+
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -86,39 +98,28 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     .exo-anel-3 { width: 120px; height: 120px; }
     .exo-core { width: 80px; height: 80px; }
 }
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 260px; }
-.config.open { display: block; } .config label { font-size: 10px; color: #00FFCC; margin-bottom:8px; display:block; font-family: monospace; margin-top: 12px; }
-.config select { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 280px; max-height: 80vh; overflow-y: auto; }
+.config.open { display: block; } 
+.config label { font-size: 10px; color: #00FFCC; margin-bottom:6px; display:block; font-family: monospace; margin-top: 12px; }
+.config select, .config input[type=range] { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
+.config input[type=range] { padding: 0; }
+.config .range-val { font-size: 11px; color: #64748B; text-align: right; margin-bottom: 5px; }
 .btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 15px;}
 .btn-clear:hover { background: rgba(231, 76, 60, 0.1); }
 .btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; }
 .btn-save:hover { background: rgba(0,255,204,0.1); }
 
-/* ═══════════════════════════════════════════════════════ */
-/* MODO DISCRETO (LAYOUT-CHAT) */
-/* ═══════════════════════════════════════════════════════ */
-.hud-container.layout-chat {
-    background-color: #0F172A;
-    background-image: none;
-    border-color: #1E293B;
-}
-.hud-container.layout-chat header {
-    background: #0F172A;
-    border-bottom: 1px solid #1E293B;
-}
+.hud-container.layout-chat { background-color: #0F172A; background-image: none; border-color: #1E293B; }
+.hud-container.layout-chat header { background: #0F172A; border-bottom: 1px solid #1E293B; }
 .hud-container.layout-chat .exo-system { color: #64748B; }
 .hud-container.layout-chat .boss-title { text-shadow: none; color: #F8FAFC; }
 .hud-container.layout-chat .corner { display: none; }
-.hud-container.layout-chat .exo-container { display: none; /* Esconde o Jarvis */ }
+.hud-container.layout-chat .exo-container { display: none; }
 .hud-container.layout-chat #chat { max-width: 800px; margin: 0 auto; mask-image: none; }
 .hud-container.layout-chat .msg-wrapper.user { align-items: flex-end; }
 .hud-container.layout-chat .msg-wrapper.boss { align-items: flex-start; }
-.hud-container.layout-chat .msg.user {
-    background: #0284C7; color: white; border: none; border-radius: 12px 12px 0 12px; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none;
-}
-.hud-container.layout-chat .msg.boss {
-    background: #1E293B; color: #F8FAFC; border: none; border-radius: 12px 12px 12px 0; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none;
-}
+.hud-container.layout-chat .msg.user { background: #0284C7; color: white; border: none; border-radius: 12px 12px 0 12px; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none; }
+.hud-container.layout-chat .msg.boss { background: #1E293B; color: #F8FAFC; border: none; border-radius: 12px 12px 12px 0; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none; }
 .hud-container.layout-chat .msg.user::before,
 .hud-container.layout-chat .msg.boss::before,
 .hud-container.layout-chat .msg.thinking::before,
@@ -133,30 +134,11 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .hud-container.layout-chat .btn-send { border-radius: 20px; background: #0EA5E9; color: white; border: none; padding: 8px 20px; }
 .hud-container.layout-chat .btn-attach { border: none; font-size: 18px; }
 
-/* ═══════════════════════════════════════════════════════ */
-/* TEMA PRETO ABSOLUTO (AMOLED) */
-/* ═══════════════════════════════════════════════════════ */
-.hud-container.theme-black {
-    background-color: #000000;
-    border-color: #222222;
-}
-.hud-container.theme-black header {
-    background: #000000;
-    border-bottom: 1px solid #222222;
-}
-.hud-container.theme-black .footer-inputs {
-    background: #111111;
-    border: 1px solid #333333;
-}
-.hud-container.theme-black .msg.boss {
-    background: #111111;
-    color: #E8EDF2;
-    border: 1px solid #222;
-}
-.hud-container.theme-black .msg.user {
-    background: #008B8B;
-    color: #FFFFFF;
-}
+.hud-container.theme-black { background-color: #000000; border-color: #222222; }
+.hud-container.theme-black header { background: #000000; border-bottom: 1px solid #222222; }
+.hud-container.theme-black .footer-inputs { background: #111111; border: 1px solid #333333; }
+.hud-container.theme-black .msg.boss { background: #111111; color: #E8EDF2; border: 1px solid #222; }
+.hud-container.theme-black .msg.user { background: #008B8B; color: #FFFFFF; }
 .hud-container.theme-black .msg b { color: #00FFCC; }
 </style>
 </head>
@@ -205,10 +187,22 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 
       <label>ESCUTA CONTÍNUA (FOLLOW-UP)</label>
       <select id="followUpSelect" onchange="mudarFollowUp()">
-        <option value="off">Desativada (Aperta botão)</option>
+        <option value="off">Desativada</option>
         <option value="on">Ativada (5s após falar)</option>
       </select>
+
+      <label>VOZ DO BOSS</label>
+      <select id="voiceSelect" onchange="mudarVoz()">
+        <option value="">Padrão do navegador</option>
+      </select>
       
+      <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
+      <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
+      
+      <label>TOM DA VOZ: <span id="pitchVal">1.05</span></label>
+      <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)">
+      
+      <button class="btn-save" onclick="testarVoz()">🔊 TESTAR VOZ</button>
       <button class="btn-save" onclick="compilarMemoria()">ENCERRAR SESSÃO E SALVAR</button>
       <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
     </div>
@@ -248,6 +242,9 @@ let userRole = localStorage.getItem('boss_role') || 'Chefe';
 let layoutModo = localStorage.getItem('boss_layout') || 'orb';
 let temaModo = localStorage.getItem('boss_theme') || 'default';
 let followUpAtivo = localStorage.getItem('boss_followup') === 'on';
+let vozNome = localStorage.getItem('boss_voice') || '';
+let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
+let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '' }; 
 let memoriaLongaPrazo = '';
@@ -260,6 +257,10 @@ document.getElementById('userSelect').value = userRole;
 document.getElementById('layoutSelect').value = layoutModo;
 document.getElementById('themeSelect').value = temaModo;
 document.getElementById('followUpSelect').value = followUpAtivo ? 'on' : 'off';
+document.getElementById('rateSlider').value = vozRate;
+document.getElementById('rateVal').textContent = vozRate.toFixed(2);
+document.getElementById('pitchSlider').value = vozPitch;
+document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
 
 function aplicarLayoutETema() {
     const hud = document.getElementById('hudContainer');
@@ -281,6 +282,44 @@ function mudarTema() {
 function mudarFollowUp() {
     followUpAtivo = document.getElementById('followUpSelect').value === 'on';
     localStorage.setItem('boss_followup', followUpAtivo ? 'on' : 'off');
+}
+
+function popularVozes() {
+    const select = document.getElementById('voiceSelect');
+    const voices = window.speechSynthesis.getVoices();
+    const ptVoices = voices.filter(v => v.lang.toLowerCase().includes('pt'));
+    const atual = vozNome;
+    select.innerHTML = '<option value="">Padrão do navegador</option>';
+    ptVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = `${v.name} (${v.lang})`;
+        if (v.name === atual) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = popularVozes;
+    setTimeout(popularVozes, 200);
+}
+
+function mudarVoz() {
+    vozNome = document.getElementById('voiceSelect').value;
+    localStorage.setItem('boss_voice', vozNome);
+}
+function mudarRate(val) {
+    vozRate = parseFloat(val);
+    document.getElementById('rateVal').textContent = vozRate.toFixed(2);
+    localStorage.setItem('boss_rate', vozRate);
+}
+function mudarPitch(val) {
+    vozPitch = parseFloat(val);
+    document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
+    localStorage.setItem('boss_pitch', vozPitch);
+}
+function testarVoz() {
+    falarTexto("Olá, Chefe. Esta é minha voz atual. Estou pronto para trabalhar.");
 }
 
 document.body.addEventListener('click', function unlockAudio() {
@@ -430,9 +469,6 @@ function lerArquivo(event) {
 async function processarOffline(texto) {
   const t = texto.toLowerCase();
 
-  // ═══════════════════════════════════════════════════════
-  // LEITOR DE ARQUIVOS (BACKUP, EXODASH E VIGILANTE)
-  // ═══════════════════════════════════════════════════════
   const lerMatch = texto.match(/(?:leia|ler|abrir|abre|consulte|consultar)\s+(?:o\s+arquivo\s+)?([a-zA-Z0-9_\-\.\/]+)/i);
   
   if (lerMatch) {
@@ -440,13 +476,11 @@ async function processarOffline(texto) {
       let repoAlvo = REPO_CONTEXTO;
       let caminhoFinal = `contexto/memorias/backup/${caminho}`;
 
-      // Se for arquivo de código do Vigilante
       if (t.includes('vigilante')) {
           repoAlvo = REPO_VIGILANTE;
           if (caminho.endsWith('.kt')) caminhoFinal = `app/src/main/java/com/exovigilante/${caminho}`;
           else if (caminho.endsWith('.xml')) caminhoFinal = `app/src/main/res/layout/${caminho}`;
       } 
-      // Se for arquivo de código do EXODASH
       else if (t.includes('exodash') || caminho.endsWith('.kt')) {
           repoAlvo = REPO_PROJETO;
           if (caminho.includes('/')) caminhoFinal = caminho;
@@ -457,12 +491,11 @@ async function processarOffline(texto) {
       
       if (conteudo) {
           arquivoAnexado = conteudo; 
-          return `[ARQUIVO ENCONTRADO: ${caminho}]\n\nO arquivo foi carregado na minha memória. Pode me pedir para analisar, criar um prompt de engenharia ou alterar este código.`;
+          return `[ARQUIVO ENCONTRADO: ${caminho}]\n\nO arquivo foi carregado na minha memória. Pode me pedir para analisar ou gerar um prompt de engenharia.`;
       } else {
           return `[SISTEMA] Arquivo "${caminho}" não encontrado no repositório ${repoAlvo}.`;
       }
   }
-  // ═══════════════════════════════════════════════════════
 
   if (/\b(bom dia|boa tarde|boa noite|oi|olá|ola)\b/.test(t)) {
     const hora = new Date().getHours(); let s = "Olá";
@@ -567,19 +600,35 @@ function limparMarkdown(texto) { return texto.replace(/[*_~`#]/g, '').replace(/\
 
 function falarTexto(textoOriginal) {
   if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
-  const textoLimpo = limparMarkdown(textoOriginal); window.speechSynthesis.cancel();
+  const textoLimpo = limparMarkdown(textoOriginal); 
+  window.speechSynthesis.cancel();
+  
   const utterance = new SpeechSynthesisUtterance(textoLimpo);
-  utterance.lang = 'pt-BR'; utterance.rate = 1.05; utterance.volume = 1.0;
+  utterance.lang = 'pt-BR';
+  utterance.rate = vozRate;
+  utterance.pitch = vozPitch;
+  utterance.volume = 1.0;
 
   const iniciarFala = () => {
-      const voices = window.speechSynthesis.getVoices(); let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
-      if (ptVoice) utterance.voice = ptVoice; utterance.pitch = 1.0; 
+      const voices = window.speechSynthesis.getVoices();
+      
+      // Se o usuário escolheu uma voz específica, usa ela
+      if (vozNome) {
+          const escolhida = voices.find(v => v.name === vozNome);
+          if (escolhida) utterance.voice = escolhida;
+      } else {
+          // Se não, pega a primeira pt-BR
+          let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+          if (ptVoice) utterance.voice = ptVoice;
+      }
+
       utterance.onstart = () => { exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); };
       utterance.onend = () => {
           exoContainer.classList.remove('falando');
           if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800);
       };
       utterance.onerror = (e) => { console.error("Erro TTS:", e); exoContainer.classList.remove('falando'); };
+      
       window.speechSynthesis.speak(utterance);
   };
 
