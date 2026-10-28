@@ -56,7 +56,7 @@ A EXODRIVE é o ecossistema de tecnologia automotiva focado em otimização, seg
 3. **Erro ao atualizar (Auto-update):**
    - Verifique se a central tem acesso à internet (Wi-Fi ou 4G do celular).
    - O GitHub pode ter bloqueado a conexão temporariamente. Tente novamente mais tarde.
-## 5. MANUAL DO TÉCNICO EXODRIVE (Avançado)
+## 5. MANUAL DO TÉCNICO EXODASH (Avançado)
 
 ### 1. Compatibilidade de Hardware (OBD2)
 - **Aprovados:** Adaptadores com chip FTDI (OBDLink EX) ou CH340/CP210x (Vgate vLinker FS). São os únicos que a biblioteca `usb-serial-for-android` reconhece sem falhar.
@@ -80,7 +80,7 @@ Se o carro der algum erro estranho (ex: app travou, OBD não leu):
 - **Sintoma:** O EXO não fala.
 - **Solução:** Vá nas configurações do Android > Acessibilidade > Saída de texto para fala. Verifique se o "Speech Services by Google" está instalado e definido como motor preferido.
 - **Sintoma:** O EXO não ouve (Microfone).
-- **Solução:** O navegador/App precisa da permissão de microfone. Em celulares Samsung, o navegador nativo funciona melhor que o Chrome.
+- **Solução:** O app precisa da permissão de microfone. Em celulares Samsung, o navegador nativo funciona melhor que o Chrome.
 
 ### 5. Atualização do Sistema (Auto-Update)
 - **Como funciona:** O app verifica automaticamente se há um Release novo no GitHub (versão maior que a instalada).
