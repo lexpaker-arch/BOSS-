@@ -86,3 +86,8 @@ Se o carro der algum erro estranho (ex: app travou, OBD não leu):
 - **Como funciona:** O app verifica automaticamente se há um Release novo no GitHub (versão maior que a instalada).
 - **Requisito:** A central precisa estar conectada à internet.
 - **Atenção:** Nunca desinstale o app para atualizar. Apenas clique em "Atualizar" na tela do Android para não perder o Nome do Carro e os DTCs salvos.
+## 3. EXO VIGILANTE (Detalhes Técnicos Atuais)
+- **UI:** Splash screen estilo "Cofre" com anel giratório. Tela principal com diagrama de circuito visual (Bateria -> Relé -> ECU). Tema escuro (#0D1117) com detalhes em dourado (#D4A017).
+- **Hardware:** Relé Bluetooth HC-05 (4 canais). Falso fusível. Comandos hex: A0 01 01 A2 (Armar), A0 01 00 A1 (Desarmar). Senha padrão: 1234.
+- **App:** Kotlin, minSdk 24. Assinatura V1/V2 ativada no Gradle para compatibilidade com centrais antigas. Suporta rotação (portrait/landscape).
+- **Comunicação:** BluetoothService.kt busca o dispositivo pareado pelo nome "HC-05" e usa o UUID SPP padrão.
