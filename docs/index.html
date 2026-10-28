@@ -275,7 +275,6 @@ async function compilarMemoria() {
     
     const conversa = historico.map(m => `${m.role === 'user' ? 'Chefe' : 'BOSS'}: ${m.content}`).join('\n');
     
-    // Chama o Worker para resumir e mesclar a memória
     const res = await fetch(`${WORKER_URL}/merge-memory`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -295,7 +294,6 @@ async function compilarMemoria() {
       if (saveRes.ok) {
         addMsg('boss', '[SISTEMA] Memória compilada e sincronizada com sucesso no GitHub. O BOSS já sabe de tudo.');
         
-        // Limpa a sessão atual após salvar
         historico = []; 
         localStorage.removeItem('boss_historico');
         document.getElementById('chat').innerHTML = ''; 
@@ -468,7 +466,9 @@ async function processarOffline(texto) {
   if (climaMatch) return await obterClima(climaMatch[1] ? climaMatch[1].trim() : null);
   
   if (/\b(status|online|offline)\b/.test(t)) return "O sistema está online e operacional.";
-  if (/\b(ajuda|o que você pode fazer|comandos)\b/.test(t)) return "Posso responder sobre clima, hora, status e ler arquivos. Para códigos e prompts complexos, uso a IA do Groq.";
+  
+  // CORREÇÃO AQUI: Evita que a palavra "comandos" no meio de frases técnicas ative o menu de ajuda
+  if (/\b(ajuda|o que você pode fazer|quais são os comandos|lista de comandos)\b/.test(t)) return "Posso responder sobre clima, hora, status e ler arquivos. Para códigos e prompts complexos, uso a IA do Groq.";
 
   return null; 
 }
