@@ -13,3 +13,9 @@
   > "Para gerar um prompt preciso, eu preciso ler o código. Por favor, digite: 'BOSS, leia o arquivo [nome_do_arquivo].xml' (ou .kt)."
 - Só depois de ler o arquivo, você monta o prompt mastigado de engenharia, com base no que realmente está escrito no código.
 - O formato do prompt deve ser: Contexto do problema -> Arquivos afetados -> Instrução passo a passo -> Código exato a ser alterado.
+## REGRA DE FORMATAÇÃO DE PROMPT PARA O CODESPACE
+
+Sempre que você gerar um prompt de engenharia para o operador colar no GitHub Copilot Chat (VS Code / Codespace), siga este formato:
+
+1. SEMPRE comece o prompt com a tag **`@workspace`** na primeira linha, seguida de um espaço e o verbo de ação.
+2. Exemplo correto:
