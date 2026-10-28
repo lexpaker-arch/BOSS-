@@ -86,12 +86,12 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     .exo-anel-3 { width: 120px; height: 120px; }
     .exo-core { width: 80px; height: 80px; }
 }
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 240px; }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 250px; }
 .config.open { display: block; } .config label { font-size: 10px; color: #00FFCC; margin-bottom:8px; display:block; font-family: monospace; }
 .config select { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 15px; }
 .btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; }
 .btn-clear:hover { background: rgba(231, 76, 60, 0.1); }
-.btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 8px; }
+.btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; }
 .btn-save:hover { background: rgba(0,255,204,0.1); }
 </style>
 </head>
@@ -125,8 +125,9 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
         <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
-      <button class="btn-save" onclick="salvarMemoria()">SALVAR MEMÓRIA AGORA</button>
-      <button class="btn-clear" style="margin-top: 8px;" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
+      
+      <button class="btn-save" onclick="compilarMemoria()">ENCERRAR SESSÃO E SALVAR</button>
+      <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
     </div>
 
     <main>
@@ -153,7 +154,6 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 </div>
 
 <script>
-// ATENÇÃO: O repositório agora é CHEFE- e não BOSS-
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local'; 
 const REPO_CONTEXTO = 'lexpaker-arch/CHEFE-'; 
@@ -169,7 +169,6 @@ let arquivoAnexado = '';
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 
-// Destrava áudio
 document.body.addEventListener('click', function unlockAudio() {
     const u = new SpeechSynthesisUtterance(' ');
     u.volume = 0.1;
@@ -178,9 +177,6 @@ document.body.addEventListener('click', function unlockAudio() {
     document.body.removeEventListener('click', unlockAudio);
 }, { once: true });
 
-// ═══════════════════════════════════════════════════════
-// TOKEN GUARD
-// ═══════════════════════════════════════════════════════
 const TOKEN_GUARD = {
   maxCharsPerPrompt: 20000,
   maxRequestsPerMinute: 20,
@@ -258,7 +254,7 @@ async function carregarContexto() {
 
 async function carregarMemoria() {
   if (userRole !== 'Chefe') {
-    memoriaLongaPrazo = ''; // Apenas o Chefe tem memória de longo prazo
+    memoriaLongaPrazo = ''; 
     return;
   }
   try {
@@ -267,45 +263,51 @@ async function carregarMemoria() {
     if (data.content) {
       memoriaLongaPrazo = decodeURIComponent(escape(atob(data.content)));
     }
-  } catch (e) { console.warn('Sem memória salva.'); }
+  } catch (e) { console.warn('Sem memória salva ainda.'); }
 }
 
-async function salvarMemoria() {
-  if (userRole !== 'Chefe') {
-      addMsg('error', 'Apenas o perfil Chefe pode salvar memória.');
-      return;
-  }
+async function compilarMemoria() {
+  if (userRole !== 'Chefe') return addMsg('error', 'Apenas o Chefe salva memória.');
+  if (historico.length === 0) return addMsg('error', 'Nada para salvar.');
+
   try {
-    addMsg('boss', '[SISTEMA] Salvando e verificando tamanho da memória...');
-    const conversa = historico.map(m => `${m.role === 'user' ? userRole : 'BOSS'}: ${m.content}`).join('\n');
-    let novaMemoria = memoriaLongaPrazo + '\n\n---\n\n' + conversa;
+    addMsg('boss', '[SISTEMA] Compilando o Diário de Bordo da sessão de hoje...');
     
-    if (novaMemoria.length > TOKEN_GUARD.memoryCharLimit) {
-      addMsg('boss', '[SISTEMA] Memória cheia. Comprimindo automaticamente via IA...');
-      const res = await fetch(`${WORKER_URL}/summarize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memory: novaMemoria })
-      });
-      const data = await res.json();
-      if (data.summary) memoriaLongaPrazo = '[RESUMO AUTOMÁTICO]\n' + data.summary;
-    } else {
-      memoriaLongaPrazo = novaMemoria;
-    }
+    const conversa = historico.map(m => `${m.role === 'user' ? 'Chefe' : 'BOSS'}: ${m.content}`).join('\n');
     
-    const res = await fetch(`${WORKER_URL}/memory`, {
+    // Chama o Worker para resumir e mesclar a memória
+    const res = await fetch(`${WORKER_URL}/merge-memory`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profile: userRole.toLowerCase(), content: memoriaLongaPrazo })
+      body: JSON.stringify({ oldMemory: memoriaLongaPrazo, recentChat: conversa })
     });
     const data = await res.json();
-    if (data.success) {
-        addMsg('boss', '[SISTEMA] Memória salva no GitHub com sucesso.');
+    
+    if (data.mergedMemory) {
+      memoriaLongaPrazo = data.mergedMemory;
+      
+      const saveRes = await fetch(`${WORKER_URL}/memory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile: userRole.toLowerCase(), content: memoriaLongaPrazo })
+      });
+      
+      if (saveRes.ok) {
+        addMsg('boss', '[SISTEMA] Memória compilada e sincronizada com sucesso no GitHub. O BOSS já sabe de tudo.');
+        
+        // Limpa a sessão atual após salvar
+        historico = []; 
+        localStorage.removeItem('boss_historico');
+        document.getElementById('chat').innerHTML = ''; 
+        restaurarHistorico();
+      } else {
+        addMsg('error', 'Falha ao salvar no GitHub. Verifique o token do Worker.');
+      }
     } else {
-        addMsg('error', 'Falha ao salvar: ' + JSON.stringify(data));
+        addMsg('error', 'O Worker não retornou o resumo. Verifique o código da Cloudflare.');
     }
   } catch (e) {
-    addMsg('error', 'Erro ao salvar memória: ' + e.message);
+    addMsg('error', 'Erro ao compilar memória: ' + e.message);
   }
 }
 
@@ -322,13 +324,13 @@ function mudarUsuario() {
   userRole = document.getElementById('userSelect').value;
   localStorage.setItem('boss_role', userRole);
   document.getElementById('userDisplay').textContent = userRole.toUpperCase();
-  carregarMemoria(); // Carrega a memória do perfil selecionado
+  carregarMemoria(); 
   addMsg('boss', `Perfil de operador alterado para ${userRole.toUpperCase()}.`);
   toggleConfig();
 }
 
 function limparHistorico() {
-    if(confirm("Apagar todo o histórico local de conversas?")) {
+    if(confirm("Apagar todo o histórico local de conversas? (A memória salva no GitHub não será afetada)")) {
         historico = [];
         localStorage.removeItem('boss_historico');
         restaurarHistorico();
@@ -497,7 +499,6 @@ async function enviar() {
   const texto = input.value.trim();
   if (!texto) return;
 
-  // Token Guard
   const check = TOKEN_GUARD.podeEnviar();
   if (!check.pode) {
     addMsg('error', `Aguarde ${check.espera}s para não sobrecarregar o núcleo.`);
