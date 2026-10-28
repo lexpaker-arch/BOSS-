@@ -443,6 +443,21 @@ async function buscarClima(lat, lon, localNome) {
 async function processarOffline(texto) {
   const t = texto.toLowerCase();
 
+  // ═══════════════════════════════════════════════════════
+  // CONSULTA DIRETA DE ARQUIVOS DE BACKUP (ZERO TOKENS)
+  // ═══════════════════════════════════════════════════════
+  const lerMatch = t.match(/\b(?:leia|ler|abrir|abre|consulte|consultar)\s+(?:o\s+arquivo\s+)?([a-z0-9_\-\.]+\.md)/i);
+  if (lerMatch) {
+      const arquivo = lerMatch[1];
+      const conteudo = await fetchGithubFile(REPO_CONTEXTO, `contexto/memorias/backup/${arquivo}`);
+      if (conteudo) {
+          return `[ARQUIVO ENCONTRADO: ${arquivo}]\n\n${conteudo}`;
+      } else {
+          return `[SISTEMA] Arquivo "${arquivo}" não encontrado na pasta de backup do GitHub.`;
+      }
+  }
+  // ═══════════════════════════════════════════════════════
+
   if (/\b(bom dia|boa tarde|boa noite|oi|olá|ola)\b/.test(t)) {
     const hora = new Date().getHours(); let s = "Olá";
     if (hora < 12) s = "Bom dia"; else if (hora < 18) s = "Boa tarde"; else s = "Boa noite";
@@ -466,8 +481,6 @@ async function processarOffline(texto) {
   if (climaMatch) return await obterClima(climaMatch[1] ? climaMatch[1].trim() : null);
   
   if (/\b(status|online|offline)\b/.test(t)) return "O sistema está online e operacional.";
-  
-  // REGRA BLINDADA: Só ativa com a palavra "ajuda" exata ou a frase completa.
   if (/\b(ajuda|o que você pode fazer)\b/.test(t)) return "Posso responder sobre clima, hora, status e ler arquivos. Para códigos e prompts complexos, uso a IA do Groq.";
 
   return null; 
