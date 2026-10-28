@@ -221,7 +221,7 @@ function restaurarHistorico() {
     const chat = document.getElementById('chat');
     chat.innerHTML = '';
     if (historico.length === 0) {
-        addMsg('boss', 'Sistema BOSS inicializado. Conexão com o núcleo EXODRIVE estabelecida.', false);
+        addMsg('boss', 'Sistema BOSS v2.1 inicializado. Conexão com o núcleo EXODRIVE estabelecida.', false);
     } else {
         historico.forEach(m => {
             const tipo = m.role === 'user' ? 'user' : 'boss';
@@ -467,8 +467,8 @@ async function processarOffline(texto) {
   
   if (/\b(status|online|offline)\b/.test(t)) return "O sistema está online e operacional.";
   
-  // CORREÇÃO AQUI: Evita que a palavra "comandos" no meio de frases técnicas ative o menu de ajuda
-  if (/\b(ajuda|o que você pode fazer|quais são os comandos|lista de comandos)\b/.test(t)) return "Posso responder sobre clima, hora, status e ler arquivos. Para códigos e prompts complexos, uso a IA do Groq.";
+  // REGRA BLINDADA: Só ativa com a palavra "ajuda" exata ou a frase completa.
+  if (/\b(ajuda|o que você pode fazer)\b/.test(t)) return "Posso responder sobre clima, hora, status e ler arquivos. Para códigos e prompts complexos, uso a IA do Groq.";
 
   return null; 
 }
