@@ -56,3 +56,33 @@ A EXODRIVE é o ecossistema de tecnologia automotiva focado em otimização, seg
 3. **Erro ao atualizar (Auto-update):**
    - Verifique se a central tem acesso à internet (Wi-Fi ou 4G do celular).
    - O GitHub pode ter bloqueado a conexão temporariamente. Tente novamente mais tarde.
+## 5. MANUAL DO TÉCNICO EXODRIVE (Avançado)
+
+### 1. Compatibilidade de Hardware (OBD2)
+- **Aprovados:** Adaptadores com chip FTDI (OBDLink EX) ou CH340/CP210x (Vgate vLinker FS). São os únicos que a biblioteca `usb-serial-for-android` reconhece sem falhar.
+- **Proibidos:** Clones ELM327 "baratos" que usam chips genéricos ou firmware corrompido. Eles cortam a resposta do Mode 03 (leitura de DTCs) e quebram o app.
+
+### 2. Como a Internet é usada no EXODASH
+- **OBD e Telemetria:** 100% OFFLINE. Não precisa de internet para ler o motor.
+- **EXO (Assistente de Voz):** Precisa de internet (Groq API). Se o carro não tiver chip 4G, o ajudante deve conectar a central no Hotspot do celular.
+- **Consumo:** Cada pergunta ao EXO gasta cerca de 2KB de dados. O uso diário não estoura nenhum plano de celular.
+- **Dica do Hotspot:** No celular, deixe o Hotspot ligado e desative a opção "Desativar quando não houver dispositivos conectados".
+
+### 3. Como extrair e enviar Logs (Suporte)
+Se o carro der algum erro estranho (ex: app travou, OBD não leu):
+1. Abra o EXODASH.
+2. Vá em Configurações > Logs de eventos.
+3. Toque no botão "EXPORTAR".
+4. Escolha o WhatsApp ou Google Drive e envie o arquivo `.txt` para o Chefe.
+5. O log contém todos os comandos que o app enviou para a ECU do carro e as respostas.
+
+### 4. Problemas com Voz (TTS e STT)
+- **Sintoma:** O EXO não fala.
+- **Solução:** Vá nas configurações do Android > Acessibilidade > Saída de texto para fala. Verifique se o "Speech Services by Google" está instalado e definido como motor preferido.
+- **Sintoma:** O EXO não ouve (Microfone).
+- **Solução:** O navegador/App precisa da permissão de microfone. Em celulares Samsung, o navegador nativo funciona melhor que o Chrome.
+
+### 5. Atualização do Sistema (Auto-Update)
+- **Como funciona:** O app verifica automaticamente se há um Release novo no GitHub (versão maior que a instalada).
+- **Requisito:** A central precisa estar conectada à internet.
+- **Atenção:** Nunca desinstale o app para atualizar. Apenas clique em "Atualizar" na tela do Android para não perder o Nome do Carro e os DTCs salvos.
