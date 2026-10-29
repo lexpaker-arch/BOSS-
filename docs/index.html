@@ -223,7 +223,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local'; 
 const REPO_VIGILANTE = 'lexpaker-arch/EXO-VIGILANTE';
-const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
+const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; // CORRIGIDO PARA BOSS-
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
@@ -236,6 +236,7 @@ let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '' }; 
 let memoriaLongaPrazo = '';
+let manualEngenharia = '';
 let exoContainer = document.getElementById('exoContainer');
 let btnMicFooter = document.getElementById('btnMicFooter');
 let arquivoAnexado = '';
@@ -257,20 +258,9 @@ function aplicarLayoutETema() {
 }
 aplicarLayoutETema();
 
-function mudarLayout() {
-    layoutModo = document.getElementById('layoutSelect').value;
-    localStorage.setItem('boss_layout', layoutModo);
-    aplicarLayoutETema();
-}
-function mudarTema() {
-    temaModo = document.getElementById('themeSelect').value;
-    localStorage.setItem('boss_theme', temaModo);
-    aplicarLayoutETema();
-}
-function mudarFollowUp() {
-    followUpAtivo = document.getElementById('followUpSelect').value === 'on';
-    localStorage.setItem('boss_followup', followUpAtivo ? 'on' : 'off');
-}
+function mudarLayout() { layoutModo = document.getElementById('layoutSelect').value; localStorage.setItem('boss_layout', layoutModo); aplicarLayoutETema(); }
+function mudarTema() { temaModo = document.getElementById('themeSelect').value; localStorage.setItem('boss_theme', temaModo); aplicarLayoutETema(); }
+function mudarFollowUp() { followUpAtivo = document.getElementById('followUpSelect').value === 'on'; localStorage.setItem('boss_followup', followUpAtivo ? 'on' : 'off'); }
 
 function popularVozes() {
     const select = document.getElementById('voiceSelect');
@@ -286,29 +276,15 @@ function popularVozes() {
         select.appendChild(opt);
     });
 }
-
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = popularVozes;
     setTimeout(popularVozes, 200);
 }
 
-function mudarVoz() {
-    vozNome = document.getElementById('voiceSelect').value;
-    localStorage.setItem('boss_voice', vozNome);
-}
-function mudarRate(val) {
-    vozRate = parseFloat(val);
-    document.getElementById('rateVal').textContent = vozRate.toFixed(2);
-    localStorage.setItem('boss_rate', vozRate);
-}
-function mudarPitch(val) {
-    vozPitch = parseFloat(val);
-    document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
-    localStorage.setItem('boss_pitch', vozPitch);
-}
-function testarVoz() {
-    falarTexto("Olá, Chefe. Esta é minha voz atual. Estou pronto para trabalhar.");
-}
+function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
+function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
+function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
+function testarVoz() { falarTexto("Olá, Chefe. Esta é minha voz atual. Estou pronto para trabalhar."); }
 
 document.body.addEventListener('click', function unlockAudio() {
     const u = new SpeechSynthesisUtterance(' ');
@@ -321,14 +297,7 @@ const TOKEN_GUARD = {
   maxCharsPerPrompt: 20000, maxRequestsPerMinute: 20, memoryCharLimit: 10000,
   requests: JSON.parse(localStorage.getItem('boss_requests') || '[]'),
   limparHistorico() { const now = Date.now(); this.requests = this.requests.filter(t => now - t < 60000); localStorage.setItem('boss_requests', JSON.stringify(this.requests)); },
-  podeEnviar() {
-    this.limparHistorico();
-    if (this.requests.length >= this.maxRequestsPerMinute) {
-      const espera = Math.ceil((60000 - (Date.now() - this.requests[0])) / 1000);
-      return { pode: false, espera };
-    }
-    return { pode: true };
-  },
+  podeEnviar() { this.limparHistorico(); if (this.requests.length >= this.maxRequestsPerMinute) { const espera = Math.ceil((60000 - (Date.now() - this.requests[0])) / 1000); return { pode: false, espera }; } return { pode: true }; },
   registrar() { this.requests.push(Date.now()); localStorage.setItem('boss_requests', JSON.stringify(this.requests)); },
   limitarTexto(texto) { return texto.length > this.maxCharsPerPrompt ? texto.substring(0, this.maxCharsPerPrompt) + "\n[Truncado]" : texto; }
 };
@@ -365,12 +334,16 @@ async function carregarContexto() {
 }
 
 async function carregarMemoria() {
-  if (userRole !== 'Chefe') { memoriaLongaPrazo = ''; return; }
+  if (userRole !== 'Chefe') { memoriaLongaPrazo = ''; manualEngenharia = ''; return; }
   try {
-    const res = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/chefe.md`);
-    const data = await res.json();
-    if (data.content) { memoriaLongaPrazo = decodeURIComponent(escape(atob(data.content))); }
-  } catch (e) {}
+    const resMem = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/chefe.md`);
+    const dataMem = await resMem.json();
+    if (dataMem.content) { memoriaLongaPrazo = decodeURIComponent(escape(atob(dataMem.content))); }
+
+    const resMan = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/backup/MANUAL_DE_ENGENHARIA.md`);
+    const dataMan = await resMan.json();
+    if (dataMan.content) { manualEngenharia = decodeURIComponent(escape(atob(dataMan.content))); }
+  } catch (e) { console.warn('Sem memória ou manual salvo ainda.'); }
 }
 
 async function compilarMemoria() {
@@ -456,12 +429,9 @@ function lerArquivo(event) {
 
 async function processarOffline(texto) {
   const t = texto.toLowerCase();
+  const tSemAcento = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  // ═══════════════════════════════════════════════════════
-  // CORREÇÃO AQUI: Exige que o arquivo tenha uma extensão (.kt, .xml, .md, etc.)
-  // ═══════════════════════════════════════════════════════
   const lerMatch = texto.match(/(?:leia|ler|abrir|abre|consulte|consultar)\s+(?:o\s+arquivo\s+)?([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)/i);
-  
   if (lerMatch) {
       let caminho = lerMatch[1];
       let repoAlvo = REPO_CONTEXTO;
@@ -471,15 +441,13 @@ async function processarOffline(texto) {
           repoAlvo = REPO_VIGILANTE;
           if (caminho.endsWith('.kt')) caminhoFinal = `app/src/main/java/com/exovigilante/${caminho}`;
           else if (caminho.endsWith('.xml')) caminhoFinal = `app/src/main/res/layout/${caminho}`;
-      } 
-      else if (t.includes('exodash') || caminho.endsWith('.kt')) {
+      } else if (t.includes('exodash') || caminho.endsWith('.kt')) {
           repoAlvo = REPO_PROJETO;
           if (caminho.includes('/')) caminhoFinal = caminho;
           else caminhoFinal = `app/src/main/java/com/exodash/${caminho}`;
       }
 
       const conteudo = await fetchGithubFile(repoAlvo, caminhoFinal);
-      
       if (conteudo) {
           arquivoAnexado = conteudo; 
           return `[ARQUIVO ENCONTRADO: ${caminho}]\n\nO arquivo foi carregado na minha memória. Pode me pedir para analisar ou gerar um prompt de engenharia.`;
@@ -487,19 +455,19 @@ async function processarOffline(texto) {
           return `[SISTEMA] Arquivo "${caminho}" não encontrado no repositório ${repoAlvo}.`;
       }
   }
-  // ═══════════════════════════════════════════════════════
 
-  if (/\b(bom dia|boa tarde|boa noite|oi|olá|ola)\b/.test(t)) {
+  if (/\b(bom dia|boa tarde|boa noite|oi|ola)\b/.test(tSemAcento)) {
     const hora = new Date().getHours(); let s = "Olá";
     if (hora < 12) s = "Bom dia"; else if (hora < 18) s = "Boa tarde"; else s = "Boa noite";
     return `${s}, ${userRole}. Como posso ajudar?`;
   }
-  if (/\b(que horas são|que hora é|horas)\b/.test(t)) return `Agora são ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}.`;
-  if (/\b(que dia é hoje|data de hoje|hoje é que dia)\b/.test(t)) return `Hoje é ${new Date().toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}.`;
-  if (/\b(quem é você|o que é o boss|o que você é)\b/.test(t)) return "Eu sou o BOSS, o assistente da EXODRIVE.";
-  if (/\b(quem manda aqui|quem é o patrão|quem é o chefe)\b/.test(t)) return "Eu sou o BOSS, o senhor é o Chefe. A diferença? Eu tenho a chave do servidor.";
+  if (/\b(que horas|hora|horas)\b/.test(tSemAcento)) return `Agora são ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}.`;
+  
+  if (/\b(que dia|data de hoje|hoje e que dia)\b/.test(tSemAcento)) return `Hoje é ${new Date().toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}.`;
+  if (/\b(quem e voce|o que e o boss|o que voce e)\b/.test(tSemAcento)) return "Eu sou o BOSS, o assistente da EXODRIVE.";
+  if (/\b(quem manda aqui|quem e o patrao|quem e o chefe)\b/.test(tSemAcento)) return "Eu sou o BOSS, o senhor é o Chefe. A diferença? Eu tenho a chave do servidor.";
   if (/\b(status|online|offline)\b/.test(t)) return "O sistema está online e operacional.";
-  if (/\b(ajuda|o que você pode fazer)\b/.test(t)) return "Posso ler arquivos de backup (.md), do EXODASH e do Vigilante. Peça: 'Leia o arquivo MainActivity.kt do Exodash'.";
+  if (/\b(ajuda|o que voce pode fazer)\b/.test(tSemAcento)) return "Posso ler arquivos de backup (.md), do EXODASH e do Vigilante. Peça: 'Leia o arquivo MainActivity.kt do Exodash'.";
 
   return null; 
 }
@@ -513,7 +481,15 @@ function buildSystemPrompt() {
   let prompt = `Você é o BOSS, assistente da EXODRIVE.
 ${roleInstruction}
 
-=== DIRETRIZES DE ENGENHARIA (OBRIGATÓRIO) ===
+=== REGRA DE ESTILO (OBRIGATÓRIA) ===
+- Seja direto ao ponto. Nada de introduções longas ou opções A, B, C.
+- Fale como um engenheiro experiente na bancada: "O problema é X. Faça Y."
+- Limite a resposta a no máximo 3 parágrafos ou 5 tópicos.
+
+=== MANUAL DE ENGENHARIA (LEIA OBRIGATORIAMENTE) ===
+${manualEngenharia || '(Manual não carregado. Peça ao operador para verificar o GitHub.)'}
+
+=== DIRETRIZES DE ENGENHARIA ===
 ${contextoCache.diretrizes || '(Nenhuma diretriz carregada)'}
 
 === MEMÓRIA DE LONGO PRAZO ===
@@ -543,7 +519,11 @@ async function enviar() {
 
   try {
     const messages = [{ role: 'system', content: buildSystemPrompt() }, ...historico.slice(-6)];
-    const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: MODELO, messages, max_tokens: 600, temperature: 0.3 }) });
+    const resp = await fetch(WORKER_URL, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ model: MODELO, messages, max_tokens: 4000, temperature: 0.3 }) // AQUI ESTÁ O NOVO MAX_TOKENS
+    });
     const data = await resp.json();
     
     let resposta = data.choices?.[0]?.message?.content?.trim() || (data.error ? "Erro: " + JSON.stringify(data.error) : "Falha na resposta.");
@@ -603,7 +583,6 @@ function falarTexto(textoOriginal) {
 
   const iniciarFala = () => {
       const voices = window.speechSynthesis.getVoices();
-      
       if (vozNome) {
           const escolhida = voices.find(v => v.name === vozNome);
           if (escolhida) utterance.voice = escolhida;
@@ -635,5 +614,4 @@ restaurarHistorico();
 </script>
 </body>
 </html>
-
 
