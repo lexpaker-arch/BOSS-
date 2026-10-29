@@ -180,6 +180,12 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
       </select>
 
       <label>VOZ DO BOSS</label>
+      <select id="voiceToggle" onchange="mudarMudo()">
+        <option value="on">Ativada (Fala)</option>
+        <option value="off">Muda (Silenciosa)</option>
+      </select>
+
+      <label>VOZ DO BOSS (SOTAQUES)</label>
       <select id="voiceSelect" onchange="mudarVoz()">
         <option value="">Padrão do navegador</option>
       </select>
@@ -223,13 +229,14 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local'; 
 const REPO_VIGILANTE = 'lexpaker-arch/EXO-VIGILANTE';
-const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; // CORRIGIDO PARA BOSS-
+const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
 let layoutModo = localStorage.getItem('boss_layout') || 'orb';
 let temaModo = localStorage.getItem('boss_theme') || 'default';
 let followUpAtivo = localStorage.getItem('boss_followup') === 'on';
+let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off'; // NOVO: Controle de Mudo
 let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
@@ -246,6 +253,7 @@ document.getElementById('userSelect').value = userRole;
 document.getElementById('layoutSelect').value = layoutModo;
 document.getElementById('themeSelect').value = temaModo;
 document.getElementById('followUpSelect').value = followUpAtivo ? 'on' : 'off';
+document.getElementById('voiceToggle').value = vozAtiva ? 'on' : 'off';
 document.getElementById('rateSlider').value = vozRate;
 document.getElementById('rateVal').textContent = vozRate.toFixed(2);
 document.getElementById('pitchSlider').value = vozPitch;
@@ -261,6 +269,7 @@ aplicarLayoutETema();
 function mudarLayout() { layoutModo = document.getElementById('layoutSelect').value; localStorage.setItem('boss_layout', layoutModo); aplicarLayoutETema(); }
 function mudarTema() { temaModo = document.getElementById('themeSelect').value; localStorage.setItem('boss_theme', temaModo); aplicarLayoutETema(); }
 function mudarFollowUp() { followUpAtivo = document.getElementById('followUpSelect').value === 'on'; localStorage.setItem('boss_followup', followUpAtivo ? 'on' : 'off'); }
+function mudarMudo() { vozAtiva = document.getElementById('voiceToggle').value === 'on'; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); }
 
 function popularVozes() {
     const select = document.getElementById('voiceSelect');
@@ -284,7 +293,10 @@ if (window.speechSynthesis) {
 function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
 function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
-function testarVoz() { falarTexto("Olá, Chefe. Esta é minha voz atual. Estou pronto para trabalhar."); }
+function testarVoz() { 
+    if (!vozAtiva) return addMsg('error', 'A voz está desativada nas configurações.');
+    falarTexto("Olá, Chefe. Esta é minha voz atual. Estou pronto para trabalhar."); 
+}
 
 document.body.addEventListener('click', function unlockAudio() {
     const u = new SpeechSynthesisUtterance(' ');
@@ -522,7 +534,7 @@ async function enviar() {
     const resp = await fetch(WORKER_URL, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ model: MODELO, messages, max_tokens: 4000, temperature: 0.3 }) // AQUI ESTÁ O NOVO MAX_TOKENS
+        body: JSON.stringify({ model: MODELO, messages, max_tokens: 4000, temperature: 0.3 })
     });
     const data = await resp.json();
     
@@ -568,42 +580,76 @@ function iniciarEscuta(isAuto = false) {
 
 function toggleGravacao() { iniciarEscuta(false); }
 
-function limparMarkdown(texto) { return texto.replace(/[*_~`#]/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1').replace(/\n/g, ' '); }
+// ═══════════════════════════════════════════════════════
+// FILTRO CIRÚRGICO DE VOZ
+// ═══════════════════════════════════════════════════════
+function limparTextoParaTTS(textoOriginal) {
+    let texto = textoOriginal;
+
+    // 1. Remove blocos de código inteiros (```...```)
+    texto = texto.replace(/```[\s\S]*?```/g, ' (código omitido) ');
+
+    // 2. Remove URLs
+    texto = texto.replace(/https?:\/\/\S+/g, ' link ');
+
+    // 3. Remove códigos DTC soltos (ex: P0301)
+    texto = texto.replace(/\b[PBCU][0-9]{4}\b/g, '');
+
+    // 4. Remove comandos hexadecimais (ex: A0 01 01 A2)
+    texto = texto.replace(/\b[A-F0-9]{2}(\s[A-F0-9]{2}){2,}\b/g, '');
+
+    // 5. Remove Markdown restante (* _ ~ ` #)
+    texto = texto.replace(/[*_~`#]/g, '');
+
+    // 6. Transforma quebras de linha em espaço
+    texto = texto.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+
+    return texto.trim();
+}
 
 function falarTexto(textoOriginal) {
-  if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
-  const textoLimpo = limparMarkdown(textoOriginal); 
-  window.speechSynthesis.cancel();
-  
-  const utterance = new SpeechSynthesisUtterance(textoLimpo);
-  utterance.lang = 'pt-BR';
-  utterance.rate = vozRate;
-  utterance.pitch = vozPitch;
-  utterance.volume = 1.0;
+    if (!vozAtiva) return;
+    if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
+    
+    const textoLimpo = limparTextoParaTTS(textoOriginal);
+    
+    // Se o filtro deixou o texto muito curto (ex: só "OK"), não fala.
+    if (textoLimpo.length < 10) {
+        exoContainer.classList.remove('falando');
+        return;
+    }
 
-  const iniciarFala = () => {
-      const voices = window.speechSynthesis.getVoices();
-      if (vozNome) {
-          const escolhida = voices.find(v => v.name === vozNome);
-          if (escolhida) utterance.voice = escolhida;
-      } else {
-          let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
-          if (ptVoice) utterance.voice = ptVoice;
-      }
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(textoLimpo);
+    utterance.lang = 'pt-BR';
+    utterance.rate = vozRate;
+    utterance.pitch = vozPitch;
+    utterance.volume = 1.0;
 
-      utterance.onstart = () => { exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); };
-      utterance.onend = () => {
-          exoContainer.classList.remove('falando');
-          if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800);
-      };
-      utterance.onerror = (e) => { console.error("Erro TTS:", e); exoContainer.classList.remove('falando'); };
-      
-      window.speechSynthesis.speak(utterance);
-  };
+    const iniciarFala = () => {
+        const voices = window.speechSynthesis.getVoices();
+        if (vozNome) {
+            const escolhida = voices.find(v => v.name === vozNome);
+            if (escolhida) utterance.voice = escolhida;
+        } else {
+            let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+            if (ptVoice) utterance.voice = ptVoice;
+        }
 
-  if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = () => { iniciarFala(); window.speechSynthesis.onvoiceschanged = null; };
-  } else { iniciarFala(); }
+        utterance.onstart = () => { exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); };
+        utterance.onend = () => {
+            exoContainer.classList.remove('falando');
+            if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800);
+        };
+        utterance.onerror = (e) => { console.error("Erro TTS:", e); exoContainer.classList.remove('falando'); };
+        
+        window.speechSynthesis.speak(utterance);
+    };
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => { iniciarFala(); window.speechSynthesis.onvoiceschanged = null; };
+    } else { iniciarFala(); }
 }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
