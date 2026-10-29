@@ -232,11 +232,16 @@ const REPO_VIGILANTE = 'lexpaker-arch/EXO-VIGILANTE';
 const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
 const MODELO = 'qwen/qwen3.8-27b';
 
+// ═══════════════════════════════════════════════════════
+// PARÂMETRO DE MEDIÇÃO (Mude para false para desativar os logs)
+// ═══════════════════════════════════════════════════════
+const DEBUG_TOKENS = true; 
+
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
 let layoutModo = localStorage.getItem('boss_layout') || 'orb';
 let temaModo = localStorage.getItem('boss_theme') || 'default';
 let followUpAtivo = localStorage.getItem('boss_followup') === 'on';
-let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off'; // NOVO: Controle de Mudo
+let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
@@ -538,6 +543,24 @@ async function enviar() {
     });
     const data = await resp.json();
     
+    // ═══════════════════════════════════════════════════════
+    // PARÂMETRO DE MEDIÇÃO DE TOKENS (Log no Console)
+    // ═══════════════════════════════════════════════════════
+    if (DEBUG_TOKENS && data.usage) {
+        const u = data.usage;
+        const custoEntrada = (u.prompt_tokens / 1000000) * 0.27;
+        const custoSaida = (u.completion_tokens / 1000000) * 1.10;
+        const custoTotal = custoEntrada + custoSaida;
+
+        console.group('%c[MÉTRICAS DE TOKENS - BOSS]', 'color: #00FFCC; font-weight: bold; font-size: 12px;');
+        console.log(`📥 Prompt (Entrada): ${u.prompt_tokens} tokens`);
+        console.log(`📤 Completion (Saída): ${u.completion_tokens} tokens`);
+        console.log(`📊 Total: ${u.total_tokens} tokens`);
+        console.log(`💰 Custo Estimado DeepSeek: $${custoTotal.toFixed(6)} USD`);
+        console.groupEnd();
+    }
+    // ═══════════════════════════════════════════════════════
+
     let resposta = data.choices?.[0]?.message?.content?.trim() || (data.error ? "Erro: " + JSON.stringify(data.error) : "Falha na resposta.");
 
     thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
@@ -580,30 +603,14 @@ function iniciarEscuta(isAuto = false) {
 
 function toggleGravacao() { iniciarEscuta(false); }
 
-// ═══════════════════════════════════════════════════════
-// FILTRO CIRÚRGICO DE VOZ
-// ═══════════════════════════════════════════════════════
 function limparTextoParaTTS(textoOriginal) {
     let texto = textoOriginal;
-
-    // 1. Remove blocos de código inteiros (```...```)
     texto = texto.replace(/```[\s\S]*?```/g, ' (código omitido) ');
-
-    // 2. Remove URLs
     texto = texto.replace(/https?:\/\/\S+/g, ' link ');
-
-    // 3. Remove códigos DTC soltos (ex: P0301)
     texto = texto.replace(/\b[PBCU][0-9]{4}\b/g, '');
-
-    // 4. Remove comandos hexadecimais (ex: A0 01 01 A2)
     texto = texto.replace(/\b[A-F0-9]{2}(\s[A-F0-9]{2}){2,}\b/g, '');
-
-    // 5. Remove Markdown restante (* _ ~ ` #)
     texto = texto.replace(/[*_~`#]/g, '');
-
-    // 6. Transforma quebras de linha em espaço
     texto = texto.replace(/\n/g, ' ').replace(/\s+/g, ' ');
-
     return texto.trim();
 }
 
@@ -613,7 +620,6 @@ function falarTexto(textoOriginal) {
     
     const textoLimpo = limparTextoParaTTS(textoOriginal);
     
-    // Se o filtro deixou o texto muito curto (ex: só "OK"), não fala.
     if (textoLimpo.length < 10) {
         exoContainer.classList.remove('falando');
         return;
