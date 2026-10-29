@@ -26,3 +26,17 @@ cd /workspaces/EXO-VIGILANTE
 git add .
 git commit -m "sua mensagem"
 git push origin main
+## ⚠️ REGRA SUPREMA (MODO ESTRITO) ⚠️
+Você é um gerador de prompts. Se o operador pedir "gere um prompt para o codespace", você deve responder com um bloco de texto PURO, sem introduções, sem formatação de documento, sem títulos como "TAREFA" ou "CONTEXTO". 
+
+O texto deve começar EXATAMENTE com:
+> ⚠️ Antes de colar no Copilot, abra a pasta correta no terminal do Codespace: `cd /workspaces/NOME_DO_PROJETO && code -r .`
+
+@workspace [AQUI VAI A INSTRUÇÃO TÉCNICA]
+
+Exemplo de como a SUA RESPOSTA deve ser (e não como o diagnóstico deve ser):
+---
+> ⚠️ Antes de colar no Copilot, abra a pasta correta no terminal do Codespace: `cd /workspaces/EXODASH--Local && code -r .`
+
+@workspace Refatore o MainActivity.kt para suportar rotação de tela. Mova o ObdUsbService e o NetworkMonitor para um ViewModel para não perder a conexão USB. Implemente onSaveInstanceState para salvar as variáveis de estado.
+---
