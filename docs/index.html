@@ -73,18 +73,20 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
 
-/* FOOTER ALINHADO À ESQUERDA */
+/* RODAPÉ: BY ALEX NA ESQUERDA E INPUT ALINHADO */
 footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: flex-start; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; flex-shrink: 0; }
-.footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: flex-start; margin-left: 0; }
-@media (min-width: 1200px) { .footer-inputs { margin-left: 280px; } } /* Alinha com a tela de chat, ignorando a barra lateral */
+.by-alex { position: absolute; left: 20px; top: 15px; font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
+@media (min-width: 900px) { .by-alex { display: block; } }
+.footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: flex-start; margin-left: 0; margin-top: 15px; }
+@media (min-width: 1200px) { .footer-inputs { margin-left: 280px; margin-top: 0; } }
+@media (min-width: 900px) and (max-width: 1199px) { .footer-inputs { margin-left: 40px; } }
+
 .btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .btn-attach:hover { border-color: #00FFCC; color: #00FFCC; }
 #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; height: 40px; max-height: 120px; overflow-y: hidden; transition: 0.3s; }
 #input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 40px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
-.by-alex { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
-@media (min-width: 900px) { .by-alex { display: block; } }
 
 .config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 300px; max-height: 80vh; overflow-y: auto; }
 .config.open { display: block; } 
@@ -131,7 +133,6 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         </div>
     </header>
 
-    <!-- MENU RESTAURADO E COMPLETO -->
     <div id="config" class="config">
       <label>OPERATOR PROFILE</label>
       <select id="userSelect" onchange="mudarUsuario()">
@@ -139,45 +140,37 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
-
       <label>INTERFACE VISUAL</label>
       <select id="layoutSelect" onchange="mudarLayout()">
         <option value="orb">JARVIS (Aro Central)</option>
         <option value="chat">DISCRETO (Chat Linear)</option>
       </select>
-
       <label>TEMA DE CORES</label>
       <select id="themeSelect" onchange="mudarTema()">
         <option value="default">Padrão (Ardósia)</option>
         <option value="black">Preto Absoluto (AMOLED)</option>
       </select>
-      
       <label>EFEITO DE DIGITAÇÃO</label>
       <select id="typewriterToggle" onchange="mudarTypewriter()">
         <option value="on">Ativado (Efeito Máquina)</option>
         <option value="off">Desativado (Texto Instantâneo)</option>
       </select>
-
       <label>ESCUTA CONTÍNUA (FOLLOW-UP)</label>
       <select id="followUpSelect" onchange="mudarFollowUp()">
         <option value="off">Desativada</option>
         <option value="on">Ativada (5s após falar)</option>
       </select>
-
       <label>VOZ DO BOSS</label>
       <select id="voiceToggle" onchange="mudarMudo()">
         <option value="on">Ativada (Fala)</option>
         <option value="off">Muda (Silenciosa)</option>
       </select>
-
       <label>VOZ DO BOSS (SOTAQUES)</label>
       <select id="voiceSelect" onchange="mudarVoz()">
         <option value="">Padrão do navegador</option>
       </select>
-      
       <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
       <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
-      
       <label>TOM DA VOZ: <span id="pitchVal">1.05</span></label>
       <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)">
       
@@ -215,6 +208,7 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
                 <div class="hud-widget-sub">Imagens: <span id="metric-img" style="color:#00FFCC">0</span></div>
                 <div class="hud-widget-sub">Vídeos: <span id="metric-vid" style="color:#00FFCC">0</span></div>
                 <div class="hud-widget-sub">Arquivos Github: <span id="metric-git" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Visão AI: <span id="metric-vision" style="color:#F1C40F">0</span></div>
             </div>
         </div>
 
@@ -229,8 +223,8 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
     <footer>
         <div class="by-alex">BY ALEX. P</div>
         <div class="footer-inputs">
-            <input type="file" id="fileInput" style="display:none" onchange="lerArquivo(event)">
-            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar arquivo local">📎</button>
+            <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="lerArquivo(event)">
+            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar foto do scanner/osciloscópio">📎</button>
             <button id="btnMicFooter" class="btn-attach" onclick="iniciarEscuta(false)" title="Falar">🎤</button>
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
             <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
@@ -249,7 +243,6 @@ const REPO_CONTEXTO = 'lexpaker-arch/BOSS-';
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
-// --- INICIALIZAÇÃO E RESTAURAÇÃO DE VARIÁVEIS ---
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 if (userRole === 'Chefe') userRole = 'Patrão';
 
@@ -264,6 +257,7 @@ let typewriterAtivo = localStorage.getItem('boss_typewriter') !== 'off';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '', memoriaCodigo: '' }; 
 let manualBaseEletrica = ''; 
+let imagemAnexadaBase64 = ''; // NOVO: Para análise de visão
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricCost = parseFloat(localStorage.getItem('metric_cost')) || 0;
@@ -271,6 +265,7 @@ let metricWeb = parseInt(localStorage.getItem('metric_web')) || 0;
 let metricImg = parseInt(localStorage.getItem('metric_img')) || 0;
 let metricVid = parseInt(localStorage.getItem('metric_vid')) || 0;
 let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
+let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
 
 function atualizarHUD() {
     document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
@@ -279,12 +274,14 @@ function atualizarHUD() {
     document.getElementById('metric-img').textContent = metricImg;
     document.getElementById('metric-vid').textContent = metricVid;
     document.getElementById('metric-git').textContent = metricGit;
+    document.getElementById('metric-vision').textContent = metricVision;
     localStorage.setItem('metric_tokens', metricTokens);
     localStorage.setItem('metric_cost', metricCost);
     localStorage.setItem('metric_web', metricWeb);
     localStorage.setItem('metric_img', metricImg);
     localStorage.setItem('metric_vid', metricVid);
     localStorage.setItem('metric_git', metricGit);
+    localStorage.setItem('metric_vision', metricVision);
 }
 atualizarHUD();
 
@@ -303,7 +300,6 @@ simularUsuarios();
 window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
 window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
 
-// --- CONTROLE DE CONFIGURAÇÕES ---
 function popularVozes() {
     const select = document.getElementById('voiceSelect');
     const voices = window.speechSynthesis.getVoices();
@@ -503,12 +499,13 @@ ${roleInstruction}
 - Se o usuário pedir "detalhes técnicos", ignore a linguagem simples e use jargões.
 
 === FERRAMENTAS (REGRA ESTRITA) ===
-- **NUNCA** gere tags de ferramentas sem o usuário pedir.
 - Use [IMAGE_SEARCH: termo] APENAS se pedirem "foto" ou "imagem".
 - Use [VIDEO_SEARCH: termo] APENAS se pedirem "vídeo".
 - Use [WEB_SEARCH: termo] APENAS se precisar de dados reais da internet.
-- Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se pedirem para criar um arquivo.
-- Use [RUN_CODE: linguagem | código] APENAS se pedirem para executar um código ou fazer um cálculo complexo.
+- Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se pedirem para criar um arquivo (ou se você mesmo decidir estudar e salvar).
+- Use [RUN_CODE: linguagem | código] APENAS para cálculos ou execução.
+- **Para Diagnósticos:** Sempre crie um fluxograma usando a sintaxe Mermaid (bloco \`\`\`mermaid ... \`\`\`). Exemplo: \`\`\`mermaid\ngraph TD\nA[Início] --> B{Testar Vácuo}\nB -->|Baixo| C[Vazamento]\nB -->|Normal| D[Testar IAC]\n\`\`\`.
+- **Auto-Estudo:** Se o usuário pedir para estudar um carro, use [WEB_SEARCH] primeiro. Após receber os dados, formate um guia técnico em Markdown e use [GITHUB_CREATE: conhecimento/veiculos/marca_modelo_ano.md | conteúdo] para salvar.
 
 === MANUAL BASE AUTOMOTIVO ===
 ${manualBaseEletrica}
@@ -522,15 +519,52 @@ ${contextoCache.memoriaCodigo || '(Nenhum gerado. Vá em ⚙ e clique em MAPEAR.
 Seja direto.`.trim();
 }
 
+function lerArquivo(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) { 
+        imagemAnexadaBase64 = e.target.result; 
+        addMsg('user', `[Foto anexada para análise]`); 
+        document.getElementById('input').focus(); 
+    };
+    reader.readAsDataURL(file); 
+    event.target.value = ''; 
+}
+
 async function enviar() {
-  const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto) return;
+  const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto && !imagemAnexadaBase64) return;
   
-  input.value = ''; autoResize(input); addMsg('user', texto);
+  input.value = ''; autoResize(input); 
+  if(texto) addMsg('user', texto);
+  
   const thinking = addMsg('thinking', 'Processando...', false); document.getElementById('send').disabled = true;
   document.getElementById('exoContainer').classList.add('pensando');
 
+  let contextoVisao = "";
+
   try {
+    // 1. Se tiver imagem, manda pro Worker analisar via Groq Vision
+    if (imagemAnexadaBase64) {
+        thinking.div.innerHTML = 'PROC > Analisando imagem técnica...';
+        metricVision++; atualizarHUD();
+        
+        const visResp = await fetch(`${WORKER_URL}/analyze-image`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: imagemAnexadaBase64 })
+        });
+        const visData = await visResp.json();
+        contextoVisao = visData.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
+        imagemAnexadaBase64 = ''; // Limpa a imagem após usar
+    }
+
+    let userContent = texto;
+    if (contextoVisao) {
+        userContent = `[ANÁLISE DA IMAGEM ENVIADA PELO USUÁRIO]:\n${contextoVisao}\n\n[PERGUNTA DO USUÁRIO]:\n${texto || "O que você acha disso?"}`;
+    }
+
     let currentMessages = [{ role: 'system', content: buildSystemPrompt() }, ...historico.slice(-6)];
+    if (userContent) currentMessages.push({ role: 'user', content: userContent });
+
     let continuarLoop = true;
     let tentativas = 0;
     let respostaFinal = "";
@@ -559,7 +593,7 @@ async function enviar() {
             const searchResp = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
             const searchData = await searchResp.json();
             currentMessages.push({ role: 'assistant', content: resposta });
-            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os dados: ${searchData.results}. Responda agora.` });
+            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os dados da busca: ${searchData.results}. Responda agora ou use GITHUB_CREATE para salvar.` });
         } else {
             respostaFinal = resposta;
             continuarLoop = false;
@@ -568,14 +602,16 @@ async function enviar() {
 
     const matchImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
     const matchVideo = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
-    const matchMermaid = respostaFinal.match(/\[MERMAID:\s*([\s\S]*?)\]/);
+    const matchMermaid = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
     const matchGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
     const matchCode = respostaFinal.match(/\[RUN_CODE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
 
     if (matchImg || matchVideo || matchMermaid || matchGit || matchCode) {
         thinking.wrapper.remove();
         
-        let textoLimpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|MERMAID|GITHUB_CREATE|RUN_CODE):[\s\S]*?\]/g, '').trim();
+        // Renderiza o texto antes das ferramentas
+        let textoLimpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GITHUB_CREATE|RUN_CODE):[\s\S]*?\]/g, '').replace(/```mermaid\n[\s\S]*?```/g, '').trim();
+        
         if (textoLimpo) {
             const msgObj = addMsg('boss', textoLimpo);
             await efeitoDigitacao(msgObj.div, textoLimpo);
@@ -703,7 +739,7 @@ function falarTexto(texto) {
     window.speechSynthesis.speak(u);
 }
 
-function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com telemetria."); }
+function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com visão e sandbox."); }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
 
