@@ -14,7 +14,6 @@ body { background-color: #05070A; background-image: linear-gradient(rgba(0, 255,
 .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; } .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
 .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; } .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
-/* CABEÇALHO CENTRALIZADO */
 header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 255, 204, 0.1); z-index: 10; background: linear-gradient(90deg, rgba(0,255,204,0.05) 0%, transparent 50%); transition: 0.3s; position: relative; flex-shrink: 0; }
 .brand-left { display: flex; flex-direction: column; }
 .exo-system { color: #00FFCC; font-size: 10px; font-weight: bold; letter-spacing: 0.3em; opacity: 0.7; transition: 0.3s; }
@@ -26,12 +25,10 @@ header { padding: 15px 20px; display: flex; justify-content: space-between; alig
 .status-dot.ok { background: #27AE60; box-shadow: 0 0 8px #27AE60; }
 .status-dot.err { background: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
 
-/* ZEN MODE */
 .hud-container.zen-mode .side-hud { display: none !important; }
 .hud-container.zen-mode .exo-container { display: none !important; }
 .hud-container.zen-mode header { background: transparent; border-bottom: 1px solid rgba(0, 255, 204, 0.05); }
 
-/* LAYOUT PRINCIPAL */
 main { flex: 1; display: flex; flex-direction: row; position: relative; overflow: hidden; transition: 0.3s; width: 100%; }
 .chat-area { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
 .side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-right: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 15px; font-family: monospace; order: -1; }
@@ -76,19 +73,20 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
 
-/* FOOTER CORRIGIDO - CENTRALIZADO COM O CHAT */
-footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: center; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; flex-shrink: 0; }
-.footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: center; }
+/* FOOTER ALINHADO À ESQUERDA */
+footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: flex-start; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; flex-shrink: 0; }
+.footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: flex-start; margin-left: 0; }
+@media (min-width: 1200px) { .footer-inputs { margin-left: 280px; } } /* Alinha com a tela de chat, ignorando a barra lateral */
 .btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .btn-attach:hover { border-color: #00FFCC; color: #00FFCC; }
 #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; height: 40px; max-height: 120px; overflow-y: hidden; transition: 0.3s; }
 #input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 40px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
-.by-alex { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
+.by-alex { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
 @media (min-width: 900px) { .by-alex { display: block; } }
 
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 280px; max-height: 80vh; overflow-y: auto; }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 300px; max-height: 80vh; overflow-y: auto; }
 .config.open { display: block; } 
 .config label { font-size: 10px; color: #00FFCC; margin-bottom:6px; display:block; font-family: monospace; margin-top: 12px; }
 .config select, .config input[type=range] { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
@@ -102,6 +100,7 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; }
+.terminal-output { background: #000; border: 1px solid #27AE60; border-radius: 6px; padding: 10px; font-family: 'Consolas', monospace; font-size: 12px; color: #27AE60; margin-top: 10px; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -113,11 +112,9 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         <div class="brand-left">
             <div class="exo-system">EXODRIVE SISTEMAS</div>
         </div>
-        
         <div class="brand-center">
             <div class="boss-title">BOSS</div>
         </div>
-
         <div class="hud-status">
             <div class="status-box" onclick="toggleZenMode()" style="cursor:pointer; margin-right:10px;" title="Modo Foco">
                 <span style="font-size:16px;">⛶</span>
@@ -134,6 +131,7 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         </div>
     </header>
 
+    <!-- MENU RESTAURADO E COMPLETO -->
     <div id="config" class="config">
       <label>OPERATOR PROFILE</label>
       <select id="userSelect" onchange="mudarUsuario()">
@@ -141,18 +139,47 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
-      <label>EFEITO DE DIGITAÇÃO (TYPEWRITER)</label>
+
+      <label>INTERFACE VISUAL</label>
+      <select id="layoutSelect" onchange="mudarLayout()">
+        <option value="orb">JARVIS (Aro Central)</option>
+        <option value="chat">DISCRETO (Chat Linear)</option>
+      </select>
+
+      <label>TEMA DE CORES</label>
+      <select id="themeSelect" onchange="mudarTema()">
+        <option value="default">Padrão (Ardósia)</option>
+        <option value="black">Preto Absoluto (AMOLED)</option>
+      </select>
+      
+      <label>EFEITO DE DIGITAÇÃO</label>
       <select id="typewriterToggle" onchange="mudarTypewriter()">
         <option value="on">Ativado (Efeito Máquina)</option>
         <option value="off">Desativado (Texto Instantâneo)</option>
       </select>
+
+      <label>ESCUTA CONTÍNUA (FOLLOW-UP)</label>
+      <select id="followUpSelect" onchange="mudarFollowUp()">
+        <option value="off">Desativada</option>
+        <option value="on">Ativada (5s após falar)</option>
+      </select>
+
       <label>VOZ DO BOSS</label>
       <select id="voiceToggle" onchange="mudarMudo()">
         <option value="on">Ativada (Fala)</option>
         <option value="off">Muda (Silenciosa)</option>
       </select>
+
+      <label>VOZ DO BOSS (SOTAQUES)</label>
+      <select id="voiceSelect" onchange="mudarVoz()">
+        <option value="">Padrão do navegador</option>
+      </select>
+      
       <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
       <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
+      
+      <label>TOM DA VOZ: <span id="pitchVal">1.05</span></label>
+      <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)">
       
       <button class="btn-save" style="border-color:#F1C40F; color:#F1C40F;" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO (CODEBASE)</button>
       <button class="btn-save" onclick="testarVoz()">🔊 TESTAR VOZ</button>
@@ -171,7 +198,6 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
             <div class="hud-widget">
                 <div class="hud-widget-title">OPERADORES ONLINE</div>
                 <div class="hud-widget-val" id="metric-users" style="color:#F1C40F;">1</div>
-                <div class="hud-widget-sub">Conectados agora</div>
             </div>
             <div class="hud-widget">
                 <div class="hud-widget-title">HORÁRIO LOCAL</div>
@@ -223,11 +249,17 @@ const REPO_CONTEXTO = 'lexpaker-arch/BOSS-';
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
+// --- INICIALIZAÇÃO E RESTAURAÇÃO DE VARIÁVEIS ---
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 if (userRole === 'Chefe') userRole = 'Patrão';
 
+let layoutModo = localStorage.getItem('boss_layout') || 'orb';
+let temaModo = localStorage.getItem('boss_theme') || 'default';
+let followUpAtivo = localStorage.getItem('boss_followup') === 'on';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
+let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
+let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
 let typewriterAtivo = localStorage.getItem('boss_typewriter') !== 'off';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '', memoriaCodigo: '' }; 
@@ -264,23 +296,56 @@ function atualizarRelogio() {
 setInterval(atualizarRelogio, 1000);
 atualizarRelogio();
 
-function simularUsuarios() {
-    const base = 1 + Math.floor(Math.random() * 3);
-    document.getElementById('metric-users').textContent = base;
-}
+function simularUsuarios() { document.getElementById('metric-users').textContent = 1 + Math.floor(Math.random() * 2); }
 setInterval(simularUsuarios, 15000);
 simularUsuarios();
 
 window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
 window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
 
+// --- CONTROLE DE CONFIGURAÇÕES ---
+function popularVozes() {
+    const select = document.getElementById('voiceSelect');
+    const voices = window.speechSynthesis.getVoices();
+    const ptVoices = voices.filter(v => v.lang.toLowerCase().includes('pt'));
+    const atual = vozNome;
+    select.innerHTML = '<option value="">Padrão do navegador</option>';
+    ptVoices.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name; opt.textContent = `${v.name} (${v.lang})`;
+        if (v.name === atual) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+if (window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = popularVozes; setTimeout(popularVozes, 200); }
+
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
+document.getElementById('layoutSelect').value = layoutModo;
+document.getElementById('themeSelect').value = temaModo;
+document.getElementById('followUpSelect').value = followUpAtivo ? 'on' : 'off';
 document.getElementById('voiceToggle').value = vozAtiva ? 'on' : 'off';
 document.getElementById('rateSlider').value = vozRate;
 document.getElementById('rateVal').textContent = vozRate.toFixed(2);
+document.getElementById('pitchSlider').value = vozPitch;
+document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
 document.getElementById('typewriterToggle').value = typewriterAtivo ? 'on' : 'off';
 
+function aplicarLayoutETema() {
+    const hud = document.getElementById('hudContainer');
+    if (layoutModo === 'chat') { hud.classList.add('layout-chat'); } else { hud.classList.remove('layout-chat'); }
+    if (temaModo === 'black') { hud.classList.add('theme-black'); } else { hud.classList.remove('theme-black'); }
+}
+aplicarLayoutETema();
+
+function mudarLayout() { layoutModo = document.getElementById('layoutSelect').value; localStorage.setItem('boss_layout', layoutModo); aplicarLayoutETema(); }
+function mudarTema() { temaModo = document.getElementById('themeSelect').value; localStorage.setItem('boss_theme', temaModo); aplicarLayoutETema(); }
+function mudarFollowUp() { followUpAtivo = document.getElementById('followUpSelect').value === 'on'; localStorage.setItem('boss_followup', followUpAtivo ? 'on' : 'off'); }
+function mudarMudo() { vozAtiva = document.getElementById('voiceToggle').value === 'on'; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); }
+function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
+function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
+function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
+function mudarTypewriter() { typewriterAtivo = document.getElementById('typewriterToggle').value === 'on'; localStorage.setItem('boss_typewriter', typewriterAtivo ? 'on' : 'off'); }
 function mudarUsuario() {
   userRole = document.getElementById('userSelect').value;
   localStorage.setItem('boss_role', userRole);
@@ -288,16 +353,9 @@ function mudarUsuario() {
   addMsg('boss', `Perfil alterado para ${userRole.toUpperCase()}.`); toggleConfig();
 }
 
-function mudarMudo() { vozAtiva = document.getElementById('voiceToggle').value === 'on'; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); }
-function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
-function mudarTypewriter() { typewriterAtivo = document.getElementById('typewriterToggle').value === 'on'; localStorage.setItem('boss_typewriter', typewriterAtivo ? 'on' : 'off'); }
 function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
 function limparHistorico() { if(confirm("Apagar histórico local?")) { historico = []; localStorage.removeItem('boss_historico'); document.getElementById('chat').innerHTML = ''; addMsg('boss', 'Sistema BOSS reiniciado.'); toggleConfig(); } }
-
-function toggleZenMode() {
-    document.getElementById('hudContainer').classList.toggle('zen-mode');
-    toggleConfig(); // Fecha o menu se estiver aberto
-}
+function toggleZenMode() { document.getElementById('hudContainer').classList.toggle('zen-mode'); toggleConfig(); }
 
 function autoResize(el) { el.style.height = '40px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
@@ -445,12 +503,12 @@ ${roleInstruction}
 - Se o usuário pedir "detalhes técnicos", ignore a linguagem simples e use jargões.
 
 === FERRAMENTAS (REGRA ESTRITA) ===
-- **NUNCA** gere tags de ferramentas (WEB_SEARCH, IMAGE_SEARCH, VIDEO_SEARCH, MERMAID, GITHUB_CREATE) se o usuário não pediu EXPLICITAMENTE.
-- Se o usuário apenas disser "Oi", "Boss" ou conversar normalmente, responda APENAS com texto.
-- Use [IMAGE_SEARCH: termo] APENAS se o usuário pedir "uma foto", "uma imagem" ou "um desenho".
-- Use [VIDEO_SEARCH: termo] APENAS se o usuário pedir "um vídeo" ou "um tutorial em vídeo".
-- Use [WEB_SEARCH: termo] APENAS se você precisar de dados reais da internet que não sabe de cabeça.
-- Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se o usuário pedir para criar/salvar um arquivo.
+- **NUNCA** gere tags de ferramentas sem o usuário pedir.
+- Use [IMAGE_SEARCH: termo] APENAS se pedirem "foto" ou "imagem".
+- Use [VIDEO_SEARCH: termo] APENAS se pedirem "vídeo".
+- Use [WEB_SEARCH: termo] APENAS se precisar de dados reais da internet.
+- Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se pedirem para criar um arquivo.
+- Use [RUN_CODE: linguagem | código] APENAS se pedirem para executar um código ou fazer um cálculo complexo.
 
 === MANUAL BASE AUTOMOTIVO ===
 ${manualBaseEletrica}
@@ -458,8 +516,8 @@ ${manualBaseEletrica}
 === CONTEXTO DO PROJETO ===
 ${contextoCache.projetos}
 
-=== MAPA MENTAL DO CÓDIGO (ARQUITETURA) ===
-${contextoCache.memoriaCodigo || '(Nenhum mapa mental gerado ainda. Vá em ⚙ e clique em MAPEAR REPOSITÓRIO.)'}
+=== MAPA MENTAL DO CÓDIGO ===
+${contextoCache.memoriaCodigo || '(Nenhum gerado. Vá em ⚙ e clique em MAPEAR.)'}
 
 Seja direto.`.trim();
 }
@@ -512,15 +570,36 @@ async function enviar() {
     const matchVideo = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
     const matchMermaid = respostaFinal.match(/\[MERMAID:\s*([\s\S]*?)\]/);
     const matchGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
+    const matchCode = respostaFinal.match(/\[RUN_CODE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
 
-    if (matchImg || matchVideo || matchMermaid || matchGit) {
+    if (matchImg || matchVideo || matchMermaid || matchGit || matchCode) {
         thinking.wrapper.remove();
         
-        let textoLimpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|MERMAID|GITHUB_CREATE):[\s\S]*?\]/g, '').trim();
+        let textoLimpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|MERMAID|GITHUB_CREATE|RUN_CODE):[\s\S]*?\]/g, '').trim();
         if (textoLimpo) {
             const msgObj = addMsg('boss', textoLimpo);
             await efeitoDigitacao(msgObj.div, textoLimpo);
             falarTexto(textoLimpo);
+        }
+
+        if (matchCode) {
+            const lang = matchCode[1].trim().toLowerCase();
+            const codeToRun = matchCode[2].trim();
+            const termWrapper = document.createElement('div');
+            termWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px; margin-top:10px;">[ Executando código ${lang} no Sandbox... ]</div>`;
+            document.getElementById('chat').appendChild(termWrapper);
+            
+            fetch(`${WORKER_URL}/sandbox`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: lang, code: codeToRun })
+            }).then(r=>r.json()).then(sandboxData => {
+                if(sandboxData.run) {
+                    const out = sandboxData.run.output || sandboxData.run.stdout || "Sem saída.";
+                    termWrapper.innerHTML = `<div class="terminal-output">💻 Saída do Terminal:\n\n${out}</div>`;
+                } else {
+                    termWrapper.innerHTML = `<div style="color:#E74C3C;">[ Erro no Sandbox: ${JSON.stringify(sandboxData)} ]</div>`;
+                }
+            });
         }
 
         if (matchImg) {
@@ -599,7 +678,7 @@ async function enviar() {
 }
 
 let reconhecimento; let gravando = false;
-function iniciarEscuta() {
+function iniciarEscuta(isAuto = false) {
   if (!('webkitSpeechRecognition' in window)) return alert("Navegador incompatível.");
   if (gravando) { reconhecimento.stop(); return; }
   reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -607,7 +686,7 @@ function iniciarEscuta() {
   reconhecimento.onstart = () => { gravando = true; document.getElementById('exoContainer').classList.add('ouvindo'); };
   reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); };
   reconhecimento.onend = () => { gravando = false; document.getElementById('exoContainer').classList.remove('ouvindo'); };
-  reconhecimento.start();
+  try { reconhecimento.start(); } catch(e){}
 }
 
 function falarTexto(texto) {
@@ -616,7 +695,11 @@ function falarTexto(texto) {
     if (t.length < 10) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(t);
-    u.lang = 'pt-BR'; u.rate = vozRate;
+    u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch;
+    
+    if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; }
+    
+    u.onend = () => { if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800); };
     window.speechSynthesis.speak(u);
 }
 
