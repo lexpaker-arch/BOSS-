@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BOSS - EXODRIVE</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background-color: #05070A; background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px); background-size: 30px 30px; color: #E8EDF2; font-family: 'Segoe UI', Roboto, sans-serif; height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -21,7 +22,17 @@ header { padding: 15px 20px; display: flex; justify-content: space-between; alig
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #6A7A8A; }
 .status-dot.ok { background: #27AE60; box-shadow: 0 0 8px #27AE60; }
 .status-dot.err { background: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
-main { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; transition: 0.3s; }
+
+/* LAYOUT PRINCIPAL E HUD LATERAL */
+main { flex: 1; display: flex; flex-direction: row; position: relative; overflow: hidden; transition: 0.3s; width: 100%; }
+.chat-area { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
+.side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-left: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 15px; font-family: monospace; }
+@media (min-width: 1200px) { .side-hud { display: flex; } }
+.hud-widget { border: 1px solid rgba(0,255,204,0.1); background: #05070A; border-radius: 6px; padding: 12px; }
+.hud-widget-title { font-size: 10px; color: #6A7A8A; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.1); padding-bottom: 4px; }
+.hud-widget-val { font-size: 20px; color: #00FFCC; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
+.hud-widget-sub { font-size: 11px; color: #E8EDF2; margin-top: 4px; }
+
 .exo-container { margin-top: 15px; position: relative; width: 160px; height: 160px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; flex-shrink: 0; }
 .exo-glow { position: absolute; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(0,255,204,0.15) 0%, transparent 70%); transition: all 0.3s ease; }
 .exo-anel-1 { position: absolute; width: 150px; height: 150px; border-radius: 50%; border: 1px dashed rgba(0,255,204,0.3); animation: gira 20s linear infinite; }
@@ -37,6 +48,7 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; posi
 .exo-container.falando .exo-anel-1 { animation-duration: 5s; }
 @keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
+
 #chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); transition: 0.3s; }
 .msg-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
 .msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; flex: 1; transition: 0.3s; }
@@ -47,11 +59,15 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; posi
 @keyframes blink { 50% { opacity: 0.5; } }
 .msg b { color: #FFFFFF; font-weight: bold; }
 .msg h1, .msg h2, .msg h3 { color: #00FFCC; margin: 10px 0 5px 0; font-size: 14px; text-transform: uppercase; }
-.msg code { background: rgba(0,255,204,0.1); padding: 2px 4px; border-radius: 3px; color: #00FFCC; font-family: monospace; }
 .msg ul, .msg ol { margin-left: 20px; margin-bottom: 10px; }
+.msg pre { background: #0D1117; padding: 10px; border-radius: 6px; overflow-x: auto; border: 1px solid rgba(0,255,204,0.2); position: relative; margin-top: 10px; }
+.msg pre code { background: transparent; color: #E8EDF2; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; }
+.btn-copy-code { position: absolute; top: 5px; right: 5px; background: #1E293B; color: #00FFCC; border: 1px solid #00FFCC; border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer; }
+.btn-copy-code:hover { background: #00FFCC; color: #000; }
 .msg-actions { display: flex; flex-direction: column; gap: 6px; }
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
+
 footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: space-between; align-items: flex-end; z-index: 10; transition: 0.3s; }
 .footer-inputs { display: flex; gap: 8px; flex: 1; max-width: 800px; align-items: flex-end; transition: 0.3s; }
 .btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 36px; display: flex; align-items: center; justify-content: center; }
@@ -60,51 +76,20 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 #input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 36px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
-.by-alex { display: none; } 
-@media (min-width: 600px) {
-    .by-alex { display: block; color: #6A7A8A; font-size: 10px; letter-spacing: 0.2em; font-family: monospace; }
-    header { padding: 15px 30px; } footer { padding: 15px 30px; } #chat { padding: 20px 40px; }
-    .exo-container { width: 200px; height: 200px; margin-top: 20px; } .exo-glow { width: 200px; height: 200px; }
-    .exo-anel-1 { width: 180px; height: 180px; } .exo-anel-2 { width: 150px; height: 150px; }
-    .exo-anel-3 { width: 120px; height: 120px; } .exo-core { width: 80px; height: 80px; }
-}
+
 .config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 280px; max-height: 80vh; overflow-y: auto; }
 .config.open { display: block; } 
 .config label { font-size: 10px; color: #00FFCC; margin-bottom:6px; display:block; font-family: monospace; margin-top: 12px; }
 .config select, .config input[type=range] { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
-.config input[type=range] { padding: 0; }
 .config .range-val { font-size: 11px; color: #64748B; text-align: right; margin-bottom: 5px; }
 .btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 15px;}
 .btn-clear:hover { background: rgba(231, 76, 60, 0.1); }
 .btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; }
-.btn-save:hover { background: rgba(0,255,204,0.1); }
-.hud-container.layout-chat { background-color: #0F172A; background-image: none; border-color: #1E293B; }
-.hud-container.layout-chat header { background: #0F172A; border-bottom: 1px solid #1E293B; }
-.hud-container.layout-chat .exo-system { color: #64748B; } .hud-container.layout-chat .boss-title { text-shadow: none; color: #F8FAFC; }
-.hud-container.layout-chat .corner { display: none; } .hud-container.layout-chat .exo-container { display: none; }
-.hud-container.layout-chat #chat { max-width: 800px; margin: 0 auto; mask-image: none; }
-.hud-container.layout-chat .msg-wrapper.user { align-items: flex-end; } .hud-container.layout-chat .msg-wrapper.boss { align-items: flex-start; }
-.hud-container.layout-chat .msg.user { background: #0284C7; color: white; border: none; border-radius: 12px 12px 0 12px; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none; }
-.hud-container.layout-chat .msg.boss { background: #1E293B; color: #F8FAFC; border: none; border-radius: 12px 12px 12px 0; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none; }
-.hud-container.layout-chat .msg.user::before, .hud-container.layout-chat .msg.boss::before, .hud-container.layout-chat .msg.thinking::before, .hud-container.layout-chat .msg.error::before { content: none; }
-.hud-container.layout-chat .msg b { color: #00FFCC; }
-.hud-container.layout-chat .msg.thinking, .hud-container.layout-chat .msg.error { background: transparent; font-family: monospace; border: none; align-self: center; }
-.hud-container.layout-chat footer { border-top: none; background: transparent; padding-bottom: 30px; }
-.hud-container.layout-chat .footer-inputs { background: #1E293B; border-radius: 24px; padding: 5px 15px; border: 1px solid #334155; align-items: center; }
-.hud-container.layout-chat #input { color: #F8FAFC; font-family: 'Segoe UI', sans-serif; border: none; }
-.hud-container.layout-chat #input::placeholder { color: #64748B; }
-.hud-container.layout-chat .btn-send { border-radius: 20px; background: #0EA5E9; color: white; border: none; padding: 8px 20px; }
-.hud-container.layout-chat .btn-attach { border: none; font-size: 18px; }
-.hud-container.theme-black { background-color: #000000; border-color: #222222; }
-.hud-container.theme-black header { background: #000000; border-bottom: 1px solid #222222; }
-.hud-container.theme-black .footer-inputs { background: #111111; border: 1px solid #333333; }
-.hud-container.theme-black .msg.boss { background: #111111; color: #E8EDF2; border: 1px solid #222; }
-.hud-container.theme-black .msg.user { background: #008B8B; color: #FFFFFF; }
-.hud-container.theme-black .msg b { color: #00FFCC; }
 
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -147,38 +132,47 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
         <option value="default">Padrão (Ardósia)</option>
         <option value="black">Preto Absoluto (AMOLED)</option>
       </select>
-      <label>ESCUTA CONTÍNUA (FOLLOW-UP)</label>
-      <select id="followUpSelect" onchange="mudarFollowUp()">
-        <option value="off">Desativada</option>
-        <option value="on">Ativada (5s após falar)</option>
-      </select>
       <label>VOZ DO BOSS</label>
       <select id="voiceToggle" onchange="mudarMudo()">
         <option value="on">Ativada (Fala)</option>
         <option value="off">Muda (Silenciosa)</option>
       </select>
-      <label>VOZ DO BOSS (SOTAQUES)</label>
-      <select id="voiceSelect" onchange="mudarVoz()">
-        <option value="">Padrão do navegador</option>
-      </select>
       <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
       <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
-      <label>TOM DA VOZ: <span id="pitchVal">1.05</span></label>
-      <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)">
       <button class="btn-save" onclick="testarVoz()">🔊 TESTAR VOZ</button>
-      <button class="btn-save" onclick="compilarMemoria()">ENCERRAR SESSÃO E SALVAR</button>
       <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
     </div>
 
     <main>
-        <div id="exoContainer" class="exo-container" onclick="iniciarEscuta(false)" title="Clique para falar">
-            <div class="exo-glow"></div>
-            <div class="exo-anel-1"></div>
-            <div class="exo-anel-2"></div>
-            <div class="exo-anel-3"></div>
-            <div class="exo-core"></div>
+        <div class="chat-area">
+            <div id="exoContainer" class="exo-container" onclick="iniciarEscuta(false)" title="Clique para falar">
+                <div class="exo-glow"></div><div class="exo-anel-1"></div><div class="exo-anel-2"></div><div class="exo-anel-3"></div><div class="exo-core"></div>
+            </div>
+            <div id="chat"></div>
         </div>
-        <div id="chat"></div>
+
+        <!-- PAINEL LATERAL DE TELEMETRIA -->
+        <div class="side-hud">
+            <div class="hud-widget">
+                <div class="hud-widget-title">STATUS DO SISTEMA</div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div id="internet-dot" class="status-dot ok"></div>
+                    <div id="internet-text" style="color:#00FFCC; font-weight:bold;">ONLINE</div>
+                </div>
+            </div>
+            <div class="hud-widget">
+                <div class="hud-widget-title">CONSUMO DE TOKENS</div>
+                <div class="hud-widget-val" id="metric-tokens">0</div>
+                <div class="hud-widget-sub">Custo Estimado: $<span id="metric-cost">0.000000</span></div>
+            </div>
+            <div class="hud-widget">
+                <div class="hud-widget-title">FERRAMENTAS USADAS</div>
+                <div class="hud-widget-sub">Buscas Web: <span id="metric-web" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Imagens: <span id="metric-img" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Vídeos: <span id="metric-vid" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Arquivos Github: <span id="metric-git" style="color:#00FFCC">0</span></div>
+            </div>
+        </div>
     </main>
 
     <footer>
@@ -189,110 +183,139 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
             <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
         </div>
-        <div class="by-alex">BY ALEX. P</div>
     </footer>
 </div>
 
+<!-- Bibliotecas Externas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+
 <script>
+mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
-const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local'; 
-const REPO_VIGILANTE = 'lexpaker-arch/EXO-VIGILANTE';
 const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
 const MODELO = 'qwen/qwen3.8-27b';
 
-const DEBUG_TOKENS = true; 
-
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
-let layoutModo = localStorage.getItem('boss_layout') || 'orb';
-let temaModo = localStorage.getItem('boss_theme') || 'default';
-let followUpAtivo = localStorage.getItem('boss_followup') === 'on';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
-let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
-let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '' }; 
-let memoriaLongaPrazo = '';
-let manualEngenharia = '';
-let catalogoVeiculos = []; 
 let manualBaseEletrica = ''; 
-let exoContainer = document.getElementById('exoContainer');
-let btnMicFooter = document.getElementById('btnMicFooter');
 let arquivoAnexado = '';
+
+// Variáveis de Telemetria
+let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
+let metricCost = parseFloat(localStorage.getItem('metric_cost')) || 0;
+let metricWeb = parseInt(localStorage.getItem('metric_web')) || 0;
+let metricImg = parseInt(localStorage.getItem('metric_img')) || 0;
+let metricVid = parseInt(localStorage.getItem('metric_vid')) || 0;
+let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
+
+function atualizarHUD() {
+    document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
+    document.getElementById('metric-cost').textContent = metricCost.toFixed(6);
+    document.getElementById('metric-web').textContent = metricWeb;
+    document.getElementById('metric-img').textContent = metricImg;
+    document.getElementById('metric-vid').textContent = metricVid;
+    document.getElementById('metric-git').textContent = metricGit;
+    
+    localStorage.setItem('metric_tokens', metricTokens);
+    localStorage.setItem('metric_cost', metricCost);
+    localStorage.setItem('metric_web', metricWeb);
+    localStorage.setItem('metric_img', metricImg);
+    localStorage.setItem('metric_vid', metricVid);
+    localStorage.setItem('metric_git', metricGit);
+}
+atualizarHUD();
+
+// Monitor de Internet
+window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
+window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
 
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
-document.getElementById('layoutSelect').value = layoutModo;
-document.getElementById('themeSelect').value = temaModo;
-document.getElementById('followUpSelect').value = followUpAtivo ? 'on' : 'off';
 document.getElementById('voiceToggle').value = vozAtiva ? 'on' : 'off';
 document.getElementById('rateSlider').value = vozRate;
 document.getElementById('rateVal').textContent = vozRate.toFixed(2);
-document.getElementById('pitchSlider').value = vozPitch;
-document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
 
-function aplicarLayoutETema() {
-    const hud = document.getElementById('hudContainer');
-    if (layoutModo === 'chat') { hud.classList.add('layout-chat'); } else { hud.classList.remove('layout-chat'); }
-    if (temaModo === 'black') { hud.classList.add('theme-black'); } else { hud.classList.remove('theme-black'); }
+function mudarUsuario() {
+  userRole = document.getElementById('userSelect').value;
+  localStorage.setItem('boss_role', userRole);
+  document.getElementById('userDisplay').textContent = userRole.toUpperCase();
+  addMsg('boss', `Perfil alterado para ${userRole.toUpperCase()}.`); toggleConfig();
 }
-aplicarLayoutETema();
 
-function mudarLayout() { layoutModo = document.getElementById('layoutSelect').value; localStorage.setItem('boss_layout', layoutModo); aplicarLayoutETema(); }
-function mudarTema() { temaModo = document.getElementById('themeSelect').value; localStorage.setItem('boss_theme', temaModo); aplicarLayoutETema(); }
-function mudarFollowUp() { followUpAtivo = document.getElementById('followUpSelect').value === 'on'; localStorage.setItem('boss_followup', followUpAtivo ? 'on' : 'off'); }
 function mudarMudo() { vozAtiva = document.getElementById('voiceToggle').value === 'on'; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); }
-
-function popularVozes() {
-    const select = document.getElementById('voiceSelect');
-    const voices = window.speechSynthesis.getVoices();
-    const ptVoices = voices.filter(v => v.lang.toLowerCase().includes('pt'));
-    const atual = vozNome;
-    select.innerHTML = '<option value="">Padrão do navegador</option>';
-    ptVoices.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.name;
-        opt.textContent = `${v.name} (${v.lang})`;
-        if (v.name === atual) opt.selected = true;
-        select.appendChild(opt);
-    });
-}
-if (window.speechSynthesis) {
-    window.speechSynthesis.onvoiceschanged = popularVozes;
-    setTimeout(popularVozes, 200);
-}
-
-function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
-function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
-function testarVoz() { 
-    if (!vozAtiva) return addMsg('error', 'A voz está desativada nas configurações.');
-    falarTexto("Olá, Chefe. Esta é minha voz atual. Estou pronto para trabalhar."); 
-}
-
-document.body.addEventListener('click', function unlockAudio() {
-    const u = new SpeechSynthesisUtterance(' ');
-    u.volume = 0.1; u.lang = 'pt-BR';
-    window.speechSynthesis.speak(u);
-    document.body.removeEventListener('click', unlockAudio);
-}, { once: true });
-
-const TOKEN_GUARD = {
-  maxCharsPerPrompt: 35000, maxRequestsPerMinute: 20, memoryCharLimit: 10000,
-  requests: JSON.parse(localStorage.getItem('boss_requests') || '[]'),
-  limparHistorico() { const now = Date.now(); this.requests = this.requests.filter(t => now - t < 60000); localStorage.setItem('boss_requests', JSON.stringify(this.requests)); },
-  podeEnviar() { this.limparHistorico(); if (this.requests.length >= this.maxRequestsPerMinute) { const espera = Math.ceil((60000 - (Date.now() - this.requests[0])) / 1000); return { pode: false, espera }; } return { pode: true }; },
-  registrar() { this.requests.push(Date.now()); localStorage.setItem('boss_requests', JSON.stringify(this.requests)); },
-  limitarTexto(texto) { return texto.length > this.maxCharsPerPrompt ? texto.substring(0, this.maxCharsPerPrompt) + "\n[Truncado]" : texto; }
-};
+function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
+function limparHistorico() { if(confirm("Apagar histórico local?")) { historico = []; localStorage.removeItem('boss_historico'); document.getElementById('chat').innerHTML = ''; addMsg('boss', 'Sistema BOSS reiniciado.'); toggleConfig(); } }
 
 function autoResize(el) { el.style.height = '36px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
-function restaurarHistorico() {
-    const chat = document.getElementById('chat');
-    chat.innerHTML = '';
-    if (historico.length === 0) { addMsg('boss', 'Sistema BOSS inicializado. Conexão com o núcleo EXODRIVE estabelecida.', false); }
-    else { historico.forEach(m => addMsg(m.role === 'user' ? 'user' : 'boss', m.content, false)); }
+// FORMATAÇÃO DE CÓDIGO E MERMAID
+function formatarTexto(texto) {
+    // 1. Blocos de Código
+    texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        const language = lang || 'plaintext';
+        return `<pre><button class="btn-copy-code" onclick="copiarCodigo(this)">COPIAR</button><code class="language-${language}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+    });
+    
+    // 2. Markdown Básico
+    texto = texto.replace(/### (.*?)\n/g, '<h3>$1</h3>').replace(/## (.*?)\n/g, '<h2>$1</h2>')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/`(.*?)`/g, '<code style="background:rgba(0,255,204,0.1); color:#00FFCC; padding:2px 4px; border-radius:3px;">$1</code>')
+        .replace(/\n/g, '<br>');
+    
+    return texto;
+}
+
+function copiarCodigo(btn) {
+    const code = btn.nextElementSibling.innerText;
+    navigator.clipboard.writeText(code);
+    btn.textContent = 'COPIADO!';
+    setTimeout(() => btn.textContent = 'COPIAR', 2000);
+}
+
+// EFEITO MÁQUINA DE ESCREVER (Typewriter)
+async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
+    elemento.innerHTML = '';
+    let i = 0;
+    return new Promise(resolve => {
+        const timer = setInterval(() => {
+            elemento.innerHTML = formatarTexto(textoFinal.substring(0, i));
+            const chat = document.getElementById('chat');
+            chat.scrollTop = chat.scrollHeight;
+            i += 2; // Adiciona 2 caracteres por tick para ser rápido
+            if (i >= textoFinal.length) {
+                clearInterval(timer);
+                elemento.innerHTML = formatarTexto(textoFinal);
+                // Realça a sintaxe após terminar
+                elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
+                resolve();
+            }
+        }, velocidade);
+    });
+}
+
+function addMsg(tipo, texto, salvar = true) {
+  const chat = document.getElementById('chat'); const wrapper = document.createElement('div');
+  wrapper.className = `msg-wrapper ${tipo}`; const div = document.createElement('div'); div.className = `msg ${tipo}`;
+  
+  if (tipo === 'boss') {
+      div.innerHTML = formatarTexto(texto);
+      div.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
+  } else { div.textContent = texto; }
+  
+  wrapper.appendChild(div); chat.appendChild(wrapper); chat.scrollTop = chat.scrollHeight;
+  
+  if (salvar && tipo !== 'thinking' && tipo !== 'error') {
+      historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
+      if(historico.length > 20) historico = historico.slice(-20);
+      localStorage.setItem('boss_historico', JSON.stringify(historico));
+  }
+  return { wrapper, div }; 
 }
 
 async function fetchGithubFile(repo, path) {
@@ -306,442 +329,204 @@ async function fetchGithubFile(repo, path) {
 
 async function carregarContexto() {
   try {
-    const [projetos, decisoes, diretrizes, manualBase] = await Promise.all([
+    const [projetos, manualBase] = await Promise.all([
       fetchGithubFile(REPO_CONTEXTO, 'contexto/projetos.md'),
-      fetchGithubFile(REPO_CONTEXTO, 'contexto/decisoes.md'),
-      fetchGithubFile(REPO_CONTEXTO, 'contexto/diretrizes_ia.md'),
       fetchGithubFile(REPO_CONTEXTO, 'conhecimento/geral/eletrica_automotiva.md')
     ]);
-    contextoCache.projetos = projetos + "\n" + decisoes;
-    contextoCache.diretrizes = diretrizes;
+    contextoCache.projetos = projetos;
     manualBaseEletrica = manualBase;
-    atualizarStatus(true);
-  } catch (e) { atualizarStatus(false); }
+    document.getElementById('statusDot').className = 'status-dot ok';
+    document.getElementById('statusText').textContent = 'ONLINE';
+  } catch (e) { }
 }
 
-async function carregarMemoria() {
-  if (userRole !== 'Chefe') { memoriaLongaPrazo = ''; manualEngenharia = ''; return; }
-  try {
-    const resMem = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/chefe.md`);
-    const dataMem = await resMem.json();
-    if (dataMem.content) { memoriaLongaPrazo = decodeURIComponent(escape(atob(dataMem.content))); }
-
-    const resMan = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/backup/MANUAL_DE_ENGENHARIA.md`);
-    const dataMan = await resMan.json();
-    if (dataMan.content) { manualEngenharia = decodeURIComponent(escape(atob(dataMan.content))); }
-    
-    const resCat = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=conhecimento/veiculos/index.json`);
-    if (resCat.ok) {
-        const dataCat = await resCat.json();
-        if (dataCat.content) {
-            catalogoVeiculos = JSON.parse(decodeURIComponent(escape(atob(dataCat.content))));
-        }
-    }
-  } catch (e) { console.warn('Sem memória, manual ou catálogo carregado.'); }
-}
-
-function autoSalvarMemoria() {
-    if (historico.length > 0 && historico.length % 10 === 0 && userRole === 'Chefe') {
-        compilarMemoria(true); 
-    }
-}
-
-async function compilarMemoria(isAuto = false) {
-  if (userRole !== 'Chefe') return;
-  if (historico.length === 0) return;
-  try {
-    if (!isAuto) addMsg('boss', '[SISTEMA] Compilando o Diário de Bordo...');
-    const conversa = historico.map(m => `${m.role === 'user' ? 'Chefe' : 'BOSS'}: ${m.content}`).join('\n');
-    const res = await fetch(`${WORKER_URL}/merge-memory`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ oldMemory: memoriaLongaPrazo, recentChat: conversa })
-    });
-    const data = await res.json();
-    if (data.mergedMemory) {
-      memoriaLongaPrazo = data.mergedMemory;
-      const saveRes = await fetch(`${WORKER_URL}/memory`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: userRole.toLowerCase(), content: memoriaLongaPrazo })
-      });
-      if (saveRes.ok) {
-        if (!isAuto) {
-            addMsg('boss', '[SISTEMA] Memória compilada e sincronizada com o GitHub.');
-            historico = []; localStorage.removeItem('boss_historico');
-            document.getElementById('chat').innerHTML = ''; restaurarHistorico();
-        } else {
-            console.log('✅ [AUTO-SAVE] Memória salva no GitHub silenciosamente.');
-        }
-      }
-    }
-  } catch (e) { console.warn('Erro no salvamento automático: ', e); }
-}
-
-function atualizarStatus(ok) {
-  const dot = document.getElementById('statusDot'); const txt = document.getElementById('statusText');
-  if (ok) { dot.className = 'status-dot ok'; txt.textContent = 'ONLINE'; txt.style.color = '#27AE60'; } 
-  else { dot.className = 'status-dot err'; txt.textContent = 'OFFLINE'; txt.style.color = '#E74C3C'; }
-}
-
-function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
-
-function mudarUsuario() {
-  userRole = document.getElementById('userSelect').value;
-  localStorage.setItem('boss_role', userRole);
-  document.getElementById('userDisplay').textContent = userRole.toUpperCase();
-  carregarMemoria(); addMsg('boss', `Perfil alterado para ${userRole.toUpperCase()}.`); toggleConfig();
-}
-
-function limparHistorico() {
-    if(confirm("Apagar histórico local? (A memória no GitHub não será afetada)")) {
-        historico = []; localStorage.removeItem('boss_historico'); restaurarHistorico(); toggleConfig();
-    }
-}
-
-function formatarTexto(texto) {
-    return texto.replace(/### (.*?)\n/g, '<h3>$1</h3>').replace(/## (.*?)\n/g, '<h2>$1</h2>')
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>')
-        .replace(/`(.*?)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
-}
-
-function addMsg(tipo, texto, salvar = true) {
-  const chat = document.getElementById('chat'); const wrapper = document.createElement('div');
-  wrapper.className = `msg-wrapper ${tipo}`; const div = document.createElement('div'); div.className = `msg ${tipo}`;
-  if (tipo === 'boss') { div.innerHTML = formatarTexto(texto); } else { div.textContent = texto; }
-  wrapper.appendChild(div);
-  if (tipo === 'boss') {
-      const actions = document.createElement('div'); actions.className = 'msg-actions';
-      const btnPlay = document.createElement('button'); btnPlay.className = 'btn-action'; btnPlay.innerHTML = '🔊'; btnPlay.onclick = () => falarTexto(texto); 
-      const btnCopy = document.createElement('button'); btnCopy.className = 'btn-action'; btnCopy.innerHTML = '📋';
-      btnCopy.onclick = () => { navigator.clipboard.writeText(texto); btnCopy.innerHTML = '✅'; setTimeout(() => btnCopy.innerHTML = '📋', 2000); };
-      actions.appendChild(btnPlay); actions.appendChild(btnCopy); wrapper.appendChild(actions);
-  }
-  chat.appendChild(wrapper); chat.scrollTop = chat.scrollHeight;
-  
-  if (salvar && tipo !== 'thinking' && tipo !== 'error') {
-      historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
-      if(historico.length > 20) historico = historico.slice(-20);
-      localStorage.setItem('boss_historico', JSON.stringify(historico));
-      if (tipo === 'user') autoSalvarMemoria();
-  }
-  return wrapper; 
-}
-
-function lerArquivo(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) { arquivoAnexado = e.target.result.substring(0, 50000); addMsg('boss', `[Arquivo "${file.name}" anexado.]`); document.getElementById('input').focus(); };
-    reader.readAsText(file); event.target.value = ''; 
-}
-
-async function processarOffline(texto) {
-  const t = texto.toLowerCase();
-  const tSemAcento = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (/\b(bom dia|boa tarde|boa noite|oi|ola)\b/.test(tSemAcento)) {
-    const hora = new Date().getHours(); let s = "Olá";
-    if (hora < 12) s = "Bom dia"; else if (hora < 18) s = "Boa tarde"; else s = "Boa noite";
-    return `${s}, ${userRole}. Como posso ajudar?`;
-  }
-  return null; 
-}
-
-async function buscarConhecimentoVeiculo(texto) {
-    let conhecimento = "";
-    const t = texto.toLowerCase();
-    let temManualEspecifico = false;
-
-    for (const carro of catalogoVeiculos) {
-        if (t.includes(carro.marca) && t.includes(carro.modelo) && t.includes(carro.ano)) {
-            const conteudo = await fetchGithubFile(REPO_CONTEXTO, `conhecimento/veiculos/${carro.arquivo}`);
-            if (conteudo) {
-                conhecimento += `\n\n=== MANUAL ESPECÍFICO DO VEÍCULO (${carro.marca.toUpperCase()} ${carro.modelo.toUpperCase()} ${carro.ano}) ===\n${conteudo}\n`;
-                temManualEspecifico = true;
-            }
-        }
-    }
-    
-    if (!temManualEspecifico) {
-        conhecimento = "\n\n=== AVISO DO SISTEMA ===\nNão há um manual específico no GitHub para este veículo. Use seu vasto conhecimento geral de eletrica automotiva ou acione a busca web se precisar de dados muito específicos.\n";
-    }
-    
-    return conhecimento;
-}
-
-function buildSystemPrompt(conhecimentoVeiculo = "") {
+function buildSystemPrompt() {
   let roleInstruction = "";
-  if (userRole === "Chefe") {
-      roleInstruction = "O operador é o Chefe, o criador do sistema e engenheiro experiente. Fale de forma técnica e direta. Use termos técnicos e valores exatos (Ohms, Volts) sem precisar explicar o básico.";
-  } else if (userRole === "Henrique") {
-      roleInstruction = "O operador é o Henrique. Ele NÃO é engenheiro e NÃO entende termos técnicos. Fale SEMPRE em linguagem simples. Se for obrigado a usar um termo técnico, explique com palavras comuns (ex: 'splash, que é a proteção contra água').";
-  } else {
-      roleInstruction = "O operador é um Convidado. Use linguagem simples e amigável, evitando jargões técnicos.";
-  }
+  if (userRole === "Chefe") roleInstruction = "O operador é o Chefe, engenheiro experiente. Use termos técnicos.";
+  else if (userRole === "Henrique") roleInstruction = "O operador é o Henrique. Use linguagem simples.";
+  else roleInstruction = "O operador é um Convidado.";
 
-  let prompt = `Você é o BOSS, um Engenheiro Eletricista Automotivo Sênior com conhecimento UNIVERSAL.
+  return `Você é o BOSS, Engenheiro Eletricista Automotivo e Engenheiro de Software Sênior.
 ${roleInstruction}
 
-=== DIRETRIZ DE ADAPTAÇÃO DE LINGUAGEM ===
-- Respeite o perfil do operador descrito acima.
-- PORÉM, se o operador pedir explicitamente "detalhes técnicos", "esquema elétrico", "valores de teste" ou disser "pode falar difícil", IGNORE a regra de linguagem simples e forneça os dados técnicos brutos imediatamente.
+=== DIRETRIZ DE LINGUAGEM ===
+- Se o usuário pedir "detalhes técnicos", ignore a linguagem simples e use jargões.
 
-=== DIRETRIZ DE CONHECIMENTO E FERRAMENTAS (MUITO IMPORTANTE) ===
-- Você entende de QUALQUER veículo do mundo.
-- Se a pergunta for sobre um veículo ESPECÍFICO que tenha manual na base, você receberá o texto. Leia e priorize.
-- Se você NÃO souber a resposta exata (ex: um carro muito novo, um esquema elétrico específico de um modelo que não está no seu manual) ou se precisar de dados atualizados da internet, você DEVE usar a ferramenta de busca web.
-- Para usar a busca web, responda EXATAMENTE com a tag: [WEB_SEARCH: seu termo de pesquisa aqui]. Não escreva mais nada, apenas a tag.
-- O sistema fará a busca e te entregará os resultados. Aí sim, você dará a resposta final.
+=== FERRAMENTAS (MUITO IMPORTANTE) ===
+- Busca Web: [WEB_SEARCH: termo] (Responda APENAS a tag se não souber algo).
+- Imagem: [IMAGE_SEARCH: termo]
+- Vídeo: [VIDEO_SEARCH: termo]
+- Diagramas: [MERMAID: código do diagrama]
+- Criar Arquivo GitHub: [GITHUB_CREATE: caminho/do/arquivo.kt | conteúdo do arquivo]
+- Blocos de código: Use \`\`\`linguagem para colorir.
 
-=== REGRA DE ESTILO ===
-- Seja direto ao ponto.
-- Limite a resposta a 3 parágrafos ou 5 tópicos.
-- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta.
-- Se o usuário pedir um vídeo, uma aula ou um tutorial em vídeo, adicione a tag exata [VIDEO_SEARCH: termo de busca] no final da sua resposta. NUNCA responda apenas com a tag. Sempre escreva uma frase antes.
-
-=== MANUAL DE ENGENHARIA BASE ===
-${manualBaseEletrica || '(Não carregado)'}
-
-=== MANUAL DE ENGENHARIA DO PROJETO ===
-${manualEngenharia || '(Não carregado)'}
-
-=== DIRETRIZES ===
-${contextoCache.diretrizes || '(Nenhuma)'}
-
-=== MEMÓRIA DE LONGO PRAZO ===
-${memoriaLongaPrazo || '(Nenhuma)'}
-
-=== CONTEXTO DO PROJETO ===
+=== MANUAL BASE ===
+${manualBaseEletrica}
 ${contextoCache.projetos}
-${conhecimentoVeiculo}
 
-Responda de forma concisa.`;
-
-  if (arquivoAnexado) prompt += `\n\n=== ARQUIVO EM MÃOS ===\n${arquivoAnexado}\n\nUse o conteúdo acima.`;
-  return TOKEN_GUARD.limitarTexto(prompt);
-}
-
-function extrairYouTubeID(url) {
-    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-    const match = url.match(regex);
-    return match ? match[1] : null;
-}
-
-function processarMidia(termoBusca, tipo, chat, thinking, resposta) {
-    if (tipo === 'image') {
-        const imgId = 'img-' + Date.now();
-        const imgWrapper = document.createElement('div');
-        imgWrapper.style.padding = '10px';
-        imgWrapper.innerHTML = `<div id="loading-${imgId}" style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando imagem no servidor... ]</div>`;
-        chat.appendChild(imgWrapper);
-        chat.scrollTop = chat.scrollHeight;
-
-        fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(termoBusca)}`)
-            .then(r => r.json())
-            .then(imgData => {
-                const loadingEl = document.getElementById(`loading-${imgId}`);
-                if(loadingEl) loadingEl.remove();
-                
-                if(imgData.url) {
-                    const imgHtml = `<img src="${imgData.url}" class="msg-img" onerror="this.outerHTML='<div style=\\'color:#E74C3C; font-family:monospace; font-size:12px;\\'>[ Falha ao carregar a imagem. O site original bloqueou o acesso. ]</div>'">`;
-                    imgWrapper.innerHTML = imgHtml;
-                } else {
-                    imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Imagem não encontrada no buscador. ]</div>`;
-                }
-            })
-            .catch(() => { 
-                const loadingEl = document.getElementById(`loading-${imgId}`);
-                if(loadingEl) loadingEl.remove();
-                imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Erro de comunicação com o Worker. ]</div>`;
-            });
-    } else if (tipo === 'video') {
-        const vidId = 'vid-' + Date.now();
-        const vidWrapper = document.createElement('div');
-        vidWrapper.style.padding = '10px';
-        vidWrapper.innerHTML = `<div id="loading-${vidId}" style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando vídeos no servidor... ]</div>`;
-        chat.appendChild(vidWrapper);
-        chat.scrollTop = chat.scrollHeight;
-
-        fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(termoBusca)}`)
-            .then(r => r.json())
-            .then(vidData => {
-                const loadingEl = document.getElementById(`loading-${vidId}`);
-                if(loadingEl) loadingEl.remove();
-                
-                if(vidData.videos && vidData.videos.length > 0) {
-                    const video = vidData.videos[0];
-                    const videoId = extrairYouTubeID(video.link);
-                    if (videoId) {
-                        vidWrapper.innerHTML = `
-                            <div class="video-container">
-                                <iframe src="https://www.youtube.com/embed/${videoId}" title="${video.title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                            </div>
-                            <div style="color:#64748B; font-size:11px; font-family:monospace; margin-top:5px;">
-                                ${video.title} (${video.channel || 'YouTube'})
-                            </div>
-                        `;
-                    } else {
-                        vidWrapper.innerHTML = `<div style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Vídeo encontrado: <a href="${video.link}" target="_blank" style="color:#00FFCC; text-decoration:underline;">${video.title}</a> ]</div>`;
-                    }
-                } else {
-                    vidWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Nenhum vídeo encontrado no buscador. ]</div>`;
-                }
-            })
-            .catch(() => { 
-                const loadingEl = document.getElementById(`loading-${vidId}`);
-                if(loadingEl) loadingEl.remove();
-                vidWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Erro de comunicação com o Worker ao buscar vídeo. ]</div>`;
-            });
-    }
+Seja direto.`.trim();
 }
 
 async function enviar() {
   const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto) return;
-  const check = TOKEN_GUARD.podeEnviar(); if (!check.pode) return addMsg('error', `Aguarde ${check.espera}s.`); TOKEN_GUARD.registrar();
-
-  const respostaOffline = await processarOffline(texto);
-  if (respostaOffline) {
-    input.value = ''; autoResize(input); addMsg('user', texto); addMsg('boss', respostaOffline); falarTexto(respostaOffline); return;
-  }
-
+  
   input.value = ''; autoResize(input); addMsg('user', texto);
   const thinking = addMsg('thinking', 'Processando...', false); document.getElementById('send').disabled = true;
-  exoContainer.classList.remove('ouvindo', 'falando'); exoContainer.classList.add('pensando');
+  document.getElementById('exoContainer').classList.add('pensando');
 
   try {
-    const conhecimentoVeiculo = await buscarConhecimentoVeiculo(texto);
-    const systemPrompt = buildSystemPrompt(conhecimentoVeiculo);
-    let currentMessages = [{ role: 'system', content: systemPrompt }, ...historico.slice(-6)];
-    
+    let currentMessages = [{ role: 'system', content: buildSystemPrompt() }, ...historico.slice(-6)];
     let continuarLoop = true;
-    let tentativasWeb = 0;
+    let tentativas = 0;
     let respostaFinal = "";
 
-    while (continuarLoop) {
+    while (continuarLoop && tentativas < 3) {
+        tentativas++;
         const resp = await fetch(WORKER_URL, { 
             method: 'POST', headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ model: MODELO, messages: currentMessages, max_tokens: 4000, temperature: 0.3 })
         });
         const data = await resp.json();
         
-        if (DEBUG_TOKENS && data.usage) {
-            const u = data.usage;
-            console.log(`%c[MÉTRICAS] Prompt: ${u.prompt_tokens} | Saída: ${u.completion_tokens}`, 'color: #00FFCC;');
+        // Telemetria
+        if (data.usage) {
+            metricTokens += data.usage.total_tokens;
+            metricCost += (data.usage.prompt_tokens / 1000000) * 0.27 + (data.usage.completion_tokens / 1000000) * 1.10;
+            atualizarHUD();
         }
 
-        let resposta = data.choices?.[0]?.message?.content?.trim() || "Falha na resposta.";
+        let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
         
         const matchWeb = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
-        if (matchWeb && tentativasWeb < 1) { 
-            tentativasWeb++;
-            const termoBusca = matchWeb[1];
-            thinking.innerHTML = `PROC > Buscando na internet por: "${termoBusca}"...`;
-            
-            const searchResp = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termoBusca)}`);
+        if (matchWeb && tentativas === 1) { 
+            metricWeb++; atualizarHUD();
+            const termo = matchWeb[1];
+            thinking.div.innerHTML = `PROC > Buscando na internet: "${termo}"...`;
+            const searchResp = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
             const searchData = await searchResp.json();
-            
             currentMessages.push({ role: 'assistant', content: resposta });
-            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os resultados da busca na web que você pediu:\n\n${searchData.results}\n\nCom base nesses dados, responda à pergunta original do usuário.` });
-            
+            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os dados: ${searchData.results}. Responda agora.` });
         } else {
             respostaFinal = resposta;
             continuarLoop = false;
         }
     }
 
+    // Tratamento de Ferramentas Visuais
     const matchImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
     const matchVideo = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
+    const matchMermaid = respostaFinal.match(/\[MERMAID:\s*([\s\S]*?)\]/);
+    const matchGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
 
-    if (matchImg) {
-        const termoBusca = matchImg[1];
-        respostaFinal = respostaFinal.replace(matchImg[0], '').trim();
-        if (!respostaFinal) respostaFinal = "Aqui está a imagem que você pediu:";
-        thinking.remove(); addMsg('boss', respostaFinal); 
-        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(respostaFinal);
-        processarMidia(termoBusca, 'image', document.getElementById('chat'), thinking, respostaFinal);
-    } else if (matchVideo) {
-        const termoBusca = matchVideo[1];
-        respostaFinal = respostaFinal.replace(matchVideo[0], '').trim();
-        if (!respostaFinal) respostaFinal = "Aqui está um vídeo que pode ajudar:";
-        thinking.remove(); addMsg('boss', respostaFinal); 
-        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(respostaFinal);
-        processarMidia(termoBusca, 'video', document.getElementById('chat'), thinking, respostaFinal);
+    if (matchImg || matchVideo || matchMermaid || matchGit) {
+        thinking.wrapper.remove();
+        
+        // Renderiza texto limpo antes dos anexos
+        let textoLimpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|MERMAID|GITHUB_CREATE):[\s\S]*?\]/g, '').trim();
+        if (textoLimpo) {
+            const msgObj = addMsg('boss', textoLimpo);
+            await efeitoDigitacao(msgObj.div, textoLimpo);
+            falarTexto(textoLimpo);
+        }
+
+        if (matchImg) {
+            metricImg++; atualizarHUD();
+            const termo = matchImg[1];
+            const imgWrapper = document.createElement('div'); imgWrapper.style.padding = '10px';
+            imgWrapper.innerHTML = `<div style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando imagem... ]</div>`;
+            document.getElementById('chat').appendChild(imgWrapper);
+            fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(termo)}`).then(r=>r.json()).then(d => {
+                imgWrapper.innerHTML = d.url ? `<img src="${d.url}" class="msg-img">` : `<div style="color:#E74C3C;">[ Imagem não encontrada ]</div>`;
+            });
+        }
+        
+        if (matchVideo) {
+            metricVid++; atualizarHUD();
+            const termo = matchVideo[1];
+            const vidWrapper = document.createElement('div'); vidWrapper.style.padding = '10px';
+            vidWrapper.innerHTML = `<div style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando vídeo... ]</div>`;
+            document.getElementById('chat').appendChild(vidWrapper);
+            fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(termo)}`).then(r=>r.json()).then(d => {
+                if(d.videos && d.videos.length > 0) {
+                    const videoId = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
+                    if(videoId) vidWrapper.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId[1]}" allowfullscreen></iframe></div>`;
+                    else vidWrapper.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
+                }
+            });
+        }
+
+        if (matchMermaid) {
+            const mermaidCode = matchMermaid[1];
+            const merWrapper = document.createElement('div'); merWrapper.className = 'mermaid-container';
+            merWrapper.innerHTML = `<pre class="mermaid">${mermaidCode}</pre>`;
+            document.getElementById('chat').appendChild(merWrapper);
+            mermaid.run({ nodes: [merWrapper.querySelector('.mermaid')] });
+        }
+
+        if (matchGit) {
+            metricGit++; atualizarHUD();
+            const path = matchGit[1].trim();
+            const content = matchGit[2].trim();
+            const gitWrapper = document.createElement('div'); gitWrapper.style.padding = '10px';
+            gitWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px;">[ Commitando no GitHub: ${path}... ]</div>`;
+            document.getElementById('chat').appendChild(gitWrapper);
+            
+            fetch(`${WORKER_URL}/github-write`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repo: 'lexpaker-arch/EXODASH--Local', path: path, content: content, message: 'Atualização via BOSS AI' })
+            }).then(r=>r.json()).then(d => {
+                gitWrapper.innerHTML = d.success ? `<div style="color:#27AE60; font-family:monospace; font-size:12px;">✅ Arquivo ${path} commitado com sucesso!</div>` : `<div style="color:#E74C3C;">[ Falha ao commitar: ${JSON.stringify(d)} ]</div>`;
+            });
+        }
+        
     } else {
-        thinking.remove(); addMsg('boss', respostaFinal); 
-        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(respostaFinal);
+        // Resposta Normal com Efeito de Digitação
+        thinking.wrapper.remove();
+        const msgObj = addMsg('boss', "", true); // Cria vazio
+        await efeitoDigitacao(msgObj.div, respostaFinal);
+        falarTexto(respostaFinal);
+        
+        // Salva no histórico manualmente após o efeito
+        historico.push({ role: 'assistant', content: respostaFinal });
+        localStorage.setItem('boss_historico', JSON.stringify(historico));
     }
 
   } catch (e) {
-    thinking.remove(); addMsg('error', `Falha de comunicação: ${e.message}`); exoContainer.classList.remove('pensando');
+    thinking.wrapper.remove(); addMsg('error', `Falha: ${e.message}`);
   } finally {
     document.getElementById('send').disabled = false; input.focus();
+    document.getElementById('exoContainer').classList.remove('pensando');
   }
 }
 
-let reconhecimento; let gravando = false; let autoListenTimer = null;
-
-function pararEscuta() {
-    if (reconhecimento) { try { reconhecimento.stop(); } catch(e){} }
-    gravando = false; exoContainer.classList.remove('ouvindo'); if (btnMicFooter) btnMicFooter.style.background = 'transparent';
+// Voz (TTS)
+let reconhecimento; let gravando = false;
+function iniciarEscuta() {
+  if (!('webkitSpeechRecognition' in window)) return alert("Navegador incompatível.");
+  if (gravando) { reconhecimento.stop(); return; }
+  reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  reconhecimento.lang = 'pt-BR';
+  reconhecimento.onstart = () => { gravando = true; document.getElementById('exoContainer').classList.add('ouvindo'); };
+  reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); };
+  reconhecimento.onend = () => { gravando = false; document.getElementById('exoContainer').classList.remove('ouvindo'); };
+  reconhecimento.start();
 }
 
-function iniciarEscuta(isAuto = false) {
-  if (gravando) { pararEscuta(); return; }
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { alert("Navegador incompatível."); return; }
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  reconhecimento = new SpeechRecognition(); reconhecimento.lang = 'pt-BR'; reconhecimento.interimResults = false;
-
-  reconhecimento.onstart = () => {
-    gravando = true; exoContainer.classList.remove('pensando', 'falando'); exoContainer.classList.add('ouvindo');
-    if (btnMicFooter) btnMicFooter.style.background = 'rgba(231,76,60,0.2)';
-    if (isAuto) { clearTimeout(autoListenTimer); autoListenTimer = setTimeout(() => { if (gravando) pararEscuta(); }, 5000); }
-  };
-
-  reconhecimento.onresult = (event) => {
-    clearTimeout(autoListenTimer); const texto = event.results[0][0].transcript;
-    document.getElementById('input').value = texto; pararEscuta(); enviar();
-  };
-  reconhecimento.onerror = () => { clearTimeout(autoListenTimer); pararEscuta(); };
-  reconhecimento.onend = () => { gravando = false; exoContainer.classList.remove('ouvindo'); if (btnMicFooter) btnMicFooter.style.background = 'transparent'; };
-  try { reconhecimento.start(); } catch(e){}
-}
-
-function limparTextoParaTTS(textoOriginal) {
-    let texto = textoOriginal;
-    texto = texto.replace(/```[\s\S]*?```/g, ' (código omitido) ');
-    texto = texto.replace(/https?:\/\/\S+/g, ' link ');
-    texto = texto.replace(/\b[PBCU][0-9]{4}\b/g, '');
-    texto = texto.replace(/\b[A-F0-9]{2}(\s[A-F0-9]{2}){2,}\b/g, '');
-    texto = texto.replace(/[*_~`#]/g, '');
-    texto = texto.replace(/\n/g, ' ').replace(/\s+/g, ' ');
-    return texto.trim();
-}
-
-function falarTexto(textoOriginal) {
-    if (!vozAtiva) return;
-    if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
-    
-    const textoLimpo = limparTextoParaTTS(textoOriginal);
-    if (textoLimpo.length < 10) { exoContainer.classList.remove('falando'); return; }
+function falarTexto(texto) {
+    if (!vozAtiva || !('speechSynthesis' in window)) return;
+    let t = texto.replace(/```[\s\S]*?```/g, ' (código) ').replace(/https?:\/\/\S+/g, '').replace(/[*_~`#]/g, '').replace(/\n/g, ' ');
+    if (t.length < 10) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(textoLimpo);
-    utterance.lang = 'pt-BR'; utterance.rate = vozRate; utterance.pitch = vozPitch; utterance.volume = 1.0;
-
-    const iniciarFala = () => {
-        const voices = window.speechSynthesis.getVoices();
-        if (vozNome) { const escolhida = voices.find(v => v.name === vozNome); if (escolhida) utterance.voice = escolhida; }
-        else { let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR')); if (ptVoice) utterance.voice = ptVoice; }
-        utterance.onstart = () => { exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); };
-        utterance.onend = () => { exoContainer.classList.remove('falando'); if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800); };
-        utterance.onerror = (e) => { console.error("Erro TTS:", e); exoContainer.classList.remove('falando'); };
-        window.speechSynthesis.speak(utterance);
-    };
-
-    if (window.speechSynthesis.getVoices().length === 0) { window.speechSynthesis.onvoiceschanged = () => { iniciarFala(); window.speechSynthesis.onvoiceschanged = null; }; } else { iniciarFala(); }
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'pt-BR'; u.rate = vozRate;
+    window.speechSynthesis.speak(u);
 }
+
+function testarVoz() { falarTexto("Olá, Chefe. Estou operando no Nível 5."); }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
+
 carregarContexto();
-carregarMemoria();
-restaurarHistorico();
 </script>
 </body>
 </html>
