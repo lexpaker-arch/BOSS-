@@ -73,9 +73,9 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
 
-/* RODAPÉ: BY ALEX NA ESQUERDA E INPUT ALINHADO */
+/* FOOTER ALINHADO À ESQUERDA COM BY ALEX NA ESQUERDA */
 footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: flex-start; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; flex-shrink: 0; }
-.by-alex { position: absolute; left: 20px; top: 15px; font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
+.by-alex { position: absolute; left: 20px; top: 10px; font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
 @media (min-width: 900px) { .by-alex { display: block; } }
 .footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: flex-start; margin-left: 0; margin-top: 15px; }
 @media (min-width: 1200px) { .footer-inputs { margin-left: 280px; margin-top: 0; } }
@@ -155,11 +155,14 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         <option value="on">Ativado (Efeito Máquina)</option>
         <option value="off">Desativado (Texto Instantâneo)</option>
       </select>
-      <label>ESCUTA CONTÍNUA (FOLLOW-UP)</label>
+      
+      <label>MODO DE ESCUTA (MICROFONE)</label>
       <select id="followUpSelect" onchange="mudarFollowUp()">
         <option value="off">Desativada</option>
-        <option value="on">Ativada (5s após falar)</option>
+        <option value="on">Follow-Up (5s após falar)</option>
+        <option value="wake">Wake Word ("BOSS")</option>
       </select>
+
       <label>VOZ DO BOSS</label>
       <select id="voiceToggle" onchange="mudarMudo()">
         <option value="on">Ativada (Fala)</option>
@@ -189,8 +192,8 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
                 </div>
             </div>
             <div class="hud-widget">
-                <div class="hud-widget-title">OPERADORES ONLINE</div>
-                <div class="hud-widget-val" id="metric-users" style="color:#F1C40F;">1</div>
+                <div class="hud-widget-title">LOCALIZAÇÃO</div>
+                <div class="hud-widget-sub" id="metric-location" style="color:#F1C40F; font-weight:bold;">Buscando...</div>
             </div>
             <div class="hud-widget">
                 <div class="hud-widget-title">HORÁRIO LOCAL</div>
@@ -248,7 +251,7 @@ if (userRole === 'Chefe') userRole = 'Patrão';
 
 let layoutModo = localStorage.getItem('boss_layout') || 'orb';
 let temaModo = localStorage.getItem('boss_theme') || 'default';
-let followUpAtivo = localStorage.getItem('boss_followup') === 'on';
+let followUpMode = localStorage.getItem('boss_followup') || 'off'; // 'off', 'on', 'wake'
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
@@ -257,7 +260,8 @@ let typewriterAtivo = localStorage.getItem('boss_typewriter') !== 'off';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '', memoriaCodigo: '' }; 
 let manualBaseEletrica = ''; 
-let imagemAnexadaBase64 = ''; // NOVO: Para análise de visão
+let imagemAnexadaBase64 = '';
+let localizacaoUsuario = 'Não definida';
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricCost = parseFloat(localStorage.getItem('metric_cost')) || 0;
@@ -285,6 +289,27 @@ function atualizarHUD() {
 }
 atualizarHUD();
 
+// GEOLOCALIZAÇÃO
+if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        document.getElementById('metric-location').textContent = "Buscando cidade...";
+        try {
+            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=pt`);
+            const data = await res.json();
+            localizacaoUsuario = `${data.city || data.locality}, ${data.principalSubdivision}`;
+            document.getElementById('metric-location').textContent = localizacaoUsuario;
+        } catch(e) {
+            document.getElementById('metric-location').textContent = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+        }
+    }, (err) => {
+        document.getElementById('metric-location').textContent = "Permissão Negada";
+    });
+} else {
+    document.getElementById('metric-location').textContent = "Não Suportado";
+}
+
 function atualizarRelogio() {
     const agora = new Date();
     document.getElementById('metric-time').textContent = agora.toLocaleTimeString('pt-BR');
@@ -292,10 +317,6 @@ function atualizarRelogio() {
 }
 setInterval(atualizarRelogio, 1000);
 atualizarRelogio();
-
-function simularUsuarios() { document.getElementById('metric-users').textContent = 1 + Math.floor(Math.random() * 2); }
-setInterval(simularUsuarios, 15000);
-simularUsuarios();
 
 window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
 window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
@@ -319,7 +340,7 @@ document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 document.getElementById('layoutSelect').value = layoutModo;
 document.getElementById('themeSelect').value = temaModo;
-document.getElementById('followUpSelect').value = followUpAtivo ? 'on' : 'off';
+document.getElementById('followUpSelect').value = followUpMode;
 document.getElementById('voiceToggle').value = vozAtiva ? 'on' : 'off';
 document.getElementById('rateSlider').value = vozRate;
 document.getElementById('rateVal').textContent = vozRate.toFixed(2);
@@ -336,7 +357,7 @@ aplicarLayoutETema();
 
 function mudarLayout() { layoutModo = document.getElementById('layoutSelect').value; localStorage.setItem('boss_layout', layoutModo); aplicarLayoutETema(); }
 function mudarTema() { temaModo = document.getElementById('themeSelect').value; localStorage.setItem('boss_theme', temaModo); aplicarLayoutETema(); }
-function mudarFollowUp() { followUpAtivo = document.getElementById('followUpSelect').value === 'on'; localStorage.setItem('boss_followup', followUpAtivo ? 'on' : 'off'); }
+function mudarFollowUp() { followUpMode = document.getElementById('followUpSelect').value; localStorage.setItem('boss_followup', followUpMode); }
 function mudarMudo() { vozAtiva = document.getElementById('voiceToggle').value === 'on'; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); }
 function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
@@ -495,6 +516,11 @@ function buildSystemPrompt() {
   return `Você é o BOSS, Engenheiro Eletricista Automotivo e Engenheiro de Software Sênior.
 ${roleInstruction}
 
+=== CONTEXTO SITUACIONAL ===
+- Localização atual do usuário: ${localizacaoUsuario}
+- Horário atual: ${new Date().toLocaleString('pt-BR')}
+- Se a pergunta for sobre clima, trânsito local, ou precisar de dados em tempo real, você OBRIGATORIAMENTE deve usar [WEB_SEARCH] com a sua localização embutida no termo de busca.
+
 === DIRETRIZ DE LINGUAGEM ===
 - Se o usuário pedir "detalhes técnicos", ignore a linguagem simples e use jargões.
 
@@ -502,10 +528,9 @@ ${roleInstruction}
 - Use [IMAGE_SEARCH: termo] APENAS se pedirem "foto" ou "imagem".
 - Use [VIDEO_SEARCH: termo] APENAS se pedirem "vídeo".
 - Use [WEB_SEARCH: termo] APENAS se precisar de dados reais da internet.
-- Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se pedirem para criar um arquivo (ou se você mesmo decidir estudar e salvar).
+- Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se pedirem para criar um arquivo.
 - Use [RUN_CODE: linguagem | código] APENAS para cálculos ou execução.
 - **Para Diagnósticos:** Sempre crie um fluxograma usando a sintaxe Mermaid (bloco \`\`\`mermaid ... \`\`\`). Exemplo: \`\`\`mermaid\ngraph TD\nA[Início] --> B{Testar Vácuo}\nB -->|Baixo| C[Vazamento]\nB -->|Normal| D[Testar IAC]\n\`\`\`.
-- **Auto-Estudo:** Se o usuário pedir para estudar um carro, use [WEB_SEARCH] primeiro. Após receber os dados, formate um guia técnico em Markdown e use [GITHUB_CREATE: conhecimento/veiculos/marca_modelo_ano.md | conteúdo] para salvar.
 
 === MANUAL BASE AUTOMOTIVO ===
 ${manualBaseEletrica}
@@ -543,7 +568,6 @@ async function enviar() {
   let contextoVisao = "";
 
   try {
-    // 1. Se tiver imagem, manda pro Worker analisar via Groq Vision
     if (imagemAnexadaBase64) {
         thinking.div.innerHTML = 'PROC > Analisando imagem técnica...';
         metricVision++; atualizarHUD();
@@ -554,7 +578,7 @@ async function enviar() {
         });
         const visData = await visResp.json();
         contextoVisao = visData.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
-        imagemAnexadaBase64 = ''; // Limpa a imagem após usar
+        imagemAnexadaBase64 = '';
     }
 
     let userContent = texto;
@@ -593,7 +617,7 @@ async function enviar() {
             const searchResp = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
             const searchData = await searchResp.json();
             currentMessages.push({ role: 'assistant', content: resposta });
-            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os dados da busca: ${searchData.results}. Responda agora ou use GITHUB_CREATE para salvar.` });
+            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os dados da busca: ${searchData.results}. Responda agora.` });
         } else {
             respostaFinal = resposta;
             continuarLoop = false;
@@ -609,7 +633,6 @@ async function enviar() {
     if (matchImg || matchVideo || matchMermaid || matchGit || matchCode) {
         thinking.wrapper.remove();
         
-        // Renderiza o texto antes das ferramentas
         let textoLimpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GITHUB_CREATE|RUN_CODE):[\s\S]*?\]/g, '').replace(/```mermaid\n[\s\S]*?```/g, '').trim();
         
         if (textoLimpo) {
@@ -713,37 +736,108 @@ async function enviar() {
   }
 }
 
-let reconhecimento; let gravando = false;
+let reconhecimento; let gravando = false; let autoListenTimer = null; let wakeWordRec;
+
+// Lógica de Wake Word
+function iniciarWakeWord() {
+    if (!('webkitSpeechRecognition' in window)) return;
+    wakeWordRec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    wakeWordRec.lang = 'pt-BR';
+    wakeWordRec.continuous = true;
+    wakeWordRec.interimResults = true;
+    
+    wakeWordRec.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript.toLowerCase();
+        }
+        
+        if (transcript.includes("boss")) {
+            wakeWordRec.stop(); // Para de ouvir a wake word
+            falarTexto("Estou ouvindo.");
+            // Espera a voz terminar e abre o microfone para o comando
+            setTimeout(() => { iniciarEscuta(false); }, 1500);
+        }
+    };
+    
+    wakeWordRec.onend = () => {
+        if (followUpMode === 'wake' && !gravando) {
+            try { wakeWordRec.start(); } catch(e){} // Reinicia para continuar ouvindo
+        }
+    };
+    
+    wakeWordRec.onerror = (e) => {
+        if (e.error === 'not-allowed') { console.warn('Microfone negado.'); }
+    };
+
+    try { wakeWordRec.start(); } catch(e){}
+}
+
+function pararEscuta() {
+    if (reconhecimento) { try { reconhecimento.stop(); } catch(e){} }
+    gravando = false; document.getElementById('exoContainer').classList.remove('ouvindo'); 
+    if (document.getElementById('btnMicFooter')) document.getElementById('btnMicFooter').style.background = 'transparent';
+    
+    // Se estiver no modo Wake Word e não estiver falando, reinicia a escuta da palavra mágica
+    if (followUpMode === 'wake' && !window.speechSynthesis.speaking) {
+        setTimeout(() => { if(followUpMode === 'wake') iniciarWakeWord(); }, 1000);
+    }
+}
+
 function iniciarEscuta(isAuto = false) {
+  if (gravando) { pararEscuta(); return; }
+  
+  if (followUpMode === 'wake' && wakeWordRec) { try { wakeWordRec.stop(); } catch(e){} } // Para a wake word enquanto ouve o comando
+  
   if (!('webkitSpeechRecognition' in window)) return alert("Navegador incompatível.");
-  if (gravando) { reconhecimento.stop(); return; }
+  
   reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
   reconhecimento.lang = 'pt-BR';
-  reconhecimento.onstart = () => { gravando = true; document.getElementById('exoContainer').classList.add('ouvindo'); };
-  reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); };
-  reconhecimento.onend = () => { gravando = false; document.getElementById('exoContainer').classList.remove('ouvindo'); };
+  reconhecimento.interimResults = false;
+
+  reconhecimento.onstart = () => {
+    gravando = true; document.getElementById('exoContainer').classList.remove('pensando', 'falando'); document.getElementById('exoContainer').classList.add('ouvindo');
+    if (document.getElementById('btnMicFooter')) document.getElementById('btnMicFooter').style.background = 'rgba(231,76,60,0.2)';
+    if (isAuto) { clearTimeout(autoListenTimer); autoListenTimer = setTimeout(() => { if (gravando) pararEscuta(); }, 5000); }
+  };
+
+  reconhecimento.onresult = (e) => { 
+      clearTimeout(autoListenTimer); 
+      document.getElementById('input').value = e.results[0][0].transcript; 
+      pararEscuta(); 
+      enviar(); 
+  };
+  reconhecimento.onerror = () => { clearTimeout(autoListenTimer); pararEscuta(); };
+  reconhecimento.onend = () => { gravando = false; document.getElementById('exoContainer').classList.remove('ouvindo'); if (document.getElementById('btnMicFooter')) document.getElementById('btnMicFooter').style.background = 'transparent'; };
   try { reconhecimento.start(); } catch(e){}
 }
 
 function falarTexto(texto) {
     if (!vozAtiva || !('speechSynthesis' in window)) return;
     let t = texto.replace(/```[\s\S]*?```/g, ' (código) ').replace(/https?:\/\/\S+/g, '').replace(/[*_~`#]/g, '').replace(/\n/g, ' ');
-    if (t.length < 10) return;
+    if (t.length < 5) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(t);
     u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch;
     
     if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; }
     
-    u.onend = () => { if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800); };
+    u.onend = () => { 
+        // Se for Follow-up normal (5s)
+        if (followUpMode === 'on') setTimeout(() => { iniciarEscuta(true); }, 800); 
+        // Se for Wake Word, volta a ouvir a palavra mágica
+        if (followUpMode === 'wake') setTimeout(() => { iniciarWakeWord(); }, 1000);
+    };
     window.speechSynthesis.speak(u);
 }
 
-function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com visão e sandbox."); }
+function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com telemetria."); }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
 
+// Inicializa o sistema
 carregarContexto();
+if (followUpMode === 'wake') { setTimeout(iniciarWakeWord, 2000); }
 </script>
 </body>
 </html>
