@@ -54,7 +54,8 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 @keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
 
-#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); }
+/* CORREÇÃO 1: Remoção do mask-image para não sumir o texto */
+#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; }
 .msg-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
 .msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; white-space: pre-wrap; flex: 1; transition: 0.3s; }
 .msg.user { border-left-color: #6A7A8A; color: #8A9AAA; } .msg.user::before { content: "USR > "; color: #6A7A8A; font-weight: bold; }
@@ -225,11 +226,8 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
     <footer>
         <div class="by-alex">BY ALEX. P</div>
         <div class="footer-inputs">
-            <!-- INPUT DE ARQUIVO TRADICIONAL -->
             <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="lerArquivo(event)">
-            <!-- NOVO INPUT DE CÂMERA DIRETA -->
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="lerArquivo(event)">
-            
             <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar arquivo local">📎</button>
             <button class="btn-attach" onclick="document.getElementById('cameraInput').click()" title="Tirar Foto (Celular)">📷</button>
             <button id="btnMicFooter" class="btn-attach" onclick="iniciarEscuta(false)" title="Falar">🎤</button>
@@ -380,7 +378,12 @@ function toggleZenMode() { document.getElementById('hudContainer').classList.tog
 
 function autoResize(el) { el.style.height = '40px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
+// CORREÇÃO 2: Substituição forçada de "Chefe" para o userRole atual
 function formatarTexto(texto) {
+    // Força a troca da palavra Chefe pelo título atual
+    const regexChefe = /\b(Chefe|chefe)\b/gi;
+    texto = texto.replace(regexChefe, userRole);
+
     texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
         const language = lang || 'plaintext';
         return `<pre><button class="btn-copy-code" onclick="copiarCodigo(this)">COPIAR</button><code class="language-${language}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
@@ -531,7 +534,7 @@ ${roleInstruction}
 
 === REGRA DE TRATAMENTO (OBRIGATÓRIA) ===
 - O seu título oficial para com o usuário agora é exatamente: ${userRole}.
-- NUNCA, em hipótese alguma, chame o usuário de "Chefe". Se o histórico antigo tiver a palavra "Chefe", ignore-o e substitua por ${userRole}.
+- NUNCA, em hipótese alguma, chame o usuário de "Chefe".
 
 === CONTEXTO SITUACIONAL ===
 - Localização atual do usuário: ${localizacaoUsuario}
