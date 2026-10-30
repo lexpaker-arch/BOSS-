@@ -54,7 +54,6 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 @keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
 
-/* CORREÇÃO: Remoção total do mask-image e ajuste de âncora */
 #chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; overflow-anchor: none; }
 .msg-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
 .msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; white-space: pre-wrap; flex: 1; transition: 0.3s; }
@@ -379,7 +378,6 @@ function toggleZenMode() { document.getElementById('hudContainer').classList.tog
 function autoResize(el) { el.style.height = '40px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
 function formatarTexto(texto) {
-    // Substituição forçada de "Chefe" para o userRole atual
     const regexChefe = /\b(Chefe|chefe)\b/gi;
     texto = texto.replace(regexChefe, userRole);
 
@@ -401,7 +399,6 @@ function copiarCodigo(btn) {
     setTimeout(() => btn.textContent = 'COPIAR', 2000);
 }
 
-// CORREÇÃO: Motor de digitação seguro que não quebra as tags HTML
 async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
     if (!typewriterAtivo) {
         elemento.innerHTML = formatarTexto(textoFinal);
@@ -410,22 +407,20 @@ async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
         return;
     }
 
-    // Renderiza todo o HTML, mas esconde o texto
     elemento.innerHTML = formatarTexto(textoFinal);
     const chat = document.getElementById('chat');
 
-    // Encontra todos os nós de texto (ignorando tags)
     const walk = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT, null, false);
     let node;
     const textNodes = [];
     while (node = walk.nextNode()) {
         if (node.nodeValue.trim() !== '') {
             textNodes.push({ node, text: node.nodeValue });
-            node.nodeValue = ''; // Esvazia o texto para a revelação gradual
+            node.nodeValue = ''; 
         }
     }
 
-    if (textNodes.length === 0) return; // Se for só código vazio
+    if (textNodes.length === 0) return; 
 
     return new Promise(resolve => {
         let currentTextIndex = 0;
@@ -434,7 +429,6 @@ async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
         const timer = setInterval(() => {
             if (currentTextIndex >= textNodes.length) {
                 clearInterval(timer);
-                // Re-aplica o highlighting no final para garantir
                 elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
                 resolve();
                 return;
@@ -444,7 +438,6 @@ async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
             currentObj.node.nodeValue += currentObj.text[currentCharIndex];
             currentCharIndex++;
 
-            // Rolagem inteligente: só desce se estiver perto do final
             const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 100;
             if (isAtBottom) { chat.scrollTop = chat.scrollHeight; }
 
@@ -578,8 +571,9 @@ ${roleInstruction}
 === REGRAS DE AÇÃO ===
 - Se o usuário pedir para "analisar o layout", "olhar o código" ou "ver o arquivo X", NUNCA peça permissão. Dispare imediatamente [GITHUB_READ: nome_do_arquivo.extensao].
 - Dica: Você NÃO precisa do caminho completo, apenas o nome do arquivo.
+- **MULTI-LEITURA:** Se você precisar ler mais de um arquivo, pode disparar várias tags na mesma resposta. Exemplo: \`[GITHUB_READ: MainActivity.kt] [GITHUB_READ: activity_main.xml]\`. O sistema vai buscar todos de uma vez e te entregar juntos.
 - Para Diagnósticos Automotivos: Crie um fluxograma Mermaid (bloco \`\`\`mermaid ... \`\`\`).
-- Para Análise de Imagens (Scanner, Placa, etc): Se o usuário enviar uma foto, analise-a detalhadamente.
+- Para Análise de Imagens: Se o usuário enviar uma foto, analise-a detalhadamente.
 
 === MANUAL BASE AUTOMOTIVO ===
 ${manualBaseEletrica}
@@ -642,7 +636,7 @@ async function enviar() {
     let tentativas = 0;
     let respostaFinal = "";
 
-    while (continuarLoop && tentativas < 4) {
+    while (continuarLoop && tentativas < 5) {
         tentativas++;
         const resp = await fetch(WORKER_URL, { 
             method: 'POST', headers: { 'Content-Type': 'application/json' }, 
@@ -658,30 +652,38 @@ async function enviar() {
 
         let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
         
-        const matchGitRead = resposta.match(/\[GITHUB_READ:\s*(.*?)\]/);
-        if (matchGitRead) {
-            let requestedPath = matchGitRead[1].trim();
-            let finalPath = requestedPath;
-            
-            if (!requestedPath.includes('/') && repoTree.length > 0) {
-                const found = repoTree.find(p => p.endsWith(requestedPath));
-                if (found) finalPath = found;
+        // --- CORREÇÃO: MÚLTIPLAS LEITURAS COM MATCHALL ---
+        const gitReadMatches = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
+        
+        if (gitReadMatches.length > 0) {
+            let allContent = "";
+            let pathsLidos = 0;
+
+            for (const match of gitReadMatches) {
+                let requestedPath = match[1].trim();
+                let finalPath = requestedPath;
+                
+                if (!requestedPath.includes('/') && repoTree.length > 0) {
+                    const found = repoTree.find(p => p.endsWith(requestedPath));
+                    if (found) finalPath = found;
+                }
+                
+                thinking.div.innerHTML = `PROC > Lendo arquivo: ${finalPath}...`;
+                metricGit++; atualizarHUD();
+                
+                const fileContent = await fetchGithubFile(REPO_PROJETO, finalPath);
+                
+                if (fileContent) {
+                    allContent += `\n\n=== INÍCIO DO ARQUIVO: ${finalPath} ===\n\`\`\`\n${fileContent}\n\`\`\`\n=== FIM DO ARQUIVO ===\n`;
+                    pathsLidos++;
+                } else {
+                    allContent += `\n\n=== INÍCIO DO ARQUIVO: ${finalPath} ===\n[ERRO: Arquivo não encontrado ou inacessível]\n`;
+                }
             }
             
-            thinking.div.innerHTML = `PROC > Lendo arquivo: ${finalPath}...`;
-            metricGit++; atualizarHUD();
-            
-            const fileContent = await fetchGithubFile(REPO_PROJETO, finalPath);
-            
-            if (fileContent) {
-                currentMessages.push({ role: 'assistant', content: resposta });
-                currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui está o conteúdo do arquivo ${finalPath}:\n\n\`\`\`\n${fileContent}\n\`\`\`\n\nAgora, faça a análise solicitada.` });
-                continue;
-            } else {
-                currentMessages.push({ role: 'assistant', content: resposta });
-                currentMessages.push({ role: 'user', content: `[SISTEMA]: Erro ao ler o arquivo ${finalPath}. O arquivo pode não existir.` });
-                continue;
-            }
+            currentMessages.push({ role: 'assistant', content: resposta });
+            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os conteúdos dos ${pathsLidos} arquivos que você pediu:\n${allContent}\n\nAgora, faça a análise e o cruzamento das informações solicitadas.` });
+            continue;
         }
 
         const matchWeb = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
