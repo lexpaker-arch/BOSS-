@@ -103,6 +103,10 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .hud-container.theme-black .msg b { color: #00FFCC; }
 
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+
+/* NOVO: Estilo do Container de Vídeo (Responsivo 16:9) */
+.video-container { position: relative; width: 100%; padding-bottom: 56.25%; /* 16:9 */ height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+.video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 </style>
 </head>
 <body>
@@ -489,7 +493,8 @@ ${roleInstruction}
 === REGRA DE ESTILO ===
 - Seja direto ao ponto.
 - Limite a resposta a 3 parágrafos ou 5 tópicos.
-- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta. NUNCA responda apenas com a tag. Sempre escreva uma frase antes (ex: "Aqui está a imagem:").
+- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta.
+- Se o usuário pedir um vídeo, uma aula ou um tutorial em vídeo, adicione a tag exata [VIDEO_SEARCH: termo de busca] no final da sua resposta. NUNCA responda apenas com a tag. Sempre escreva uma frase antes (ex: "Aqui está um vídeo que pode ajudar:").
 
 === MANUAL DE ENGENHARIA BASE ===
 ${manualBaseEletrica || '(Não carregado)'}
@@ -511,6 +516,13 @@ Responda de forma concisa.`;
 
   if (arquivoAnexado) prompt += `\n\n=== ARQUIVO EM MÃOS ===\n${arquivoAnexado}\n\nUse o conteúdo acima.`;
   return TOKEN_GUARD.limitarTexto(prompt);
+}
+
+// Função para extrair ID do YouTube de qualquer URL
+function extrairYouTubeID(url) {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const match = url.match(regex);
+    return match ? match[1] : null;
 }
 
 async function enviar() {
@@ -552,15 +564,16 @@ async function enviar() {
 
     let resposta = data.choices?.[0]?.message?.content?.trim() || (data.error ? "Erro: " + JSON.stringify(data.error) : "Falha na resposta.");
 
+    // Verifica se a IA pediu uma imagem
     const matchImg = resposta.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
+    // Verifica se a IA pediu um vídeo
+    const matchVideo = resposta.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
+
     if (matchImg) {
         const termoBusca = matchImg[1];
         resposta = resposta.replace(matchImg[0], '').trim();
         
-        // BUGFIX: Se a resposta ficou vazia, coloca um texto padrão
-        if (!resposta) {
-            resposta = "Aqui está a imagem que você pediu:";
-        }
+        if (!resposta) resposta = "Aqui está a imagem que você pediu:";
 
         thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
         exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
@@ -569,7 +582,6 @@ async function enviar() {
         const chat = document.getElementById('chat');
         const imgWrapper = document.createElement('div');
         imgWrapper.style.padding = '10px';
-        // BUGFIX: Placeholder local (não depende de site externo)
         imgWrapper.innerHTML = `<div id="loading-${imgId}" style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando imagem no servidor... ]</div>`;
         chat.appendChild(imgWrapper);
         chat.scrollTop = chat.scrollHeight;
@@ -578,10 +590,9 @@ async function enviar() {
             .then(r => r.json())
             .then(imgData => {
                 const loadingEl = document.getElementById(`loading-${imgId}`);
-                if(loadingEl) loadingEl.remove(); // Remove o "Carregando"
+                if(loadingEl) loadingEl.remove();
                 
                 if(imgData.url) {
-                    // Cria a tag img com onerror para avisar se o link estiver quebrado
                     const imgHtml = `<img src="${imgData.url}" class="msg-img" onerror="this.outerHTML='<div style=\\'color:#E74C3C; font-family:monospace; font-size:12px;\\'>[ Falha ao carregar a imagem. O site original bloqueou o acesso. ]</div>'">`;
                     imgWrapper.innerHTML = imgHtml;
                 } else {
@@ -594,6 +605,55 @@ async function enviar() {
                 imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Erro de comunicação com o Worker. ]</div>`;
             });
             
+    } else if (matchVideo) {
+        const termoBusca = matchVideo[1];
+        resposta = resposta.replace(matchVideo[0], '').trim();
+        
+        if (!resposta) resposta = "Aqui está um vídeo que pode ajudar:";
+
+        thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
+        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
+
+        const vidId = 'vid-' + Date.now();
+        const chat = document.getElementById('chat');
+        const vidWrapper = document.createElement('div');
+        vidWrapper.style.padding = '10px';
+        vidWrapper.innerHTML = `<div id="loading-${vidId}" style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando vídeos no servidor... ]</div>`;
+        chat.appendChild(vidWrapper);
+        chat.scrollTop = chat.scrollHeight;
+
+        fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(termoBusca)}`)
+            .then(r => r.json())
+            .then(vidData => {
+                const loadingEl = document.getElementById(`loading-${vidId}`);
+                if(loadingEl) loadingEl.remove();
+                
+                if(vidData.videos && vidData.videos.length > 0) {
+                    const video = vidData.videos[0];
+                    const videoId = extrairYouTubeID(video.link);
+                    
+                    if (videoId) {
+                        vidWrapper.innerHTML = `
+                            <div class="video-container">
+                                <iframe src="https://www.youtube.com/embed/${videoId}" title="${video.title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                            <div style="color:#64748B; font-size:11px; font-family:monospace; margin-top:5px;">
+                                ${video.title} (${video.channel || 'YouTube'})
+                            </div>
+                        `;
+                    } else {
+                        vidWrapper.innerHTML = `<div style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Vídeo encontrado: <a href="${video.link}" target="_blank" style="color:#00FFCC; text-decoration:underline;">${video.title}</a> ]</div>`;
+                    }
+                } else {
+                    vidWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Nenhum vídeo encontrado no buscador. ]</div>`;
+                }
+            })
+            .catch(() => { 
+                const loadingEl = document.getElementById(`loading-${vidId}`);
+                if(loadingEl) loadingEl.remove();
+                vidWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Erro de comunicação com o Worker ao buscar vídeo. ]</div>`;
+            });
+
     } else {
         thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
         exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
@@ -700,4 +760,5 @@ restaurarHistorico();
 </script>
 </body>
 </html>
+
 
