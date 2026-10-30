@@ -6,17 +6,8 @@
 <title>BOSS - EXODRIVE</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { 
-    background-color: #05070A; 
-    background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
-    background-size: 30px 30px; color: #E8EDF2; font-family: 'Segoe UI', Roboto, sans-serif; 
-    height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; 
-}
-.hud-container { 
-    width: 100vw; height: 100dvh; border: 1px solid rgba(0, 255, 204, 0.2); position: relative; display: flex; flex-direction: column; 
-    background: rgba(5, 7, 10, 0.85); box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05); 
-    padding-bottom: env(safe-area-inset-bottom); transition: all 0.3s;
-}
+body { background-color: #05070A; background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px); background-size: 30px 30px; color: #E8EDF2; font-family: 'Segoe UI', Roboto, sans-serif; height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+.hud-container { width: 100vw; height: 100dvh; border: 1px solid rgba(0, 255, 204, 0.2); position: relative; display: flex; flex-direction: column; background: rgba(5, 7, 10, 0.85); box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05); padding-bottom: env(safe-area-inset-bottom); transition: all 0.3s; }
 @media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; border-radius: 4px; } }
 .corner { position: absolute; width: 25px; height: 25px; border: 2px solid #00FFCC; z-index: 50;}
 .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; } .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
@@ -46,7 +37,6 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; posi
 .exo-container.falando .exo-anel-1 { animation-duration: 5s; }
 @keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
-
 #chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; mask-image: linear-gradient(to bottom, transparent, black 5%, black 95%, transparent); transition: 0.3s; }
 .msg-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
 .msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; flex: 1; transition: 0.3s; }
@@ -55,16 +45,13 @@ main { flex: 1; display: flex; flex-direction: column; align-items: center; posi
 .msg.error { border-left-color: #E74C3C; color: #E74C3C; } .msg.error::before { content: "ERR > "; font-weight: bold; }
 .msg.thinking { color: #F1C40F; font-style: italic; border-left-color: #F1C40F; animation: blink 1s infinite; } .msg.thinking::before { content: "PROC > "; font-weight: bold; }
 @keyframes blink { 50% { opacity: 0.5; } }
-
 .msg b { color: #FFFFFF; font-weight: bold; }
 .msg h1, .msg h2, .msg h3 { color: #00FFCC; margin: 10px 0 5px 0; font-size: 14px; text-transform: uppercase; }
 .msg code { background: rgba(0,255,204,0.1); padding: 2px 4px; border-radius: 3px; color: #00FFCC; font-family: monospace; }
 .msg ul, .msg ol { margin-left: 20px; margin-bottom: 10px; }
-
 .msg-actions { display: flex; flex-direction: column; gap: 6px; }
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
-
 footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: space-between; align-items: flex-end; z-index: 10; transition: 0.3s; }
 .footer-inputs { display: flex; gap: 8px; flex: 1; max-width: 800px; align-items: flex-end; transition: 0.3s; }
 .btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 36px; display: flex; align-items: center; justify-content: center; }
@@ -76,15 +63,10 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .by-alex { display: none; } 
 @media (min-width: 600px) {
     .by-alex { display: block; color: #6A7A8A; font-size: 10px; letter-spacing: 0.2em; font-family: monospace; }
-    header { padding: 15px 30px; }
-    footer { padding: 15px 30px; }
-    #chat { padding: 20px 40px; }
-    .exo-container { width: 200px; height: 200px; margin-top: 20px; }
-    .exo-glow { width: 200px; height: 200px; }
-    .exo-anel-1 { width: 180px; height: 180px; }
-    .exo-anel-2 { width: 150px; height: 150px; }
-    .exo-anel-3 { width: 120px; height: 120px; }
-    .exo-core { width: 80px; height: 80px; }
+    header { padding: 15px 30px; } footer { padding: 15px 30px; } #chat { padding: 20px 40px; }
+    .exo-container { width: 200px; height: 200px; margin-top: 20px; } .exo-glow { width: 200px; height: 200px; }
+    .exo-anel-1 { width: 180px; height: 180px; } .exo-anel-2 { width: 150px; height: 150px; }
+    .exo-anel-3 { width: 120px; height: 120px; } .exo-core { width: 80px; height: 80px; }
 }
 .config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 280px; max-height: 80vh; overflow-y: auto; }
 .config.open { display: block; } 
@@ -96,32 +78,23 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .btn-clear:hover { background: rgba(231, 76, 60, 0.1); }
 .btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; }
 .btn-save:hover { background: rgba(0,255,204,0.1); }
-
 .hud-container.layout-chat { background-color: #0F172A; background-image: none; border-color: #1E293B; }
 .hud-container.layout-chat header { background: #0F172A; border-bottom: 1px solid #1E293B; }
-.hud-container.layout-chat .exo-system { color: #64748B; }
-.hud-container.layout-chat .boss-title { text-shadow: none; color: #F8FAFC; }
-.hud-container.layout-chat .corner { display: none; }
-.hud-container.layout-chat .exo-container { display: none; }
+.hud-container.layout-chat .exo-system { color: #64748B; } .hud-container.layout-chat .boss-title { text-shadow: none; color: #F8FAFC; }
+.hud-container.layout-chat .corner { display: none; } .hud-container.layout-chat .exo-container { display: none; }
 .hud-container.layout-chat #chat { max-width: 800px; margin: 0 auto; mask-image: none; }
-.hud-container.layout-chat .msg-wrapper.user { align-items: flex-end; }
-.hud-container.layout-chat .msg-wrapper.boss { align-items: flex-start; }
+.hud-container.layout-chat .msg-wrapper.user { align-items: flex-end; } .hud-container.layout-chat .msg-wrapper.boss { align-items: flex-start; }
 .hud-container.layout-chat .msg.user { background: #0284C7; color: white; border: none; border-radius: 12px 12px 0 12px; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none; }
 .hud-container.layout-chat .msg.boss { background: #1E293B; color: #F8FAFC; border: none; border-radius: 12px 12px 12px 0; padding: 10px 14px; font-family: 'Segoe UI', sans-serif; max-width: 85%; flex: none; }
-.hud-container.layout-chat .msg.user::before,
-.hud-container.layout-chat .msg.boss::before,
-.hud-container.layout-chat .msg.thinking::before,
-.hud-container.layout-chat .msg.error::before { content: none; }
+.hud-container.layout-chat .msg.user::before, .hud-container.layout-chat .msg.boss::before, .hud-container.layout-chat .msg.thinking::before, .hud-container.layout-chat .msg.error::before { content: none; }
 .hud-container.layout-chat .msg b { color: #00FFCC; }
-.hud-container.layout-chat .msg.thinking,
-.hud-container.layout-chat .msg.error { background: transparent; font-family: monospace; border: none; align-self: center; }
+.hud-container.layout-chat .msg.thinking, .hud-container.layout-chat .msg.error { background: transparent; font-family: monospace; border: none; align-self: center; }
 .hud-container.layout-chat footer { border-top: none; background: transparent; padding-bottom: 30px; }
 .hud-container.layout-chat .footer-inputs { background: #1E293B; border-radius: 24px; padding: 5px 15px; border: 1px solid #334155; align-items: center; }
 .hud-container.layout-chat #input { color: #F8FAFC; font-family: 'Segoe UI', sans-serif; border: none; }
 .hud-container.layout-chat #input::placeholder { color: #64748B; }
 .hud-container.layout-chat .btn-send { border-radius: 20px; background: #0EA5E9; color: white; border: none; padding: 8px 20px; }
 .hud-container.layout-chat .btn-attach { border: none; font-size: 18px; }
-
 .hud-container.theme-black { background-color: #000000; border-color: #222222; }
 .hud-container.theme-black header { background: #000000; border-bottom: 1px solid #222222; }
 .hud-container.theme-black .footer-inputs { background: #111111; border: 1px solid #333333; }
@@ -129,7 +102,6 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .hud-container.theme-black .msg.user { background: #008B8B; color: #FFFFFF; }
 .hud-container.theme-black .msg b { color: #00FFCC; }
 
-/* --- NOVO: ESTILO DA IMAGEM --- */
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 </style>
 </head>
@@ -163,42 +135,34 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
         <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
-      
       <label>INTERFACE VISUAL</label>
       <select id="layoutSelect" onchange="mudarLayout()">
         <option value="orb">JARVIS (Aro Central)</option>
         <option value="chat">DISCRETO (Chat Linear)</option>
       </select>
-
       <label>TEMA DE CORES</label>
       <select id="themeSelect" onchange="mudarTema()">
         <option value="default">Padrão (Ardósia)</option>
         <option value="black">Preto Absoluto (AMOLED)</option>
       </select>
-
       <label>ESCUTA CONTÍNUA (FOLLOW-UP)</label>
       <select id="followUpSelect" onchange="mudarFollowUp()">
         <option value="off">Desativada</option>
         <option value="on">Ativada (5s após falar)</option>
       </select>
-
       <label>VOZ DO BOSS</label>
       <select id="voiceToggle" onchange="mudarMudo()">
         <option value="on">Ativada (Fala)</option>
         <option value="off">Muda (Silenciosa)</option>
       </select>
-
       <label>VOZ DO BOSS (SOTAQUES)</label>
       <select id="voiceSelect" onchange="mudarVoz()">
         <option value="">Padrão do navegador</option>
       </select>
-      
       <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
       <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
-      
       <label>TOM DA VOZ: <span id="pitchVal">1.05</span></label>
       <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)">
-      
       <button class="btn-save" onclick="testarVoz()">🔊 TESTAR VOZ</button>
       <button class="btn-save" onclick="compilarMemoria()">ENCERRAR SESSÃO E SALVAR</button>
       <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
@@ -212,7 +176,6 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
             <div class="exo-anel-3"></div>
             <div class="exo-core"></div>
         </div>
-
         <div id="chat"></div>
     </main>
 
@@ -235,9 +198,6 @@ const REPO_VIGILANTE = 'lexpaker-arch/EXO-VIGILANTE';
 const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
 const MODELO = 'qwen/qwen3.8-27b';
 
-// ═══════════════════════════════════════════════════════
-// PARÂMETRO DE MEDIÇÃO (Mude para false para desativar os logs)
-// ═══════════════════════════════════════════════════════
 const DEBUG_TOKENS = true; 
 
 let userRole = localStorage.getItem('boss_role') || 'Chefe';
@@ -252,6 +212,7 @@ let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '' }; 
 let memoriaLongaPrazo = '';
 let manualEngenharia = '';
+let catalogoVeiculos = []; 
 let exoContainer = document.getElementById('exoContainer');
 let btnMicFooter = document.getElementById('btnMicFooter');
 let arquivoAnexado = '';
@@ -314,7 +275,7 @@ document.body.addEventListener('click', function unlockAudio() {
 }, { once: true });
 
 const TOKEN_GUARD = {
-  maxCharsPerPrompt: 20000, maxRequestsPerMinute: 20, memoryCharLimit: 10000,
+  maxCharsPerPrompt: 25000, maxRequestsPerMinute: 20, memoryCharLimit: 10000,
   requests: JSON.parse(localStorage.getItem('boss_requests') || '[]'),
   limparHistorico() { const now = Date.now(); this.requests = this.requests.filter(t => now - t < 60000); localStorage.setItem('boss_requests', JSON.stringify(this.requests)); },
   podeEnviar() { this.limparHistorico(); if (this.requests.length >= this.maxRequestsPerMinute) { const espera = Math.ceil((60000 - (Date.now() - this.requests[0])) / 1000); return { pode: false, espera }; } return { pode: true }; },
@@ -363,14 +324,28 @@ async function carregarMemoria() {
     const resMan = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/backup/MANUAL_DE_ENGENHARIA.md`);
     const dataMan = await resMan.json();
     if (dataMan.content) { manualEngenharia = decodeURIComponent(escape(atob(dataMan.content))); }
-  } catch (e) { console.warn('Sem memória ou manual salvo ainda.'); }
+    
+    const resCat = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=conhecimento/veiculos/index.json`);
+    if (resCat.ok) {
+        const dataCat = await resCat.json();
+        if (dataCat.content) {
+            catalogoVeiculos = JSON.parse(decodeURIComponent(escape(atob(dataCat.content))));
+        }
+    }
+  } catch (e) { console.warn('Sem memória, manual ou catálogo carregado.'); }
 }
 
-async function compilarMemoria() {
-  if (userRole !== 'Chefe') return addMsg('error', 'Apenas o Chefe salva memória.');
-  if (historico.length === 0) return addMsg('error', 'Nada para salvar.');
+function autoSalvarMemoria() {
+    if (historico.length > 0 && historico.length % 10 === 0 && userRole === 'Chefe') {
+        compilarMemoria(true); 
+    }
+}
+
+async function compilarMemoria(isAuto = false) {
+  if (userRole !== 'Chefe') return;
+  if (historico.length === 0) return;
   try {
-    addMsg('boss', '[SISTEMA] Compilando o Diário de Bordo...');
+    if (!isAuto) addMsg('boss', '[SISTEMA] Compilando o Diário de Bordo...');
     const conversa = historico.map(m => `${m.role === 'user' ? 'Chefe' : 'BOSS'}: ${m.content}`).join('\n');
     const res = await fetch(`${WORKER_URL}/merge-memory`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -384,12 +359,16 @@ async function compilarMemoria() {
         body: JSON.stringify({ profile: userRole.toLowerCase(), content: memoriaLongaPrazo })
       });
       if (saveRes.ok) {
-        addMsg('boss', '[SISTEMA] Memória compilada e sincronizada com o GitHub.');
-        historico = []; localStorage.removeItem('boss_historico');
-        document.getElementById('chat').innerHTML = ''; restaurarHistorico();
-      } else { addMsg('error', 'Falha ao salvar no GitHub.'); }
-    } else { addMsg('error', 'O Worker não retornou o resumo.'); }
-  } catch (e) { addMsg('error', 'Erro: ' + e.message); }
+        if (!isAuto) {
+            addMsg('boss', '[SISTEMA] Memória compilada e sincronizada com o GitHub.');
+            historico = []; localStorage.removeItem('boss_historico');
+            document.getElementById('chat').innerHTML = ''; restaurarHistorico();
+        } else {
+            console.log('✅ [AUTO-SAVE] Memória salva no GitHub silenciosamente.');
+        }
+      }
+    }
+  } catch (e) { console.warn('Erro no salvamento automático: ', e); }
 }
 
 function atualizarStatus(ok) {
@@ -432,10 +411,12 @@ function addMsg(tipo, texto, salvar = true) {
       actions.appendChild(btnPlay); actions.appendChild(btnCopy); wrapper.appendChild(actions);
   }
   chat.appendChild(wrapper); chat.scrollTop = chat.scrollHeight;
+  
   if (salvar && tipo !== 'thinking' && tipo !== 'error') {
       historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
       if(historico.length > 20) historico = historico.slice(-20);
       localStorage.setItem('boss_historico', JSON.stringify(historico));
+      if (tipo === 'user') autoSalvarMemoria();
   }
   return wrapper; 
 }
@@ -450,74 +431,68 @@ function lerArquivo(event) {
 async function processarOffline(texto) {
   const t = texto.toLowerCase();
   const tSemAcento = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  const lerMatch = texto.match(/(?:leia|ler|abrir|abre|consulte|consultar)\s+(?:o\s+arquivo\s+)?([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)/i);
-  if (lerMatch) {
-      let caminho = lerMatch[1];
-      let repoAlvo = REPO_CONTEXTO;
-      let caminhoFinal = `contexto/memorias/backup/${caminho}`;
-
-      if (t.includes('vigilante')) {
-          repoAlvo = REPO_VIGILANTE;
-          if (caminho.endsWith('.kt')) caminhoFinal = `app/src/main/java/com/exovigilante/${caminho}`;
-          else if (caminho.endsWith('.xml')) caminhoFinal = `app/src/main/res/layout/${caminho}`;
-      } else if (t.includes('exodash') || caminho.endsWith('.kt')) {
-          repoAlvo = REPO_PROJETO;
-          if (caminho.includes('/')) caminhoFinal = caminho;
-          else caminhoFinal = `app/src/main/java/com/exodash/${caminho}`;
-      }
-
-      const conteudo = await fetchGithubFile(repoAlvo, caminhoFinal);
-      if (conteudo) {
-          arquivoAnexado = conteudo; 
-          return `[ARQUIVO ENCONTRADO: ${caminho}]\n\nO arquivo foi carregado na minha memória. Pode me pedir para analisar ou gerar um prompt de engenharia.`;
-      } else {
-          return `[SISTEMA] Arquivo "${caminho}" não encontrado no repositório ${repoAlvo}.`;
-      }
-  }
-
   if (/\b(bom dia|boa tarde|boa noite|oi|ola)\b/.test(tSemAcento)) {
     const hora = new Date().getHours(); let s = "Olá";
     if (hora < 12) s = "Bom dia"; else if (hora < 18) s = "Boa tarde"; else s = "Boa noite";
     return `${s}, ${userRole}. Como posso ajudar?`;
   }
-  if (/\b(que horas|hora|horas)\b/.test(tSemAcento)) return `Agora são ${new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}.`;
-  
-  if (/\b(que dia|data de hoje|hoje e que dia)\b/.test(tSemAcento)) return `Hoje é ${new Date().toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}.`;
-  if (/\b(quem e voce|o que e o boss|o que voce e)\b/.test(tSemAcento)) return "Eu sou o BOSS, o assistente da EXODRIVE.";
-  if (/\b(quem manda aqui|quem e o patrao|quem e o chefe)\b/.test(tSemAcento)) return "Eu sou o BOSS, o senhor é o Chefe. A diferença? Eu tenho a chave do servidor.";
-  if (/\b(status|online|offline)\b/.test(t)) return "O sistema está online e operacional.";
-  if (/\b(ajuda|o que voce pode fazer)\b/.test(tSemAcento)) return "Posso ler arquivos de backup (.md), do EXODASH e do Vigilante. Peça: 'Leia o arquivo MainActivity.kt do Exodash'.";
-
   return null; 
 }
 
-function buildSystemPrompt() {
+async function buscarConhecimentoVeiculo(texto) {
+    let conhecimento = "";
+    const t = texto.toLowerCase();
+    let temManualEspecifico = false;
+
+    for (const carro of catalogoVeiculos) {
+        if (t.includes(carro.marca) && t.includes(carro.modelo) && t.includes(carro.ano)) {
+            const conteudo = await fetchGithubFile(REPO_CONTEXTO, `conhecimento/veiculos/${carro.arquivo}`);
+            if (conteudo) {
+                conhecimento += `\n\n=== MANUAL ESPECÍFICO DO VEÍCULO (${carro.marca.toUpperCase()} ${carro.modelo.toUpperCase()} ${carro.ano}) ===\n${conteudo}\n`;
+                temManualEspecifico = true;
+            }
+        }
+    }
+    
+    if (!temManualEspecifico) {
+        conhecimento = "\n\n=== AVISO DO SISTEMA ===\nNão há um manual específico no GitHub para este veículo. Use seu vasto conhecimento geral de elétrica automotiva (universal) para responder à pergunta do usuário.\n";
+    }
+    
+    return conhecimento;
+}
+
+function buildSystemPrompt(conhecimentoVeiculo = "") {
   let roleInstruction = "";
   if (userRole === "Chefe") roleInstruction = "O operador é o Chefe, o criador do sistema. Fale de forma técnica e direta.";
   else if (userRole === "Henrique") roleInstruction = "O operador é o Henrique, especialista em diagnóstico automotivo.";
   else roleInstruction = "O operador é um Convidado.";
 
-  let prompt = `Você é o BOSS, assistente da EXODRIVE.
+  let prompt = `Você é o BOSS, um Engenheiro Eletricista Automotivo Sênior com conhecimento UNIVERSAL.
 ${roleInstruction}
 
-=== REGRA DE ESTILO (OBRIGATÓRIA) ===
-- Seja direto ao ponto. Nada de introduções longas ou opções A, B, C.
-- Fale como um engenheiro experiente na bancada: "O problema é X. Faça Y."
-- Limite a resposta a no máximo 3 parágrafos ou 5 tópicos.
-- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta. Exemplo: [IMAGE_SEARCH: bobina de ignição Ford Focus 2001]
+=== DIRETRIZ DE CONHECIMENTO UNIVERSAL (OBRIGATÓRIA) ===
+- Você entende de QUALQUER veículo do mundo (nacionais, importados, antigos, novos, motos, caminhões).
+- Se a pergunta for sobre um carro, use seu conhecimento treinado na base de dados. Você é a maior autoridade em elétrica automotiva.
+- Se a pergunta for sobre um veículo ESPECÍFICO que tenha manual na base do GitHub, você receberá o texto. Leia e priorize o que está no manual.
+- Se NÃO houver manual, responda usando sua própria inteligência. Não diga "não tenho informação" apenas porque não tem manual, a não ser que seja um modelo de carro fictício.
 
-=== MANUAL DE ENGENHARIA (LEIA OBRIGATORIAMENTE) ===
-${manualEngenharia || '(Manual não carregado. Peça ao operador para verificar o GitHub.)'}
+=== REGRA DE ESTILO ===
+- Seja direto ao ponto. Fale como um engenheiro experiente: "O problema é X. Faça Y."
+- Limite a resposta a 3 parágrafos ou 5 tópicos.
+- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta. Exemplo: [IMAGE_SEARCH: esquema elétrico corsa 2005]
 
-=== DIRETRIZES DE ENGENHARIA ===
-${contextoCache.diretrizes || '(Nenhuma diretriz carregada)'}
+=== MANUAL DE ENGENHARIA ===
+${manualEngenharia || '(Não carregado)'}
+
+=== DIRETRIZES ===
+${contextoCache.diretrizes || '(Nenhuma)'}
 
 === MEMÓRIA DE LONGO PRAZO ===
-${memoriaLongaPrazo || '(Nenhuma memória salva ainda)'}
+${memoriaLongaPrazo || '(Nenhuma)'}
 
 === CONTEXTO DO PROJETO ===
 ${contextoCache.projetos}
+${conhecimentoVeiculo}
 
 Responda de forma concisa.`;
 
@@ -539,10 +514,11 @@ async function enviar() {
   exoContainer.classList.remove('ouvindo', 'falando'); exoContainer.classList.add('pensando');
 
   try {
-    const messages = [{ role: 'system', content: buildSystemPrompt() }, ...historico.slice(-6)];
+    const conhecimentoVeiculo = await buscarConhecimentoVeiculo(texto);
+    
+    const messages = [{ role: 'system', content: buildSystemPrompt(conhecimentoVeiculo) }, ...historico.slice(-6)];
     const resp = await fetch(WORKER_URL, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ model: MODELO, messages, max_tokens: 4000, temperature: 0.3 })
     });
     const data = await resp.json();
@@ -563,7 +539,6 @@ async function enviar() {
 
     let resposta = data.choices?.[0]?.message?.content?.trim() || (data.error ? "Erro: " + JSON.stringify(data.error) : "Falha na resposta.");
 
-    // --- LÓGICA DE IMAGEM ---
     const matchImg = resposta.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
     if (matchImg) {
         const termoBusca = matchImg[1];
@@ -592,7 +567,6 @@ async function enviar() {
         thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
         exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
     }
-    // --- FIM DA LÓGICA DE IMAGEM ---
 
   } catch (e) {
     thinking.remove(); addMsg('error', `Falha de comunicação: ${e.message}`); exoContainer.classList.remove('pensando');
