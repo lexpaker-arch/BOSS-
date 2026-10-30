@@ -54,7 +54,12 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 @keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
 
-#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; overflow-anchor: none; }
+#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 25px 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; overflow-anchor: none; }
+#chat::-webkit-scrollbar { width: 8px; }
+#chat::-webkit-scrollbar-track { background: transparent; }
+#chat::-webkit-scrollbar-thumb { background: rgba(0, 255, 204, 0.3); border-radius: 4px; }
+#chat::-webkit-scrollbar-thumb:hover { background: rgba(0, 255, 204, 0.8); }
+
 .msg-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
 .msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; white-space: pre-wrap; flex: 1; transition: 0.3s; }
 .msg.user { border-left-color: #6A7A8A; color: #8A9AAA; } .msg.user::before { content: "USR > "; color: #6A7A8A; font-weight: bold; }
@@ -102,6 +107,10 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; }
 .terminal-output { background: #000; border: 1px solid #27AE60; border-radius: 6px; padding: 10px; font-family: 'Consolas', monospace; font-size: 12px; color: #27AE60; margin-top: 10px; white-space: pre-wrap; }
+
+.log-line { font-size: 11px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-line:first-child { color: #00FFCC; font-weight: bold; }
+.log-line:not(:first-child) { color: #64748B; }
 </style>
 </head>
 <body>
@@ -212,6 +221,17 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
                 <div class="hud-widget-sub">Arquivos Github: <span id="metric-git" style="color:#00FFCC">0</span></div>
                 <div class="hud-widget-sub">Visão AI: <span id="metric-vision" style="color:#F1C40F">0</span></div>
             </div>
+            
+            <div class="hud-widget">
+                <div class="hud-widget-title">LATÊNCIA (API)</div>
+                <div class="hud-widget-val" id="metric-latency" style="font-size:16px;">-- ms</div>
+            </div>
+            <div class="hud-widget">
+                <div class="hud-widget-title">LOG DE ATIVIDADE</div>
+                <div id="action-log">
+                    <div class="log-line">Aguardando comando...</div>
+                </div>
+            </div>
         </div>
 
         <div class="chat-area">
@@ -295,6 +315,17 @@ function atualizarHUD() {
     localStorage.setItem('metric_vision', metricVision);
 }
 atualizarHUD();
+
+function addLog(texto) {
+    const logContainer = document.getElementById('action-log');
+    const novoLog = document.createElement('div');
+    novoLog.className = 'log-line';
+    novoLog.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${texto}`;
+    logContainer.insertBefore(novoLog, logContainer.firstChild);
+    if (logContainer.children.length > 3) {
+        logContainer.removeChild(logContainer.lastChild);
+    }
+}
 
 if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(async (position) => {
@@ -468,13 +499,20 @@ function addMsg(tipo, texto, salvar = true) {
   return { wrapper, div }; 
 }
 
+// CORREÇÃO: Tratamento de erro robusto no fetch do GitHub
 async function fetchGithubFile(repo, path) {
     try {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}`);
         const data = await res.json();
-        if (data.content) return decodeURIComponent(escape(atob(data.content)));
-        return '';
-    } catch (e) { return ''; }
+        if (data.content) {
+            return decodeURIComponent(escape(atob(data.content)));
+        } else if (data.message) {
+            return `[ERRO GITHUB API]: ${data.message}`;
+        }
+        return `[ERRO: Resposta vazia do servidor]`;
+    } catch (e) { 
+        return `[ERRO DE REDE]: ${e.message}`; 
+    }
 }
 
 async function carregarContexto() {
@@ -495,12 +533,14 @@ async function carregarContexto() {
 
     document.getElementById('statusDot').className = 'status-dot ok';
     document.getElementById('statusText').textContent = 'ONLINE';
-  } catch (e) { }
+    addLog('Conexão com GitHub estabelecida.');
+  } catch (e) { addLog('Falha ao carregar contexto.'); }
 }
 
 async function mapearRepositorio() {
     toggleConfig();
     const thinking = addMsg('thinking', 'Mapeando estrutura do repositório...', false);
+    addLog('Iniciando Codebase Mapping...');
     
     try {
         if (repoTree.length === 0) {
@@ -530,11 +570,14 @@ async function mapearRepositorio() {
             contextoCache.memoriaCodigo = mapaMental;
             thinking.wrapper.remove();
             addMsg('boss', '✅ **Repositório Mapeado!**\n\nEu li a estrutura do seu projeto e criei um mapa mental da arquitetura. Agora, sempre que você me perguntar sobre onde fica algo no código, eu já sei a resposta.');
+            addLog('Codebase Mapping concluído com sucesso.');
         } else {
             thinking.wrapper.remove(); addMsg('error', 'Falha ao gerar o mapa mental.');
+            addLog('Falha no Codebase Mapping.');
         }
     } catch (e) {
         thinking.wrapper.remove(); addMsg('error', 'Erro ao mapear repositório: ' + e.message);
+        addLog('Erro no Codebase Mapping.');
     }
 }
 
@@ -559,6 +602,17 @@ ${roleInstruction}
 - Localização atual do usuário: ${localizacaoUsuario}
 - Horário atual: ${new Date().toLocaleString('pt-BR')}
 - Repositório configurado no sistema: ${REPO_PROJETO}
+
+=== CHECKLIST OBRIGATÓRIO DE AUDITORIA (SEU PADRÃO) ===
+Toda vez que for analisar código, cruze obrigatoriamente:
+1. XML x Código (IDs órfãos/invisíveis)
+2. Manifest x Classes (Activities e Services ausentes)
+3. Permissões (Android 12+ e 14+)
+4. Threads/Handlers (Timeouts concorrentes)
+5. Null-safety (lateinit, try/catch)
+6. Dívida técnica (Hardcodes)
+7. UX de escape (Kill switches)
+8. Consistência Elétrica/Automotiva (ex: mapeamento de bateria)
 
 === SUAS FERRAMENTAS DISPONÍVEIS ===
 1. [IMAGE_SEARCH: termo]
@@ -593,6 +647,7 @@ function lerArquivo(event) {
     reader.onload = function(e) { 
         imagemAnexadaBase64 = e.target.result; 
         addMsg('user', `[Foto anexada para análise]`); 
+        addLog('Imagem anexada para visão AI.');
         document.getElementById('input').focus(); 
     };
     reader.readAsDataURL(file); 
@@ -607,6 +662,7 @@ async function enviar() {
   
   const thinking = addMsg('thinking', 'Processando...', false); document.getElementById('send').disabled = true;
   document.getElementById('exoContainer').classList.add('pensando');
+  addLog('Processando comando...');
 
   let contextoVisao = "";
 
@@ -614,6 +670,7 @@ async function enviar() {
     if (imagemAnexadaBase64) {
         thinking.div.innerHTML = 'PROC > Analisando imagem técnica...';
         metricVision++; atualizarHUD();
+        addLog('Enviando imagem para Groq Vision...');
         
         const visResp = await fetch(`${WORKER_URL}/analyze-image`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -638,10 +695,16 @@ async function enviar() {
 
     while (continuarLoop && tentativas < 5) {
         tentativas++;
+        
+        const startTime = performance.now();
         const resp = await fetch(WORKER_URL, { 
             method: 'POST', headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ model: MODELO, messages: currentMessages, max_tokens: 4000, temperature: 0.3 })
         });
+        const endTime = performance.now();
+        const latency = Math.round(endTime - startTime);
+        document.getElementById('metric-latency').textContent = `${latency} ms`;
+        
         const data = await resp.json();
         
         if (data.usage) {
@@ -652,7 +715,6 @@ async function enviar() {
 
         let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
         
-        // --- CORREÇÃO: MÚLTIPLAS LEITURAS COM MATCHALL ---
         const gitReadMatches = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
         
         if (gitReadMatches.length > 0) {
@@ -669,15 +731,16 @@ async function enviar() {
                 }
                 
                 thinking.div.innerHTML = `PROC > Lendo arquivo: ${finalPath}...`;
+                addLog(`Lendo ${finalPath}...`);
                 metricGit++; atualizarHUD();
                 
                 const fileContent = await fetchGithubFile(REPO_PROJETO, finalPath);
                 
-                if (fileContent) {
+                if (fileContent && !fileContent.startsWith('[ERRO')) {
                     allContent += `\n\n=== INÍCIO DO ARQUIVO: ${finalPath} ===\n\`\`\`\n${fileContent}\n\`\`\`\n=== FIM DO ARQUIVO ===\n`;
                     pathsLidos++;
                 } else {
-                    allContent += `\n\n=== INÍCIO DO ARQUIVO: ${finalPath} ===\n[ERRO: Arquivo não encontrado ou inacessível]\n`;
+                    allContent += `\n\n=== INÍCIO DO ARQUIVO: ${finalPath} ===\n${fileContent}\n`;
                 }
             }
             
@@ -691,6 +754,7 @@ async function enviar() {
             metricWeb++; atualizarHUD();
             const termo = matchWeb[1];
             thinking.div.innerHTML = `PROC > Buscando na internet: "${termo}"...`;
+            addLog(`Buscando na web: ${termo}`);
             const searchResp = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
             const searchData = await searchResp.json();
             currentMessages.push({ role: 'assistant', content: resposta });
@@ -724,6 +788,7 @@ async function enviar() {
             const termWrapper = document.createElement('div');
             termWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px; margin-top:10px;">[ Executando código ${lang} no Sandbox... ]</div>`;
             document.getElementById('chat').appendChild(termWrapper);
+            addLog(`Executando código no Sandbox...`);
             
             fetch(`${WORKER_URL}/sandbox`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -732,8 +797,10 @@ async function enviar() {
                 if(sandboxData.run) {
                     const out = sandboxData.run.output || sandboxData.run.stdout || "Sem saída.";
                     termWrapper.innerHTML = `<div class="terminal-output">💻 Saída do Terminal:\n\n${out}</div>`;
+                    addLog(`Sandbox finalizado.`);
                 } else {
                     termWrapper.innerHTML = `<div style="color:#E74C3C;">[ Erro no Sandbox: ${JSON.stringify(sandboxData)} ]</div>`;
+                    addLog(`Erro no Sandbox.`);
                 }
             });
         }
@@ -744,14 +811,17 @@ async function enviar() {
             const imgWrapper = document.createElement('div'); imgWrapper.style.padding = '10px';
             imgWrapper.innerHTML = `<div style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando imagem... ]</div>`;
             document.getElementById('chat').appendChild(imgWrapper);
+            addLog(`Buscando imagem: ${termo}`);
             fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(termo)}`).then(r=>r.json()).then(d => {
                 if(d.url) {
                     const img = document.createElement('img');
                     img.src = d.url; img.className = 'msg-img';
-                    img.onerror = () => { imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Falha ao carregar. O site original bloqueou o acesso. ]</div>`; };
+                    img.onerror = () => { imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Falha ao carregar. O site original bloqueou o acesso. ]</div>`; addLog(`Erro na imagem.`); };
                     imgWrapper.innerHTML = ''; imgWrapper.appendChild(img);
+                    addLog(`Imagem carregada.`);
                 } else {
                     imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Imagem não encontrada. ]</div>`;
+                    addLog(`Imagem não encontrada.`);
                 }
             });
         }
@@ -762,11 +832,13 @@ async function enviar() {
             const vidWrapper = document.createElement('div'); vidWrapper.style.padding = '10px';
             vidWrapper.innerHTML = `<div style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando vídeo... ]</div>`;
             document.getElementById('chat').appendChild(vidWrapper);
+            addLog(`Buscando vídeo: ${termo}`);
             fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(termo)}`).then(r=>r.json()).then(d => {
                 if(d.videos && d.videos.length > 0) {
                     const videoId = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
                     if(videoId) vidWrapper.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId[1]}" allowfullscreen></iframe></div>`;
                     else vidWrapper.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
+                    addLog(`Vídeo carregado.`);
                 }
             });
         }
@@ -777,6 +849,7 @@ async function enviar() {
             merWrapper.innerHTML = `<pre class="mermaid">${mermaidCode}</pre>`;
             document.getElementById('chat').appendChild(merWrapper);
             mermaid.run({ nodes: [merWrapper.querySelector('.mermaid')] });
+            addLog(`Fluxograma renderizado.`);
         }
 
         if (matchGit) {
@@ -786,12 +859,14 @@ async function enviar() {
             const gitWrapper = document.createElement('div'); gitWrapper.style.padding = '10px';
             gitWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px;">[ Commitando no GitHub: ${path}... ]</div>`;
             document.getElementById('chat').appendChild(gitWrapper);
+            addLog(`Commitando ${path}...`);
             
             fetch(`${WORKER_URL}/github-write`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ repo: REPO_PROJETO, path: path, content: content, message: 'Atualização via BOSS AI' })
             }).then(r=>r.json()).then(d => {
                 gitWrapper.innerHTML = d.success ? `<div style="color:#27AE60; font-family:monospace; font-size:12px;">✅ Arquivo ${path} commitado com sucesso!</div>` : `<div style="color:#E74C3C;">[ Falha ao commitar: ${JSON.stringify(d)} ]</div>`;
+                addLog(d.success ? `Commit efetuado.` : `Falha no commit.`);
             });
         }
         
@@ -800,6 +875,7 @@ async function enviar() {
         const msgObj = addMsg('boss', "", true); 
         await efeitoDigitacao(msgObj.div, respostaFinal);
         falarTexto(respostaFinal);
+        addLog(`Resposta enviada.`);
         
         historico.push({ role: 'assistant', content: respostaFinal });
         localStorage.setItem('boss_historico', JSON.stringify(historico));
@@ -807,6 +883,7 @@ async function enviar() {
 
   } catch (e) {
     thinking.wrapper.remove(); addMsg('error', `Falha: ${e.message}`);
+    addLog(`Erro crítico.`);
   } finally {
     document.getElementById('send').disabled = false; input.focus();
     document.getElementById('exoContainer').classList.remove('pensando');
