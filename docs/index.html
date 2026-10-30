@@ -213,6 +213,7 @@ let contextoCache = { projetos: '', diretrizes: '' };
 let memoriaLongaPrazo = '';
 let manualEngenharia = '';
 let catalogoVeiculos = []; 
+let manualBaseEletrica = ''; // NOVO: Variável para guardar o manual base
 let exoContainer = document.getElementById('exoContainer');
 let btnMicFooter = document.getElementById('btnMicFooter');
 let arquivoAnexado = '';
@@ -303,13 +304,15 @@ async function fetchGithubFile(repo, path) {
 
 async function carregarContexto() {
   try {
-    const [projetos, decisoes, diretrizes] = await Promise.all([
+    const [projetos, decisoes, diretrizes, manualBase] = await Promise.all([
       fetchGithubFile(REPO_CONTEXTO, 'contexto/projetos.md'),
       fetchGithubFile(REPO_CONTEXTO, 'contexto/decisoes.md'),
-      fetchGithubFile(REPO_CONTEXTO, 'contexto/diretrizes_ia.md')
+      fetchGithubFile(REPO_CONTEXTO, 'contexto/diretrizes_ia.md'),
+      fetchGithubFile(REPO_CONTEXTO, 'conhecimento/geral/eletrica_automotiva.md') // Carrega o manual base
     ]);
     contextoCache.projetos = projetos + "\n" + decisoes;
     contextoCache.diretrizes = diretrizes;
+    manualBaseEletrica = manualBase; // Salva na variável global
     atualizarStatus(true);
   } catch (e) { atualizarStatus(false); }
 }
@@ -481,7 +484,10 @@ ${roleInstruction}
 - Limite a resposta a 3 parágrafos ou 5 tópicos.
 - Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta. Exemplo: [IMAGE_SEARCH: esquema elétrico corsa 2005]
 
-=== MANUAL DE ENGENHARIA ===
+=== MANUAL DE ENGENHARIA BASE (DIRETRIZES DE BANCADA) ===
+${manualBaseEletrica || '(Não carregado)'}
+
+=== MANUAL DE ENGENHARIA DO PROJETO ===
 ${manualEngenharia || '(Não carregado)'}
 
 === DIRETRIZES ===
