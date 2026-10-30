@@ -54,8 +54,8 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 @keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
 @keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
 
-/* CORREÇÃO 1: Remoção do mask-image para não sumir o texto */
-#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; }
+/* CORREÇÃO: Remoção total do mask-image e ajuste de âncora */
+#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; overflow-anchor: none; }
 .msg-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
 .msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; white-space: pre-wrap; flex: 1; transition: 0.3s; }
 .msg.user { border-left-color: #6A7A8A; color: #8A9AAA; } .msg.user::before { content: "USR > "; color: #6A7A8A; font-weight: bold; }
@@ -378,9 +378,8 @@ function toggleZenMode() { document.getElementById('hudContainer').classList.tog
 
 function autoResize(el) { el.style.height = '40px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
-// CORREÇÃO 2: Substituição forçada de "Chefe" para o userRole atual
 function formatarTexto(texto) {
-    // Força a troca da palavra Chefe pelo título atual
+    // Substituição forçada de "Chefe" para o userRole atual
     const regexChefe = /\b(Chefe|chefe)\b/gi;
     texto = texto.replace(regexChefe, userRole);
 
@@ -402,6 +401,7 @@ function copiarCodigo(btn) {
     setTimeout(() => btn.textContent = 'COPIAR', 2000);
 }
 
+// CORREÇÃO: Motor de digitação seguro que não quebra as tags HTML
 async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
     if (!typewriterAtivo) {
         elemento.innerHTML = formatarTexto(textoFinal);
@@ -410,21 +410,47 @@ async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
         return;
     }
 
-    elemento.innerHTML = '';
-    let i = 0;
+    // Renderiza todo o HTML, mas esconde o texto
+    elemento.innerHTML = formatarTexto(textoFinal);
     const chat = document.getElementById('chat');
-    
+
+    // Encontra todos os nós de texto (ignorando tags)
+    const walk = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    const textNodes = [];
+    while (node = walk.nextNode()) {
+        if (node.nodeValue.trim() !== '') {
+            textNodes.push({ node, text: node.nodeValue });
+            node.nodeValue = ''; // Esvazia o texto para a revelação gradual
+        }
+    }
+
+    if (textNodes.length === 0) return; // Se for só código vazio
+
     return new Promise(resolve => {
+        let currentTextIndex = 0;
+        let currentCharIndex = 0;
+
         const timer = setInterval(() => {
-            elemento.innerHTML = formatarTexto(textoFinal.substring(0, i));
-            const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 150;
-            if (isAtBottom) { chat.scrollTop = chat.scrollHeight; }
-            i += 2;
-            if (i >= textoFinal.length) {
+            if (currentTextIndex >= textNodes.length) {
                 clearInterval(timer);
-                elemento.innerHTML = formatarTexto(textoFinal);
+                // Re-aplica o highlighting no final para garantir
                 elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
                 resolve();
+                return;
+            }
+
+            const currentObj = textNodes[currentTextIndex];
+            currentObj.node.nodeValue += currentObj.text[currentCharIndex];
+            currentCharIndex++;
+
+            // Rolagem inteligente: só desce se estiver perto do final
+            const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 100;
+            if (isAtBottom) { chat.scrollTop = chat.scrollHeight; }
+
+            if (currentCharIndex >= currentObj.text.length) {
+                currentTextIndex++;
+                currentCharIndex = 0;
             }
         }, velocidade);
     });
@@ -859,5 +885,4 @@ if (followUpMode === 'wake') { setTimeout(iniciarWakeWord, 2000); }
 </script>
 </body>
 </html>
-
 
