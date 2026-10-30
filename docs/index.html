@@ -103,9 +103,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .hud-container.theme-black .msg b { color: #00FFCC; }
 
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-
-/* NOVO: Estilo do Container de Vídeo (Responsivo 16:9) */
-.video-container { position: relative; width: 100%; padding-bottom: 56.25%; /* 16:9 */ height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+.video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 </style>
 </head>
@@ -280,7 +278,7 @@ document.body.addEventListener('click', function unlockAudio() {
 }, { once: true });
 
 const TOKEN_GUARD = {
-  maxCharsPerPrompt: 25000, maxRequestsPerMinute: 20, memoryCharLimit: 10000,
+  maxCharsPerPrompt: 35000, maxRequestsPerMinute: 20, memoryCharLimit: 10000,
   requests: JSON.parse(localStorage.getItem('boss_requests') || '[]'),
   limparHistorico() { const now = Date.now(); this.requests = this.requests.filter(t => now - t < 60000); localStorage.setItem('boss_requests', JSON.stringify(this.requests)); },
   podeEnviar() { this.limparHistorico(); if (this.requests.length >= this.maxRequestsPerMinute) { const espera = Math.ceil((60000 - (Date.now() - this.requests[0])) / 1000); return { pode: false, espera }; } return { pode: true }; },
@@ -462,7 +460,7 @@ async function buscarConhecimentoVeiculo(texto) {
     }
     
     if (!temManualEspecifico) {
-        conhecimento = "\n\n=== AVISO DO SISTEMA ===\nNão há um manual específico no GitHub para este veículo. Use seu vasto conhecimento geral de elétrica automotiva (universal) para responder à pergunta do usuário.\n";
+        conhecimento = "\n\n=== AVISO DO SISTEMA ===\nNão há um manual específico no GitHub para este veículo. Use seu vasto conhecimento geral de eletrica automotiva ou acione a busca web se precisar de dados muito específicos.\n";
     }
     
     return conhecimento;
@@ -473,7 +471,7 @@ function buildSystemPrompt(conhecimentoVeiculo = "") {
   if (userRole === "Chefe") {
       roleInstruction = "O operador é o Chefe, o criador do sistema e engenheiro experiente. Fale de forma técnica e direta. Use termos técnicos e valores exatos (Ohms, Volts) sem precisar explicar o básico.";
   } else if (userRole === "Henrique") {
-      roleInstruction = "O operador é o Henrique. Ele NÃO é engenheiro e NÃO entende termos técnicos (como 'splash', 'PWM', 'multiplexação', 'queda de tensão'). Fale SEMPRE em linguagem simples, como se explicasse para o dono do carro. Se for obrigado a usar um termo técnico, explique em seguida com palavras comuns (ex: 'splash, que é a proteção contra água').";
+      roleInstruction = "O operador é o Henrique. Ele NÃO é engenheiro e NÃO entende termos técnicos. Fale SEMPRE em linguagem simples. Se for obrigado a usar um termo técnico, explique com palavras comuns (ex: 'splash, que é a proteção contra água').";
   } else {
       roleInstruction = "O operador é um Convidado. Use linguagem simples e amigável, evitando jargões técnicos.";
   }
@@ -483,18 +481,20 @@ ${roleInstruction}
 
 === DIRETRIZ DE ADAPTAÇÃO DE LINGUAGEM ===
 - Respeite o perfil do operador descrito acima.
-- PORÉM, se o operador pedir explicitamente "detalhes técnicos", "esquema elétrico", "valores de teste" ou disser "pode falar difícil", IGNORE a regra de linguagem simples e forneça os dados técnicos brutos (tabelas, valores e jargões de engenharia) imediatamente.
+- PORÉM, se o operador pedir explicitamente "detalhes técnicos", "esquema elétrico", "valores de teste" ou disser "pode falar difícil", IGNORE a regra de linguagem simples e forneça os dados técnicos brutos imediatamente.
 
-=== DIRETRIZ DE CONHECIMENTO UNIVERSAL ===
+=== DIRETRIZ DE CONHECIMENTO E FERRAMENTAS (MUITO IMPORTANTE) ===
 - Você entende de QUALQUER veículo do mundo.
 - Se a pergunta for sobre um veículo ESPECÍFICO que tenha manual na base, você receberá o texto. Leia e priorize.
-- Se NÃO houver manual, responda usando sua própria inteligência.
+- Se você NÃO souber a resposta exata (ex: um carro muito novo, um esquema elétrico específico de um modelo que não está no seu manual) ou se precisar de dados atualizados da internet, você DEVE usar a ferramenta de busca web.
+- Para usar a busca web, responda EXATAMENTE com a tag: [WEB_SEARCH: seu termo de pesquisa aqui]. Não escreva mais nada, apenas a tag.
+- O sistema fará a busca e te entregará os resultados. Aí sim, você dará a resposta final.
 
 === REGRA DE ESTILO ===
 - Seja direto ao ponto.
 - Limite a resposta a 3 parágrafos ou 5 tópicos.
 - Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta.
-- Se o usuário pedir um vídeo, uma aula ou um tutorial em vídeo, adicione a tag exata [VIDEO_SEARCH: termo de busca] no final da sua resposta. NUNCA responda apenas com a tag. Sempre escreva uma frase antes (ex: "Aqui está um vídeo que pode ajudar:").
+- Se o usuário pedir um vídeo, uma aula ou um tutorial em vídeo, adicione a tag exata [VIDEO_SEARCH: termo de busca] no final da sua resposta. NUNCA responda apenas com a tag. Sempre escreva uma frase antes.
 
 === MANUAL DE ENGENHARIA BASE ===
 ${manualBaseEletrica || '(Não carregado)'}
@@ -518,68 +518,15 @@ Responda de forma concisa.`;
   return TOKEN_GUARD.limitarTexto(prompt);
 }
 
-// Função para extrair ID do YouTube de qualquer URL
 function extrairYouTubeID(url) {
     const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
     const match = url.match(regex);
     return match ? match[1] : null;
 }
 
-async function enviar() {
-  const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto) return;
-  const check = TOKEN_GUARD.podeEnviar(); if (!check.pode) return addMsg('error', `Aguarde ${check.espera}s.`); TOKEN_GUARD.registrar();
-
-  const respostaOffline = await processarOffline(texto);
-  if (respostaOffline) {
-    input.value = ''; autoResize(input); addMsg('user', texto); addMsg('boss', respostaOffline); falarTexto(respostaOffline); return;
-  }
-
-  input.value = ''; autoResize(input); addMsg('user', texto);
-  const thinking = addMsg('thinking', 'Processando...', false); document.getElementById('send').disabled = true;
-  exoContainer.classList.remove('ouvindo', 'falando'); exoContainer.classList.add('pensando');
-
-  try {
-    const conhecimentoVeiculo = await buscarConhecimentoVeiculo(texto);
-    
-    const messages = [{ role: 'system', content: buildSystemPrompt(conhecimentoVeiculo) }, ...historico.slice(-6)];
-    const resp = await fetch(WORKER_URL, { 
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ model: MODELO, messages, max_tokens: 4000, temperature: 0.3 })
-    });
-    const data = await resp.json();
-    
-    if (DEBUG_TOKENS && data.usage) {
-        const u = data.usage;
-        const custoEntrada = (u.prompt_tokens / 1000000) * 0.27;
-        const custoSaida = (u.completion_tokens / 1000000) * 1.10;
-        const custoTotal = custoEntrada + custoSaida;
-
-        console.group('%c[MÉTRICAS DE TOKENS - BOSS]', 'color: #00FFCC; font-weight: bold; font-size: 12px;');
-        console.log(`📥 Prompt (Entrada): ${u.prompt_tokens} tokens`);
-        console.log(`📤 Completion (Saída): ${u.completion_tokens} tokens`);
-        console.log(`📊 Total: ${u.total_tokens} tokens`);
-        console.log(`💰 Custo Estimado DeepSeek: $${custoTotal.toFixed(6)} USD`);
-        console.groupEnd();
-    }
-
-    let resposta = data.choices?.[0]?.message?.content?.trim() || (data.error ? "Erro: " + JSON.stringify(data.error) : "Falha na resposta.");
-
-    // Verifica se a IA pediu uma imagem
-    const matchImg = resposta.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
-    // Verifica se a IA pediu um vídeo
-    const matchVideo = resposta.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
-
-    if (matchImg) {
-        const termoBusca = matchImg[1];
-        resposta = resposta.replace(matchImg[0], '').trim();
-        
-        if (!resposta) resposta = "Aqui está a imagem que você pediu:";
-
-        thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
-        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
-
+function processarMidia(termoBusca, tipo, chat, thinking, resposta) {
+    if (tipo === 'image') {
         const imgId = 'img-' + Date.now();
-        const chat = document.getElementById('chat');
         const imgWrapper = document.createElement('div');
         imgWrapper.style.padding = '10px';
         imgWrapper.innerHTML = `<div id="loading-${imgId}" style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando imagem no servidor... ]</div>`;
@@ -604,18 +551,8 @@ async function enviar() {
                 if(loadingEl) loadingEl.remove();
                 imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Erro de comunicação com o Worker. ]</div>`;
             });
-            
-    } else if (matchVideo) {
-        const termoBusca = matchVideo[1];
-        resposta = resposta.replace(matchVideo[0], '').trim();
-        
-        if (!resposta) resposta = "Aqui está um vídeo que pode ajudar:";
-
-        thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
-        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
-
+    } else if (tipo === 'video') {
         const vidId = 'vid-' + Date.now();
-        const chat = document.getElementById('chat');
         const vidWrapper = document.createElement('div');
         vidWrapper.style.padding = '10px';
         vidWrapper.innerHTML = `<div id="loading-${vidId}" style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando vídeos no servidor... ]</div>`;
@@ -631,7 +568,6 @@ async function enviar() {
                 if(vidData.videos && vidData.videos.length > 0) {
                     const video = vidData.videos[0];
                     const videoId = extrairYouTubeID(video.link);
-                    
                     if (videoId) {
                         vidWrapper.innerHTML = `
                             <div class="video-container">
@@ -653,10 +589,83 @@ async function enviar() {
                 if(loadingEl) loadingEl.remove();
                 vidWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Erro de comunicação com o Worker ao buscar vídeo. ]</div>`;
             });
+    }
+}
 
+async function enviar() {
+  const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto) return;
+  const check = TOKEN_GUARD.podeEnviar(); if (!check.pode) return addMsg('error', `Aguarde ${check.espera}s.`); TOKEN_GUARD.registrar();
+
+  const respostaOffline = await processarOffline(texto);
+  if (respostaOffline) {
+    input.value = ''; autoResize(input); addMsg('user', texto); addMsg('boss', respostaOffline); falarTexto(respostaOffline); return;
+  }
+
+  input.value = ''; autoResize(input); addMsg('user', texto);
+  const thinking = addMsg('thinking', 'Processando...', false); document.getElementById('send').disabled = true;
+  exoContainer.classList.remove('ouvindo', 'falando'); exoContainer.classList.add('pensando');
+
+  try {
+    const conhecimentoVeiculo = await buscarConhecimentoVeiculo(texto);
+    const systemPrompt = buildSystemPrompt(conhecimentoVeiculo);
+    let currentMessages = [{ role: 'system', content: systemPrompt }, ...historico.slice(-6)];
+    
+    let continuarLoop = true;
+    let tentativasWeb = 0;
+    let respostaFinal = "";
+
+    while (continuarLoop) {
+        const resp = await fetch(WORKER_URL, { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ model: MODELO, messages: currentMessages, max_tokens: 4000, temperature: 0.3 })
+        });
+        const data = await resp.json();
+        
+        if (DEBUG_TOKENS && data.usage) {
+            const u = data.usage;
+            console.log(`%c[MÉTRICAS] Prompt: ${u.prompt_tokens} | Saída: ${u.completion_tokens}`, 'color: #00FFCC;');
+        }
+
+        let resposta = data.choices?.[0]?.message?.content?.trim() || "Falha na resposta.";
+        
+        const matchWeb = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
+        if (matchWeb && tentativasWeb < 1) { 
+            tentativasWeb++;
+            const termoBusca = matchWeb[1];
+            thinking.innerHTML = `PROC > Buscando na internet por: "${termoBusca}"...`;
+            
+            const searchResp = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termoBusca)}`);
+            const searchData = await searchResp.json();
+            
+            currentMessages.push({ role: 'assistant', content: resposta });
+            currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui estão os resultados da busca na web que você pediu:\n\n${searchData.results}\n\nCom base nesses dados, responda à pergunta original do usuário.` });
+            
+        } else {
+            respostaFinal = resposta;
+            continuarLoop = false;
+        }
+    }
+
+    const matchImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
+    const matchVideo = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
+
+    if (matchImg) {
+        const termoBusca = matchImg[1];
+        respostaFinal = respostaFinal.replace(matchImg[0], '').trim();
+        if (!respostaFinal) respostaFinal = "Aqui está a imagem que você pediu:";
+        thinking.remove(); addMsg('boss', respostaFinal); 
+        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(respostaFinal);
+        processarMidia(termoBusca, 'image', document.getElementById('chat'), thinking, respostaFinal);
+    } else if (matchVideo) {
+        const termoBusca = matchVideo[1];
+        respostaFinal = respostaFinal.replace(matchVideo[0], '').trim();
+        if (!respostaFinal) respostaFinal = "Aqui está um vídeo que pode ajudar:";
+        thinking.remove(); addMsg('boss', respostaFinal); 
+        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(respostaFinal);
+        processarMidia(termoBusca, 'video', document.getElementById('chat'), thinking, respostaFinal);
     } else {
-        thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
-        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
+        thinking.remove(); addMsg('boss', respostaFinal); 
+        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(respostaFinal);
     }
 
   } catch (e) {
@@ -695,8 +704,6 @@ function iniciarEscuta(isAuto = false) {
   try { reconhecimento.start(); } catch(e){}
 }
 
-function toggleGravacao() { iniciarEscuta(false); }
-
 function limparTextoParaTTS(textoOriginal) {
     let texto = textoOriginal;
     texto = texto.replace(/```[\s\S]*?```/g, ' (código omitido) ');
@@ -713,47 +720,25 @@ function falarTexto(textoOriginal) {
     if (!('speechSynthesis' in window)) { exoContainer.classList.remove('falando'); return; }
     
     const textoLimpo = limparTextoParaTTS(textoOriginal);
-    
-    if (textoLimpo.length < 10) {
-        exoContainer.classList.remove('falando');
-        return;
-    }
-
+    if (textoLimpo.length < 10) { exoContainer.classList.remove('falando'); return; }
     window.speechSynthesis.cancel();
-    
     const utterance = new SpeechSynthesisUtterance(textoLimpo);
-    utterance.lang = 'pt-BR';
-    utterance.rate = vozRate;
-    utterance.pitch = vozPitch;
-    utterance.volume = 1.0;
+    utterance.lang = 'pt-BR'; utterance.rate = vozRate; utterance.pitch = vozPitch; utterance.volume = 1.0;
 
     const iniciarFala = () => {
         const voices = window.speechSynthesis.getVoices();
-        if (vozNome) {
-            const escolhida = voices.find(v => v.name === vozNome);
-            if (escolhida) utterance.voice = escolhida;
-        } else {
-            let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
-            if (ptVoice) utterance.voice = ptVoice;
-        }
-
+        if (vozNome) { const escolhida = voices.find(v => v.name === vozNome); if (escolhida) utterance.voice = escolhida; }
+        else { let ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR')); if (ptVoice) utterance.voice = ptVoice; }
         utterance.onstart = () => { exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); };
-        utterance.onend = () => {
-            exoContainer.classList.remove('falando');
-            if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800);
-        };
+        utterance.onend = () => { exoContainer.classList.remove('falando'); if (followUpAtivo) setTimeout(() => { iniciarEscuta(true); }, 800); };
         utterance.onerror = (e) => { console.error("Erro TTS:", e); exoContainer.classList.remove('falando'); };
-        
         window.speechSynthesis.speak(utterance);
     };
 
-    if (window.speechSynthesis.getVoices().length === 0) {
-        window.speechSynthesis.onvoiceschanged = () => { iniciarFala(); window.speechSynthesis.onvoiceschanged = null; };
-    } else { iniciarFala(); }
+    if (window.speechSynthesis.getVoices().length === 0) { window.speechSynthesis.onvoiceschanged = () => { iniciarFala(); window.speechSynthesis.onvoiceschanged = null; }; } else { iniciarFala(); }
 }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
-
 carregarContexto();
 carregarMemoria();
 restaurarHistorico();
