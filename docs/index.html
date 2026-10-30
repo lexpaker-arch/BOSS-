@@ -73,7 +73,6 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
 
-/* FOOTER ALINHADO À ESQUERDA COM BY ALEX NA ESQUERDA */
 footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: flex-start; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; flex-shrink: 0; }
 .by-alex { position: absolute; left: 20px; top: 10px; font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
 @media (min-width: 900px) { .by-alex { display: block; } }
@@ -251,7 +250,7 @@ if (userRole === 'Chefe') userRole = 'Patrão';
 
 let layoutModo = localStorage.getItem('boss_layout') || 'orb';
 let temaModo = localStorage.getItem('boss_theme') || 'default';
-let followUpMode = localStorage.getItem('boss_followup') || 'off'; // 'off', 'on', 'wake'
+let followUpMode = localStorage.getItem('boss_followup') || 'off'; 
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
@@ -289,12 +288,10 @@ function atualizarHUD() {
 }
 atualizarHUD();
 
-// GEOLOCALIZAÇÃO
 if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(async (position) => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-        document.getElementById('metric-location').textContent = "Buscando cidade...";
         try {
             const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=pt`);
             const data = await res.json();
@@ -303,12 +300,8 @@ if ("geolocation" in navigator) {
         } catch(e) {
             document.getElementById('metric-location').textContent = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
         }
-    }, (err) => {
-        document.getElementById('metric-location').textContent = "Permissão Negada";
-    });
-} else {
-    document.getElementById('metric-location').textContent = "Não Suportado";
-}
+    }, (err) => { document.getElementById('metric-location').textContent = "Permissão Negada"; });
+} else { document.getElementById('metric-location').textContent = "Não Suportado"; }
 
 function atualizarRelogio() {
     const agora = new Date();
@@ -532,6 +525,11 @@ ${roleInstruction}
 - Use [RUN_CODE: linguagem | código] APENAS para cálculos ou execução.
 - **Para Diagnósticos:** Sempre crie um fluxograma usando a sintaxe Mermaid (bloco \`\`\`mermaid ... \`\`\`). Exemplo: \`\`\`mermaid\ngraph TD\nA[Início] --> B{Testar Vácuo}\nB -->|Baixo| C[Vazamento]\nB -->|Normal| D[Testar IAC]\n\`\`\`.
 
+=== ACESSO AO CÓDIGO-FONTE (INICIATIVA) ===
+- **VOCÊ TEM AUTORIZAÇÃO TOTAL E PERMANENTE para LER qualquer arquivo do repositório.**
+- Se o usuário pedir para analisar um layout, código ou arquivo, NUNCA peça permissão. NUNCA diga "me autorize a ler". 
+- **Ação:** Imediatamente gere a tag [GITHUB_READ: caminho/exato/do/arquivo.extensao] (Exemplo: [GITHUB_READ: app/src/main/res/layout/activity_main.xml]). O sistema vai puxar o arquivo e te entregar o conteúdo silenciosamente. Você então fará a análise e responderá.
+
 === MANUAL BASE AUTOMOTIVO ===
 ${manualBaseEletrica}
 
@@ -609,6 +607,26 @@ async function enviar() {
 
         let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
         
+        // LÓGICA DE LEITURA AUTOMÁTICA DO GITHUB
+        const matchGitRead = resposta.match(/\[GITHUB_READ:\s*(.*?)\]/);
+        if (matchGitRead && tentativas < 3) {
+            const path = matchGitRead[1].trim();
+            thinking.div.innerHTML = `PROC > Lendo arquivo: ${path}...`;
+            metricGit++; atualizarHUD();
+            
+            const fileContent = await fetchGithubFile(REPO_PROJETO, path);
+            
+            if (fileContent) {
+                currentMessages.push({ role: 'assistant', content: resposta });
+                currentMessages.push({ role: 'user', content: `[SISTEMA]: Aqui está o conteúdo do arquivo ${path}:\n\n\`\`\`\n${fileContent}\n\`\`\`\n\nAgora, faça a análise solicitada pelo usuário.` });
+                continue; // Pula para a próxima iteração do while para a IA responder com o código em mãos
+            } else {
+                currentMessages.push({ role: 'assistant', content: resposta });
+                currentMessages.push({ role: 'user', content: `[SISTEMA]: Erro ao ler o arquivo ${path}. O arquivo pode não existir nesse caminho.` });
+                continue;
+            }
+        }
+
         const matchWeb = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
         if (matchWeb && tentativas === 1) { 
             metricWeb++; atualizarHUD();
@@ -738,38 +756,22 @@ async function enviar() {
 
 let reconhecimento; let gravando = false; let autoListenTimer = null; let wakeWordRec;
 
-// Lógica de Wake Word
 function iniciarWakeWord() {
     if (!('webkitSpeechRecognition' in window)) return;
     wakeWordRec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    wakeWordRec.lang = 'pt-BR';
-    wakeWordRec.continuous = true;
-    wakeWordRec.interimResults = true;
+    wakeWordRec.lang = 'pt-BR'; wakeWordRec.continuous = true; wakeWordRec.interimResults = true;
     
     wakeWordRec.onresult = (event) => {
         let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript.toLowerCase();
-        }
-        
+        for (let i = event.resultIndex; i < event.results.length; i++) { transcript += event.results[i][0].transcript.toLowerCase(); }
         if (transcript.includes("boss")) {
-            wakeWordRec.stop(); // Para de ouvir a wake word
-            falarTexto("Estou ouvindo.");
-            // Espera a voz terminar e abre o microfone para o comando
+            wakeWordRec.stop(); falarTexto("Estou ouvindo.");
             setTimeout(() => { iniciarEscuta(false); }, 1500);
         }
     };
     
-    wakeWordRec.onend = () => {
-        if (followUpMode === 'wake' && !gravando) {
-            try { wakeWordRec.start(); } catch(e){} // Reinicia para continuar ouvindo
-        }
-    };
-    
-    wakeWordRec.onerror = (e) => {
-        if (e.error === 'not-allowed') { console.warn('Microfone negado.'); }
-    };
-
+    wakeWordRec.onend = () => { if (followUpMode === 'wake' && !gravando) { try { wakeWordRec.start(); } catch(e){} } };
+    wakeWordRec.onerror = (e) => { if (e.error === 'not-allowed') { console.warn('Microfone negado.'); } };
     try { wakeWordRec.start(); } catch(e){}
 }
 
@@ -777,23 +779,16 @@ function pararEscuta() {
     if (reconhecimento) { try { reconhecimento.stop(); } catch(e){} }
     gravando = false; document.getElementById('exoContainer').classList.remove('ouvindo'); 
     if (document.getElementById('btnMicFooter')) document.getElementById('btnMicFooter').style.background = 'transparent';
-    
-    // Se estiver no modo Wake Word e não estiver falando, reinicia a escuta da palavra mágica
-    if (followUpMode === 'wake' && !window.speechSynthesis.speaking) {
-        setTimeout(() => { if(followUpMode === 'wake') iniciarWakeWord(); }, 1000);
-    }
+    if (followUpMode === 'wake' && !window.speechSynthesis.speaking) { setTimeout(() => { if(followUpMode === 'wake') iniciarWakeWord(); }, 1000); }
 }
 
 function iniciarEscuta(isAuto = false) {
   if (gravando) { pararEscuta(); return; }
-  
-  if (followUpMode === 'wake' && wakeWordRec) { try { wakeWordRec.stop(); } catch(e){} } // Para a wake word enquanto ouve o comando
-  
+  if (followUpMode === 'wake' && wakeWordRec) { try { wakeWordRec.stop(); } catch(e){} }
   if (!('webkitSpeechRecognition' in window)) return alert("Navegador incompatível.");
   
   reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  reconhecimento.lang = 'pt-BR';
-  reconhecimento.interimResults = false;
+  reconhecimento.lang = 'pt-BR'; reconhecimento.interimResults = false;
 
   reconhecimento.onstart = () => {
     gravando = true; document.getElementById('exoContainer').classList.remove('pensando', 'falando'); document.getElementById('exoContainer').classList.add('ouvindo');
@@ -801,12 +796,7 @@ function iniciarEscuta(isAuto = false) {
     if (isAuto) { clearTimeout(autoListenTimer); autoListenTimer = setTimeout(() => { if (gravando) pararEscuta(); }, 5000); }
   };
 
-  reconhecimento.onresult = (e) => { 
-      clearTimeout(autoListenTimer); 
-      document.getElementById('input').value = e.results[0][0].transcript; 
-      pararEscuta(); 
-      enviar(); 
-  };
+  reconhecimento.onresult = (e) => { clearTimeout(autoListenTimer); document.getElementById('input').value = e.results[0][0].transcript; pararEscuta(); enviar(); };
   reconhecimento.onerror = () => { clearTimeout(autoListenTimer); pararEscuta(); };
   reconhecimento.onend = () => { gravando = false; document.getElementById('exoContainer').classList.remove('ouvindo'); if (document.getElementById('btnMicFooter')) document.getElementById('btnMicFooter').style.background = 'transparent'; };
   try { reconhecimento.start(); } catch(e){}
@@ -823,9 +813,7 @@ function falarTexto(texto) {
     if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; }
     
     u.onend = () => { 
-        // Se for Follow-up normal (5s)
         if (followUpMode === 'on') setTimeout(() => { iniciarEscuta(true); }, 800); 
-        // Se for Wake Word, volta a ouvir a palavra mágica
         if (followUpMode === 'wake') setTimeout(() => { iniciarWakeWord(); }, 1000);
     };
     window.speechSynthesis.speak(u);
@@ -835,10 +823,10 @@ function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com t
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
 
-// Inicializa o sistema
 carregarContexto();
 if (followUpMode === 'wake') { setTimeout(iniciarWakeWord, 2000); }
 </script>
 </body>
 </html>
+
 
