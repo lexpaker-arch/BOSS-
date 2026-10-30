@@ -15,7 +15,7 @@ body { background-color: #05070A; background-image: linear-gradient(rgba(0, 255,
 .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; } .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
 /* CABEÇALHO CENTRALIZADO */
-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 255, 204, 0.1); z-index: 10; background: linear-gradient(90deg, rgba(0,255,204,0.05) 0%, transparent 50%); transition: 0.3s; position: relative; }
+header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 255, 204, 0.1); z-index: 10; background: linear-gradient(90deg, rgba(0,255,204,0.05) 0%, transparent 50%); transition: 0.3s; position: relative; flex-shrink: 0; }
 .brand-left { display: flex; flex-direction: column; }
 .exo-system { color: #00FFCC; font-size: 10px; font-weight: bold; letter-spacing: 0.3em; opacity: 0.7; transition: 0.3s; }
 .brand-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
@@ -26,7 +26,12 @@ header { padding: 15px 20px; display: flex; justify-content: space-between; alig
 .status-dot.ok { background: #27AE60; box-shadow: 0 0 8px #27AE60; }
 .status-dot.err { background: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
 
-/* LAYOUT PRINCIPAL: HUD NA ESQUERDA, CHAT NA DIREITA */
+/* ZEN MODE */
+.hud-container.zen-mode .side-hud { display: none !important; }
+.hud-container.zen-mode .exo-container { display: none !important; }
+.hud-container.zen-mode header { background: transparent; border-bottom: 1px solid rgba(0, 255, 204, 0.05); }
+
+/* LAYOUT PRINCIPAL */
 main { flex: 1; display: flex; flex-direction: row; position: relative; overflow: hidden; transition: 0.3s; width: 100%; }
 .chat-area { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
 .side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-right: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 15px; font-family: monospace; order: -1; }
@@ -71,8 +76,8 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
 
-/* RODAPÉ CENTRALIZADO E COM BY ALEX */
-footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: center; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; }
+/* FOOTER CORRIGIDO - CENTRALIZADO COM O CHAT */
+footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: center; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; flex-shrink: 0; }
 .footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: center; }
 .btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .btn-attach:hover { border-color: #00FFCC; color: #00FFCC; }
@@ -80,7 +85,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 #input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 40px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
-.by-alex { position: absolute; left: 20px; bottom: 15px; font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
+.by-alex { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
 @media (min-width: 900px) { .by-alex { display: block; } }
 
 .config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 280px; max-height: 80vh; overflow-y: auto; }
@@ -91,6 +96,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 15px;}
 .btn-clear:hover { background: rgba(231, 76, 60, 0.1); }
 .btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; }
+.btn-save:hover { background: rgba(0,255,204,0.1); }
 
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
@@ -113,6 +119,9 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
         </div>
 
         <div class="hud-status">
+            <div class="status-box" onclick="toggleZenMode()" style="cursor:pointer; margin-right:10px;" title="Modo Foco">
+                <span style="font-size:16px;">⛶</span>
+            </div>
             <div class="status-box">
                 <div id="statusDot" class="status-dot"></div>
                 <span id="statusText">OFFLINE</span>
@@ -132,11 +141,6 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
         <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
-      <label>INTERFACE VISUAL</label>
-      <select id="layoutSelect" onchange="mudarLayout()">
-        <option value="orb">JARVIS (Aro Central)</option>
-        <option value="chat">DISCRETO (Chat Linear)</option>
-      </select>
       <label>EFEITO DE DIGITAÇÃO (TYPEWRITER)</label>
       <select id="typewriterToggle" onchange="mudarTypewriter()">
         <option value="on">Ativado (Efeito Máquina)</option>
@@ -149,6 +153,8 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
       </select>
       <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
       <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
+      
+      <button class="btn-save" style="border-color:#F1C40F; color:#F1C40F;" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO (CODEBASE)</button>
       <button class="btn-save" onclick="testarVoz()">🔊 TESTAR VOZ</button>
       <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
     </div>
@@ -162,26 +168,21 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
                     <div id="internet-text" style="color:#00FFCC; font-weight:bold;">ONLINE</div>
                 </div>
             </div>
-            
-            <!-- NOVOS WIDGETS: USUÁRIOS E HORÁRIO -->
             <div class="hud-widget">
                 <div class="hud-widget-title">OPERADORES ONLINE</div>
                 <div class="hud-widget-val" id="metric-users" style="color:#F1C40F;">1</div>
                 <div class="hud-widget-sub">Conectados agora</div>
             </div>
-            
             <div class="hud-widget">
                 <div class="hud-widget-title">HORÁRIO LOCAL</div>
                 <div class="hud-widget-val" id="metric-time" style="color:#E8EDF2;">--:--:--</div>
                 <div class="hud-widget-sub" id="metric-date">---</div>
             </div>
-
             <div class="hud-widget">
                 <div class="hud-widget-title">CONSUMO DE TOKENS</div>
                 <div class="hud-widget-val" id="metric-tokens">0</div>
                 <div class="hud-widget-sub">Custo: $<span id="metric-cost">0.000000</span></div>
             </div>
-            
             <div class="hud-widget">
                 <div class="hud-widget-title">FERRAMENTAS USADAS</div>
                 <div class="hud-widget-sub">Buscas Web: <span id="metric-web" style="color:#00FFCC">0</span></div>
@@ -200,6 +201,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     </main>
 
     <footer>
+        <div class="by-alex">BY ALEX. P</div>
         <div class="footer-inputs">
             <input type="file" id="fileInput" style="display:none" onchange="lerArquivo(event)">
             <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar arquivo local">📎</button>
@@ -207,7 +209,6 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
             <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
         </div>
-        <div class="by-alex">BY ALEX. P</div>
     </footer>
 </div>
 
@@ -219,20 +220,19 @@ mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
 const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
+const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
-// --- INICIALIZAÇÃO PATRÃO ---
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
-if (userRole === 'Chefe') userRole = 'Patrão'; // Converte usuários antigos
+if (userRole === 'Chefe') userRole = 'Patrão';
 
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let typewriterAtivo = localStorage.getItem('boss_typewriter') !== 'off';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
-let contextoCache = { projetos: '', diretrizes: '' }; 
+let contextoCache = { projetos: '', diretrizes: '', memoriaCodigo: '' }; 
 let manualBaseEletrica = ''; 
 
-// Variáveis de Telemetria
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricCost = parseFloat(localStorage.getItem('metric_cost')) || 0;
 let metricWeb = parseInt(localStorage.getItem('metric_web')) || 0;
@@ -256,7 +256,6 @@ function atualizarHUD() {
 }
 atualizarHUD();
 
-// Relógio e Data
 function atualizarRelogio() {
     const agora = new Date();
     document.getElementById('metric-time').textContent = agora.toLocaleTimeString('pt-BR');
@@ -265,9 +264,8 @@ function atualizarRelogio() {
 setInterval(atualizarRelogio, 1000);
 atualizarRelogio();
 
-// Simulador de Usuários Online (Flutuante)
 function simularUsuarios() {
-    const base = 1 + Math.floor(Math.random() * 3); // Varia entre 1 e 3
+    const base = 1 + Math.floor(Math.random() * 3);
     document.getElementById('metric-users').textContent = base;
 }
 setInterval(simularUsuarios, 15000);
@@ -295,6 +293,11 @@ function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('ra
 function mudarTypewriter() { typewriterAtivo = document.getElementById('typewriterToggle').value === 'on'; localStorage.setItem('boss_typewriter', typewriterAtivo ? 'on' : 'off'); }
 function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
 function limparHistorico() { if(confirm("Apagar histórico local?")) { historico = []; localStorage.removeItem('boss_historico'); document.getElementById('chat').innerHTML = ''; addMsg('boss', 'Sistema BOSS reiniciado.'); toggleConfig(); } }
+
+function toggleZenMode() {
+    document.getElementById('hudContainer').classList.toggle('zen-mode');
+    toggleConfig(); // Fecha o menu se estiver aberto
+}
 
 function autoResize(el) { el.style.height = '40px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
@@ -375,15 +378,58 @@ async function fetchGithubFile(repo, path) {
 
 async function carregarContexto() {
   try {
-    const [projetos, manualBase] = await Promise.all([
+    const [projetos, manualBase, memoriaCodigo] = await Promise.all([
       fetchGithubFile(REPO_CONTEXTO, 'contexto/projetos.md'),
-      fetchGithubFile(REPO_CONTEXTO, 'conhecimento/geral/eletrica_automotiva.md')
+      fetchGithubFile(REPO_CONTEXTO, 'conhecimento/geral/eletrica_automotiva.md'),
+      fetchGithubFile(REPO_CONTEXTO, 'contexto/memoria_codigo.md')
     ]);
     contextoCache.projetos = projetos;
     manualBaseEletrica = manualBase;
+    contextoCache.memoriaCodigo = memoriaCodigo;
     document.getElementById('statusDot').className = 'status-dot ok';
     document.getElementById('statusText').textContent = 'ONLINE';
   } catch (e) { }
+}
+
+async function mapearRepositorio() {
+    toggleConfig();
+    const thinking = addMsg('thinking', 'Mapeando estrutura do repositório...', false);
+    
+    try {
+        const res = await fetch(`${WORKER_URL}/github-tree?repo=${REPO_PROJETO}`);
+        const data = await res.json();
+        
+        if(data.tree) {
+            const arquivos = data.tree.filter(f => f.type === 'blob').map(f => f.path).join('\n');
+            thinking.div.innerHTML = 'PROC > Analisando arquivos e criando mapa mental com IA...';
+            
+            const prompt = `Aqui está a lista de arquivos do meu projeto:\n\n${arquivos}\n\nCrie um "Mapa de Arquitetura" resumido, explicando onde fica cada parte (ex: "A interface fica em res/layout", "A lógica em MainActivity.kt"). Seja conciso e técnico. Esse texto será salvo como memória permanente para você entender o projeto no futuro.`;
+            
+            const resp = await fetch(WORKER_URL, { 
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ model: MODELO, messages: [{ role: 'user', content: prompt }], max_tokens: 2000, temperature: 0.2 })
+            });
+            const iaData = await resp.json();
+            const mapaMental = iaData.choices?.[0]?.message?.content?.trim();
+            
+            if (mapaMental) {
+                thinking.div.innerHTML = 'PROC > Salvando mapa mental no GitHub...';
+                await fetch(`${WORKER_URL}/github-write`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repo: REPO_CONTEXTO, path: 'contexto/memoria_codigo.md', content: mapaMental, message: 'Mapeamento de Código via BOSS AI' })
+                });
+                contextoCache.memoriaCodigo = mapaMental;
+                thinking.wrapper.remove();
+                addMsg('boss', '✅ **Repositório Mapeado!**\n\nEu li a estrutura do seu projeto e criei um mapa mental da arquitetura. Agora, sempre que você me perguntar sobre onde fica algo no código, eu já sei a resposta. O arquivo `memoria_codigo.md` foi salvo no GitHub.');
+            } else {
+                thinking.wrapper.remove(); addMsg('error', 'Falha ao gerar o mapa mental.');
+            }
+        } else {
+            thinking.wrapper.remove(); addMsg('error', 'Não foi possível ler a árvore do repositório.');
+        }
+    } catch (e) {
+        thinking.wrapper.remove(); addMsg('error', 'Erro ao mapear repositório: ' + e.message);
+    }
 }
 
 function buildSystemPrompt() {
@@ -406,9 +452,14 @@ ${roleInstruction}
 - Use [WEB_SEARCH: termo] APENAS se você precisar de dados reais da internet que não sabe de cabeça.
 - Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se o usuário pedir para criar/salvar um arquivo.
 
-=== MANUAL BASE ===
+=== MANUAL BASE AUTOMOTIVO ===
 ${manualBaseEletrica}
+
+=== CONTEXTO DO PROJETO ===
 ${contextoCache.projetos}
+
+=== MAPA MENTAL DO CÓDIGO (ARQUITETURA) ===
+${contextoCache.memoriaCodigo || '(Nenhum mapa mental gerado ainda. Vá em ⚙ e clique em MAPEAR REPOSITÓRIO.)'}
 
 Seja direto.`.trim();
 }
@@ -523,7 +574,7 @@ async function enviar() {
             
             fetch(`${WORKER_URL}/github-write`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repo: 'lexpaker-arch/EXODASH--Local', path: path, content: content, message: 'Atualização via BOSS AI' })
+                body: JSON.stringify({ repo: REPO_PROJETO, path: path, content: content, message: 'Atualização via BOSS AI' })
             }).then(r=>r.json()).then(d => {
                 gitWrapper.innerHTML = d.success ? `<div style="color:#27AE60; font-family:monospace; font-size:12px;">✅ Arquivo ${path} commitado com sucesso!</div>` : `<div style="color:#E74C3C;">[ Falha ao commitar: ${JSON.stringify(d)} ]</div>`;
             });
