@@ -128,6 +128,9 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
 .hud-container.theme-black .msg.boss { background: #111111; color: #E8EDF2; border: 1px solid #222; }
 .hud-container.theme-black .msg.user { background: #008B8B; color: #FFFFFF; }
 .hud-container.theme-black .msg b { color: #00FFCC; }
+
+/* --- NOVO: ESTILO DA IMAGEM --- */
+.msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 </style>
 </head>
 <body>
@@ -502,6 +505,7 @@ ${roleInstruction}
 - Seja direto ao ponto. Nada de introduções longas ou opções A, B, C.
 - Fale como um engenheiro experiente na bancada: "O problema é X. Faça Y."
 - Limite a resposta a no máximo 3 parágrafos ou 5 tópicos.
+- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta. Exemplo: [IMAGE_SEARCH: bobina de ignição Ford Focus 2001]
 
 === MANUAL DE ENGENHARIA (LEIA OBRIGATORIAMENTE) ===
 ${manualEngenharia || '(Manual não carregado. Peça ao operador para verificar o GitHub.)'}
@@ -543,9 +547,6 @@ async function enviar() {
     });
     const data = await resp.json();
     
-    // ═══════════════════════════════════════════════════════
-    // PARÂMETRO DE MEDIÇÃO DE TOKENS (Log no Console)
-    // ═══════════════════════════════════════════════════════
     if (DEBUG_TOKENS && data.usage) {
         const u = data.usage;
         const custoEntrada = (u.prompt_tokens / 1000000) * 0.27;
@@ -559,12 +560,40 @@ async function enviar() {
         console.log(`💰 Custo Estimado DeepSeek: $${custoTotal.toFixed(6)} USD`);
         console.groupEnd();
     }
-    // ═══════════════════════════════════════════════════════
 
     let resposta = data.choices?.[0]?.message?.content?.trim() || (data.error ? "Erro: " + JSON.stringify(data.error) : "Falha na resposta.");
 
-    thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
-    exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta); 
+    // --- LÓGICA DE IMAGEM ---
+    const matchImg = resposta.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
+    if (matchImg) {
+        const termoBusca = matchImg[1];
+        resposta = resposta.replace(matchImg[0], '').trim();
+        
+        thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
+        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
+
+        const imgId = 'img-' + Date.now();
+        const chat = document.getElementById('chat');
+        const imgWrapper = document.createElement('div');
+        imgWrapper.style.padding = '10px';
+        imgWrapper.innerHTML = `<img id="${imgId}" src="https://via.placeholder.com/400x200/05070A/00FFCC?text=Buscando+Imagem..." class="msg-img">`;
+        chat.appendChild(imgWrapper);
+        chat.scrollTop = chat.scrollHeight;
+
+        fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(termoBusca)}`)
+            .then(r => r.json())
+            .then(imgData => {
+                if(imgData.url) document.getElementById(imgId).src = imgData.url;
+                else document.getElementById(imgId).src = 'https://via.placeholder.com/400x200/05070A/E74C3C?text=Imagem+nao+encontrada';
+            })
+            .catch(() => { document.getElementById(imgId).src = 'https://via.placeholder.com/400x200/05070A/E74C3C?text=Erro+na+Busca'; });
+            
+    } else {
+        thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
+        exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
+    }
+    // --- FIM DA LÓGICA DE IMAGEM ---
+
   } catch (e) {
     thinking.remove(); addMsg('error', `Falha de comunicação: ${e.message}`); exoContainer.classList.remove('pensando');
   } finally {
