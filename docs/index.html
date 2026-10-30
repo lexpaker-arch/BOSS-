@@ -13,9 +13,12 @@ body { background-color: #05070A; background-image: linear-gradient(rgba(0, 255,
 .corner { position: absolute; width: 25px; height: 25px; border: 2px solid #00FFCC; z-index: 50;}
 .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; } .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
 .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; } .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 255, 204, 0.1); z-index: 10; background: linear-gradient(90deg, rgba(0,255,204,0.05) 0%, transparent 50%); transition: 0.3s; }
+
+/* CABEÇALHO CENTRALIZADO */
+header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 255, 204, 0.1); z-index: 10; background: linear-gradient(90deg, rgba(0,255,204,0.05) 0%, transparent 50%); transition: 0.3s; position: relative; }
 .brand-left { display: flex; flex-direction: column; }
 .exo-system { color: #00FFCC; font-size: 10px; font-weight: bold; letter-spacing: 0.3em; opacity: 0.7; transition: 0.3s; }
+.brand-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
 .boss-title { color: #FFFFFF; font-size: 22px; font-weight: 900; letter-spacing: 0.5em; text-shadow: 0 0 10px rgba(0,255,204,0.3); transition: 0.3s; }
 .hud-status { display: flex; gap: 15px; align-items: center; font-family: monospace; font-size: 11px; letter-spacing: 0.1em; }
 .status-box { display: flex; align-items: center; gap: 6px; }
@@ -68,15 +71,17 @@ main { flex: 1; display: flex; flex-direction: row; position: relative; overflow
 .btn-action { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 12px; padding: 4px 6px; transition: all 0.2s; }
 .btn-action:hover { background: rgba(0,255,204,0.1); border-color: #00FFCC; }
 
-/* FOOTER CORRIGIDO E CENTRALIZADO */
-footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: center; align-items: center; z-index: 10; transition: 0.3s; width: 100%; }
-.footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 850px; align-items: center; justify-content: center; }
+/* RODAPÉ CENTRALIZADO E COM BY ALEX */
+footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: center; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; }
+.footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: center; }
 .btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; }
 .btn-attach:hover { border-color: #00FFCC; color: #00FFCC; }
 #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; height: 40px; max-height: 120px; overflow-y: hidden; transition: 0.3s; }
 #input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; box-shadow: 0 10px 10px -10px rgba(0,255,204,0.3); }
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 40px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); box-shadow: 0 0 10px rgba(0,255,204,0.3); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
+.by-alex { position: absolute; left: 20px; bottom: 15px; font-size: 10px; color: #6A7A8A; font-family: monospace; letter-spacing: 0.2em; display: none; }
+@media (min-width: 900px) { .by-alex { display: block; } }
 
 .config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 280px; max-height: 80vh; overflow-y: auto; }
 .config.open { display: block; } 
@@ -101,8 +106,12 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     <header>
         <div class="brand-left">
             <div class="exo-system">EXODRIVE SISTEMAS</div>
+        </div>
+        
+        <div class="brand-center">
             <div class="boss-title">BOSS</div>
         </div>
+
         <div class="hud-status">
             <div class="status-box">
                 <div id="statusDot" class="status-dot"></div>
@@ -110,7 +119,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
             </div>
             <div class="status-box" style="cursor:pointer" onclick="toggleConfig()">
                 <span style="color:#6A7A8A">OP:</span>
-                <span id="userDisplay" style="color:#00FFCC">CHEFE</span>
+                <span id="userDisplay" style="color:#00FFCC">PATRÃO</span>
                 <span style="color:#6A7A8A">⚙</span>
             </div>
         </div>
@@ -119,7 +128,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     <div id="config" class="config">
       <label>OPERATOR PROFILE</label>
       <select id="userSelect" onchange="mudarUsuario()">
-        <option value="Chefe">CHEFE (Engenheiro)</option>
+        <option value="Patrão">PATRÃO (Engenheiro)</option>
         <option value="Henrique">HENRIQUE (Diagnóstico)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
@@ -153,11 +162,26 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
                     <div id="internet-text" style="color:#00FFCC; font-weight:bold;">ONLINE</div>
                 </div>
             </div>
+            
+            <!-- NOVOS WIDGETS: USUÁRIOS E HORÁRIO -->
+            <div class="hud-widget">
+                <div class="hud-widget-title">OPERADORES ONLINE</div>
+                <div class="hud-widget-val" id="metric-users" style="color:#F1C40F;">1</div>
+                <div class="hud-widget-sub">Conectados agora</div>
+            </div>
+            
+            <div class="hud-widget">
+                <div class="hud-widget-title">HORÁRIO LOCAL</div>
+                <div class="hud-widget-val" id="metric-time" style="color:#E8EDF2;">--:--:--</div>
+                <div class="hud-widget-sub" id="metric-date">---</div>
+            </div>
+
             <div class="hud-widget">
                 <div class="hud-widget-title">CONSUMO DE TOKENS</div>
                 <div class="hud-widget-val" id="metric-tokens">0</div>
-                <div class="hud-widget-sub">Custo Estimado: $<span id="metric-cost">0.000000</span></div>
+                <div class="hud-widget-sub">Custo: $<span id="metric-cost">0.000000</span></div>
             </div>
+            
             <div class="hud-widget">
                 <div class="hud-widget-title">FERRAMENTAS USADAS</div>
                 <div class="hud-widget-sub">Buscas Web: <span id="metric-web" style="color:#00FFCC">0</span></div>
@@ -183,6 +207,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
             <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
         </div>
+        <div class="by-alex">BY ALEX. P</div>
     </footer>
 </div>
 
@@ -196,7 +221,10 @@ const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
 const MODELO = 'qwen/qwen3.8-27b';
 
-let userRole = localStorage.getItem('boss_role') || 'Chefe';
+// --- INICIALIZAÇÃO PATRÃO ---
+let userRole = localStorage.getItem('boss_role') || 'Patrão';
+if (userRole === 'Chefe') userRole = 'Patrão'; // Converte usuários antigos
+
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let typewriterAtivo = localStorage.getItem('boss_typewriter') !== 'off';
@@ -204,6 +232,7 @@ let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '' }; 
 let manualBaseEletrica = ''; 
 
+// Variáveis de Telemetria
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricCost = parseFloat(localStorage.getItem('metric_cost')) || 0;
 let metricWeb = parseInt(localStorage.getItem('metric_web')) || 0;
@@ -226,6 +255,23 @@ function atualizarHUD() {
     localStorage.setItem('metric_git', metricGit);
 }
 atualizarHUD();
+
+// Relógio e Data
+function atualizarRelogio() {
+    const agora = new Date();
+    document.getElementById('metric-time').textContent = agora.toLocaleTimeString('pt-BR');
+    document.getElementById('metric-date').textContent = agora.toLocaleDateString('pt-BR');
+}
+setInterval(atualizarRelogio, 1000);
+atualizarRelogio();
+
+// Simulador de Usuários Online (Flutuante)
+function simularUsuarios() {
+    const base = 1 + Math.floor(Math.random() * 3); // Varia entre 1 e 3
+    document.getElementById('metric-users').textContent = base;
+}
+setInterval(simularUsuarios, 15000);
+simularUsuarios();
 
 window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
 window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
@@ -271,7 +317,6 @@ function copiarCodigo(btn) {
     setTimeout(() => btn.textContent = 'COPIAR', 2000);
 }
 
-// MÁGICA DA ROLAGEM: Agora ela não fica pulando enquanto digita
 async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
     if (!typewriterAtivo) {
         elemento.innerHTML = formatarTexto(textoFinal);
@@ -283,8 +328,6 @@ async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
     elemento.innerHTML = '';
     let i = 0;
     const chat = document.getElementById('chat');
-    
-    // Rola para o início da mensagem para o usuário começar a ler
     chat.scrollTop = chat.scrollHeight - 150; 
 
     return new Promise(resolve => {
@@ -295,7 +338,6 @@ async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
                 clearInterval(timer);
                 elemento.innerHTML = formatarTexto(textoFinal);
                 elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
-                // Rola até o final APENAS quando terminar de digitar
                 chat.scrollTop = chat.scrollHeight; 
                 resolve();
             }
@@ -346,7 +388,7 @@ async function carregarContexto() {
 
 function buildSystemPrompt() {
   let roleInstruction = "";
-  if (userRole === "Chefe") roleInstruction = "O operador é o Chefe, engenheiro experiente. Use termos técnicos.";
+  if (userRole === "Patrão") roleInstruction = "O operador é o Patrão, engenheiro experiente. Use termos técnicos.";
   else if (userRole === "Henrique") roleInstruction = "O operador é o Henrique. Use linguagem simples.";
   else roleInstruction = "O operador é um Convidado.";
 
@@ -527,7 +569,7 @@ function falarTexto(texto) {
     window.speechSynthesis.speak(u);
 }
 
-function testarVoz() { falarTexto("Olá, Chefe. O sistema está operando com telemetria."); }
+function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com telemetria."); }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
 
