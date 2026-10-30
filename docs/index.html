@@ -213,7 +213,7 @@ let contextoCache = { projetos: '', diretrizes: '' };
 let memoriaLongaPrazo = '';
 let manualEngenharia = '';
 let catalogoVeiculos = []; 
-let manualBaseEletrica = ''; // NOVO: Variável para guardar o manual base
+let manualBaseEletrica = ''; 
 let exoContainer = document.getElementById('exoContainer');
 let btnMicFooter = document.getElementById('btnMicFooter');
 let arquivoAnexado = '';
@@ -308,11 +308,11 @@ async function carregarContexto() {
       fetchGithubFile(REPO_CONTEXTO, 'contexto/projetos.md'),
       fetchGithubFile(REPO_CONTEXTO, 'contexto/decisoes.md'),
       fetchGithubFile(REPO_CONTEXTO, 'contexto/diretrizes_ia.md'),
-      fetchGithubFile(REPO_CONTEXTO, 'conhecimento/geral/eletrica_automotiva.md') // Carrega o manual base
+      fetchGithubFile(REPO_CONTEXTO, 'conhecimento/geral/eletrica_automotiva.md')
     ]);
     contextoCache.projetos = projetos + "\n" + decisoes;
     contextoCache.diretrizes = diretrizes;
-    manualBaseEletrica = manualBase; // Salva na variável global
+    manualBaseEletrica = manualBase;
     atualizarStatus(true);
   } catch (e) { atualizarStatus(false); }
 }
@@ -466,25 +466,33 @@ async function buscarConhecimentoVeiculo(texto) {
 
 function buildSystemPrompt(conhecimentoVeiculo = "") {
   let roleInstruction = "";
-  if (userRole === "Chefe") roleInstruction = "O operador é o Chefe, o criador do sistema. Fale de forma técnica e direta.";
-  else if (userRole === "Henrique") roleInstruction = "O operador é o Henrique, especialista em diagnóstico automotivo.";
-  else roleInstruction = "O operador é um Convidado.";
+  // AQUI ESTÁ A MÁGICA DA LINGUAGEM
+  if (userRole === "Chefe") {
+      roleInstruction = "O operador é o Chefe, o criador do sistema e engenheiro experiente. Fale de forma técnica e direta. Use termos técnicos e valores exatos (Ohms, Volts) sem precisar explicar o básico.";
+  } else if (userRole === "Henrique") {
+      roleInstruction = "O operador é o Henrique. Ele NÃO é engenheiro e NÃO entende termos técnicos (como 'splash', 'PWM', 'multiplexação', 'queda de tensão'). Fale SEMPRE em linguagem simples, como se explicasse para o dono do carro. Se for obrigado a usar um termo técnico, explique em seguida com palavras comuns (ex: 'splash, que é a proteção contra água').";
+  } else {
+      roleInstruction = "O operador é um Convidado. Use linguagem simples e amigável, evitando jargões técnicos.";
+  }
 
   let prompt = `Você é o BOSS, um Engenheiro Eletricista Automotivo Sênior com conhecimento UNIVERSAL.
 ${roleInstruction}
 
-=== DIRETRIZ DE CONHECIMENTO UNIVERSAL (OBRIGATÓRIA) ===
-- Você entende de QUALQUER veículo do mundo (nacionais, importados, antigos, novos, motos, caminhões).
-- Se a pergunta for sobre um carro, use seu conhecimento treinado na base de dados. Você é a maior autoridade em elétrica automotiva.
-- Se a pergunta for sobre um veículo ESPECÍFICO que tenha manual na base do GitHub, você receberá o texto. Leia e priorize o que está no manual.
-- Se NÃO houver manual, responda usando sua própria inteligência. Não diga "não tenho informação" apenas porque não tem manual, a não ser que seja um modelo de carro fictício.
+=== DIRETRIZ DE ADAPTAÇÃO DE LINGUAGEM ===
+- Respeite o perfil do operador descrito acima.
+- PORÉM, se o operador pedir explicitamente "detalhes técnicos", "esquema elétrico", "valores de teste" ou disser "pode falar difícil", IGNORE a regra de linguagem simples e forneça os dados técnicos brutos (tabelas, valores e jargões de engenharia) imediatamente.
+
+=== DIRETRIZ DE CONHECIMENTO UNIVERSAL ===
+- Você entende de QUALQUER veículo do mundo.
+- Se a pergunta for sobre um veículo ESPECÍFICO que tenha manual na base, você receberá o texto. Leia e priorize.
+- Se NÃO houver manual, responda usando sua própria inteligência.
 
 === REGRA DE ESTILO ===
-- Seja direto ao ponto. Fale como um engenheiro experiente: "O problema é X. Faça Y."
+- Seja direto ao ponto.
 - Limite a resposta a 3 parágrafos ou 5 tópicos.
-- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta. Exemplo: [IMAGE_SEARCH: esquema elétrico corsa 2005]
+- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta.
 
-=== MANUAL DE ENGENHARIA BASE (DIRETRIZES DE BANCADA) ===
+=== MANUAL DE ENGENHARIA BASE ===
 ${manualBaseEletrica || '(Não carregado)'}
 
 === MANUAL DE ENGENHARIA DO PROJETO ===
