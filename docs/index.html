@@ -466,7 +466,6 @@ async function buscarConhecimentoVeiculo(texto) {
 
 function buildSystemPrompt(conhecimentoVeiculo = "") {
   let roleInstruction = "";
-  // AQUI ESTÁ A MÁGICA DA LINGUAGEM
   if (userRole === "Chefe") {
       roleInstruction = "O operador é o Chefe, o criador do sistema e engenheiro experiente. Fale de forma técnica e direta. Use termos técnicos e valores exatos (Ohms, Volts) sem precisar explicar o básico.";
   } else if (userRole === "Henrique") {
@@ -490,7 +489,7 @@ ${roleInstruction}
 === REGRA DE ESTILO ===
 - Seja direto ao ponto.
 - Limite a resposta a 3 parágrafos ou 5 tópicos.
-- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta.
+- Se o usuário pedir uma foto, imagem ou esquema visual de uma peça, adicione a tag exata [IMAGE_SEARCH: termo de busca] no final da sua resposta. NUNCA responda apenas com a tag. Sempre escreva uma frase antes (ex: "Aqui está a imagem:").
 
 === MANUAL DE ENGENHARIA BASE ===
 ${manualBaseEletrica || '(Não carregado)'}
@@ -558,6 +557,11 @@ async function enviar() {
         const termoBusca = matchImg[1];
         resposta = resposta.replace(matchImg[0], '').trim();
         
+        // BUGFIX: Se a resposta ficou vazia, coloca um texto padrão
+        if (!resposta) {
+            resposta = "Aqui está a imagem que você pediu:";
+        }
+
         thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
         exoContainer.classList.remove('pensando'); exoContainer.classList.add('falando'); falarTexto(resposta);
 
@@ -565,17 +569,30 @@ async function enviar() {
         const chat = document.getElementById('chat');
         const imgWrapper = document.createElement('div');
         imgWrapper.style.padding = '10px';
-        imgWrapper.innerHTML = `<img id="${imgId}" src="https://via.placeholder.com/400x200/05070A/00FFCC?text=Buscando+Imagem..." class="msg-img">`;
+        // BUGFIX: Placeholder local (não depende de site externo)
+        imgWrapper.innerHTML = `<div id="loading-${imgId}" style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando imagem no servidor... ]</div>`;
         chat.appendChild(imgWrapper);
         chat.scrollTop = chat.scrollHeight;
 
         fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(termoBusca)}`)
             .then(r => r.json())
             .then(imgData => {
-                if(imgData.url) document.getElementById(imgId).src = imgData.url;
-                else document.getElementById(imgId).src = 'https://via.placeholder.com/400x200/05070A/E74C3C?text=Imagem+nao+encontrada';
+                const loadingEl = document.getElementById(`loading-${imgId}`);
+                if(loadingEl) loadingEl.remove(); // Remove o "Carregando"
+                
+                if(imgData.url) {
+                    // Cria a tag img com onerror para avisar se o link estiver quebrado
+                    const imgHtml = `<img src="${imgData.url}" class="msg-img" onerror="this.outerHTML='<div style=\\'color:#E74C3C; font-family:monospace; font-size:12px;\\'>[ Falha ao carregar a imagem. O site original bloqueou o acesso. ]</div>'">`;
+                    imgWrapper.innerHTML = imgHtml;
+                } else {
+                    imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Imagem não encontrada no buscador. ]</div>`;
+                }
             })
-            .catch(() => { document.getElementById(imgId).src = 'https://via.placeholder.com/400x200/05070A/E74C3C?text=Erro+na+Busca'; });
+            .catch(() => { 
+                const loadingEl = document.getElementById(`loading-${imgId}`);
+                if(loadingEl) loadingEl.remove();
+                imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Erro de comunicação com o Worker. ]</div>`;
+            });
             
     } else {
         thinking.remove(); addMsg('boss', resposta); if(arquivoAnexado) arquivoAnexado = '';
