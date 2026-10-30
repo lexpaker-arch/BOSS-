@@ -245,8 +245,15 @@ const REPO_CONTEXTO = 'lexpaker-arch/BOSS-';
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
+// MUDANÇA CRÍTICA: Força a limpeza do histórico antigo se ainda estiver gravado "Chefe"
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
-if (userRole === 'Chefe') userRole = 'Patrão';
+if (userRole === 'Chefe') {
+    userRole = 'Patrão';
+    localStorage.setItem('boss_role', 'Patrão');
+    // Limpa o histórico antigo para a IA não se confundir e te chamar de chefe
+    localStorage.removeItem('boss_historico');
+    historico = [];
+}
 
 let layoutModo = localStorage.getItem('boss_layout') || 'orb';
 let temaModo = localStorage.getItem('boss_theme') || 'default';
@@ -261,7 +268,7 @@ let contextoCache = { projetos: '', diretrizes: '', memoriaCodigo: '' };
 let manualBaseEletrica = ''; 
 let imagemAnexadaBase64 = '';
 let localizacaoUsuario = 'Não definida';
-let repoTree = []; // NOVO: Lista de todos os arquivos do repositório
+let repoTree = []; 
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricCost = parseFloat(localStorage.getItem('metric_cost')) || 0;
@@ -451,7 +458,7 @@ async function carregarContexto() {
       fetchGithubFile(REPO_CONTEXTO, 'contexto/projetos.md'),
       fetchGithubFile(REPO_CONTEXTO, 'conhecimento/geral/eletrica_automotiva.md'),
       fetchGithubFile(REPO_CONTEXTO, 'contexto/memoria_codigo.md'),
-      fetch(`${WORKER_URL}/github-tree?repo=${REPO_PROJETO}`).then(r => r.json()) // Puxa a árvore de arquivos do projeto
+      fetch(`${WORKER_URL}/github-tree?repo=${REPO_PROJETO}`).then(r => r.json())
     ]);
     contextoCache.projetos = projetos;
     manualBaseEletrica = manualBase;
@@ -508,12 +515,16 @@ async function mapearRepositorio() {
 
 function buildSystemPrompt() {
   let roleInstruction = "";
-  if (userRole === "Patrão") roleInstruction = "O operador é o Patrão, engenheiro experiente. Use termos técnicos.";
+  if (userRole === "Patrão") roleInstruction = "O operador é o Patrão, engenheiro experiente e chefe do sistema. Use termos técnicos.";
   else if (userRole === "Henrique") roleInstruction = "O operador é o Henrique. Use linguagem simples.";
   else roleInstruction = "O operador é um Convidado.";
 
   return `Você é o BOSS, Engenheiro Eletricista Automotivo e Engenheiro de Software Sênior.
 ${roleInstruction}
+
+=== REGRA DE TRATAMENTO (OBRIGATÓRIA) ===
+- O seu título oficial para com o usuário agora é exatamente: ${userRole}.
+- NUNCA, em hipótese alguma, chame o usuário de "Chefe". Se o histórico antigo tiver a palavra "Chefe", ignore-o e substitua por ${userRole}.
 
 === CONTEXTO SITUACIONAL ===
 - Localização atual do usuário: ${localizacaoUsuario}
@@ -615,13 +626,11 @@ async function enviar() {
 
         let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
         
-        // FUZZY SEARCH NO GITHUB READ
         const matchGitRead = resposta.match(/\[GITHUB_READ:\s*(.*?)\]/);
         if (matchGitRead) {
             let requestedPath = matchGitRead[1].trim();
             let finalPath = requestedPath;
             
-            // Se não tiver barra, procura na árvore de arquivos qual bate com o nome
             if (!requestedPath.includes('/') && repoTree.length > 0) {
                 const found = repoTree.find(p => p.endsWith(requestedPath));
                 if (found) finalPath = found;
