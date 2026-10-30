@@ -23,10 +23,10 @@ header { padding: 15px 20px; display: flex; justify-content: space-between; alig
 .status-dot.ok { background: #27AE60; box-shadow: 0 0 8px #27AE60; }
 .status-dot.err { background: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
 
-/* LAYOUT PRINCIPAL E HUD LATERAL */
+/* LAYOUT PRINCIPAL: HUD NA ESQUERDA, CHAT NA DIREITA */
 main { flex: 1; display: flex; flex-direction: row; position: relative; overflow: hidden; transition: 0.3s; width: 100%; }
 .chat-area { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
-.side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-left: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 15px; font-family: monospace; }
+.side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-right: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 15px; font-family: monospace; order: -1; }
 @media (min-width: 1200px) { .side-hud { display: flex; } }
 .hud-widget { border: 1px solid rgba(0,255,204,0.1); background: #05070A; border-radius: 6px; padding: 12px; }
 .hud-widget-title { font-size: 10px; color: #6A7A8A; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.1); padding-bottom: 4px; }
@@ -144,14 +144,7 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     </div>
 
     <main>
-        <div class="chat-area">
-            <div id="exoContainer" class="exo-container" onclick="iniciarEscuta(false)" title="Clique para falar">
-                <div class="exo-glow"></div><div class="exo-anel-1"></div><div class="exo-anel-2"></div><div class="exo-anel-3"></div><div class="exo-core"></div>
-            </div>
-            <div id="chat"></div>
-        </div>
-
-        <!-- PAINEL LATERAL DE TELEMETRIA -->
+        <!-- PAINEL LATERAL DE TELEMETRIA (ESQUERDA) -->
         <div class="side-hud">
             <div class="hud-widget">
                 <div class="hud-widget-title">STATUS DO SISTEMA</div>
@@ -173,6 +166,13 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
                 <div class="hud-widget-sub">Arquivos Github: <span id="metric-git" style="color:#00FFCC">0</span></div>
             </div>
         </div>
+
+        <div class="chat-area">
+            <div id="exoContainer" class="exo-container" onclick="iniciarEscuta(false)" title="Clique para falar">
+                <div class="exo-glow"></div><div class="exo-anel-1"></div><div class="exo-anel-2"></div><div class="exo-anel-3"></div><div class="exo-core"></div>
+            </div>
+            <div id="chat"></div>
+        </div>
     </main>
 
     <footer>
@@ -186,7 +186,6 @@ footer { padding: 10px 20px 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0
     </footer>
 </div>
 
-<!-- Bibliotecas Externas -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
 
@@ -203,7 +202,6 @@ let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '' }; 
 let manualBaseEletrica = ''; 
-let arquivoAnexado = '';
 
 // Variáveis de Telemetria
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
@@ -230,7 +228,6 @@ function atualizarHUD() {
 }
 atualizarHUD();
 
-// Monitor de Internet
 window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
 window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
 
@@ -254,20 +251,15 @@ function limparHistorico() { if(confirm("Apagar histórico local?")) { historico
 
 function autoResize(el) { el.style.height = '36px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
 
-// FORMATAÇÃO DE CÓDIGO E MERMAID
 function formatarTexto(texto) {
-    // 1. Blocos de Código
     texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
         const language = lang || 'plaintext';
         return `<pre><button class="btn-copy-code" onclick="copiarCodigo(this)">COPIAR</button><code class="language-${language}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
     });
-    
-    // 2. Markdown Básico
     texto = texto.replace(/### (.*?)\n/g, '<h3>$1</h3>').replace(/## (.*?)\n/g, '<h2>$1</h2>')
         .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\*(.*?)\*/g, '<i>$1</i>')
         .replace(/`(.*?)`/g, '<code style="background:rgba(0,255,204,0.1); color:#00FFCC; padding:2px 4px; border-radius:3px;">$1</code>')
         .replace(/\n/g, '<br>');
-    
     return texto;
 }
 
@@ -278,7 +270,6 @@ function copiarCodigo(btn) {
     setTimeout(() => btn.textContent = 'COPIAR', 2000);
 }
 
-// EFEITO MÁQUINA DE ESCREVER (Typewriter)
 async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
     elemento.innerHTML = '';
     let i = 0;
@@ -287,11 +278,10 @@ async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
             elemento.innerHTML = formatarTexto(textoFinal.substring(0, i));
             const chat = document.getElementById('chat');
             chat.scrollTop = chat.scrollHeight;
-            i += 2; // Adiciona 2 caracteres por tick para ser rápido
+            i += 2;
             if (i >= textoFinal.length) {
                 clearInterval(timer);
                 elemento.innerHTML = formatarTexto(textoFinal);
-                // Realça a sintaxe após terminar
                 elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
                 resolve();
             }
@@ -352,13 +342,13 @@ ${roleInstruction}
 === DIRETRIZ DE LINGUAGEM ===
 - Se o usuário pedir "detalhes técnicos", ignore a linguagem simples e use jargões.
 
-=== FERRAMENTAS (MUITO IMPORTANTE) ===
-- Busca Web: [WEB_SEARCH: termo] (Responda APENAS a tag se não souber algo).
-- Imagem: [IMAGE_SEARCH: termo]
-- Vídeo: [VIDEO_SEARCH: termo]
-- Diagramas: [MERMAID: código do diagrama]
-- Criar Arquivo GitHub: [GITHUB_CREATE: caminho/do/arquivo.kt | conteúdo do arquivo]
-- Blocos de código: Use \`\`\`linguagem para colorir.
+=== FERRAMENTAS (REGRA ESTRITA) ===
+- **NUNCA** gere tags de ferramentas (WEB_SEARCH, IMAGE_SEARCH, VIDEO_SEARCH, MERMAID, GITHUB_CREATE) se o usuário não pediu EXPLICITAMENTE.
+- Se o usuário apenas disser "Oi", "Boss" ou conversar normalmente, responda APENAS com texto.
+- Use [IMAGE_SEARCH: termo] APENAS se o usuário pedir "uma foto", "uma imagem" ou "um desenho".
+- Use [VIDEO_SEARCH: termo] APENAS se o usuário pedir "um vídeo" ou "um tutorial em vídeo".
+- Use [WEB_SEARCH: termo] APENAS se você precisar de dados reais da internet que não sabe de cabeça.
+- Use [GITHUB_CREATE: caminho/arquivo | conteúdo] APENAS se o usuário pedir para criar/salvar um arquivo.
 
 === MANUAL BASE ===
 ${manualBaseEletrica}
@@ -388,7 +378,6 @@ async function enviar() {
         });
         const data = await resp.json();
         
-        // Telemetria
         if (data.usage) {
             metricTokens += data.usage.total_tokens;
             metricCost += (data.usage.prompt_tokens / 1000000) * 0.27 + (data.usage.completion_tokens / 1000000) * 1.10;
@@ -412,7 +401,6 @@ async function enviar() {
         }
     }
 
-    // Tratamento de Ferramentas Visuais
     const matchImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
     const matchVideo = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
     const matchMermaid = respostaFinal.match(/\[MERMAID:\s*([\s\S]*?)\]/);
@@ -421,7 +409,6 @@ async function enviar() {
     if (matchImg || matchVideo || matchMermaid || matchGit) {
         thinking.wrapper.remove();
         
-        // Renderiza texto limpo antes dos anexos
         let textoLimpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|MERMAID|GITHUB_CREATE):[\s\S]*?\]/g, '').trim();
         if (textoLimpo) {
             const msgObj = addMsg('boss', textoLimpo);
@@ -436,7 +423,14 @@ async function enviar() {
             imgWrapper.innerHTML = `<div style="color:#00FFCC; font-family:monospace; font-size:12px;">[ Buscando imagem... ]</div>`;
             document.getElementById('chat').appendChild(imgWrapper);
             fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(termo)}`).then(r=>r.json()).then(d => {
-                imgWrapper.innerHTML = d.url ? `<img src="${d.url}" class="msg-img">` : `<div style="color:#E74C3C;">[ Imagem não encontrada ]</div>`;
+                if(d.url) {
+                    const img = document.createElement('img');
+                    img.src = d.url; img.className = 'msg-img';
+                    img.onerror = () => { imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Falha ao carregar. O site original bloqueou o acesso. ]</div>`; };
+                    imgWrapper.innerHTML = ''; imgWrapper.appendChild(img);
+                } else {
+                    imgWrapper.innerHTML = `<div style="color:#E74C3C; font-family:monospace; font-size:12px;">[ Imagem não encontrada. ]</div>`;
+                }
             });
         }
         
@@ -480,13 +474,11 @@ async function enviar() {
         }
         
     } else {
-        // Resposta Normal com Efeito de Digitação
         thinking.wrapper.remove();
-        const msgObj = addMsg('boss', "", true); // Cria vazio
+        const msgObj = addMsg('boss', "", true); 
         await efeitoDigitacao(msgObj.div, respostaFinal);
         falarTexto(respostaFinal);
         
-        // Salva no histórico manualmente após o efeito
         historico.push({ role: 'assistant', content: respostaFinal });
         localStorage.setItem('boss_historico', JSON.stringify(historico));
     }
@@ -499,7 +491,6 @@ async function enviar() {
   }
 }
 
-// Voz (TTS)
 let reconhecimento; let gravando = false;
 function iniciarEscuta() {
   if (!('webkitSpeechRecognition' in window)) return alert("Navegador incompatível.");
@@ -522,7 +513,7 @@ function falarTexto(texto) {
     window.speechSynthesis.speak(u);
 }
 
-function testarVoz() { falarTexto("Olá, Chefe. Estou operando no Nível 5."); }
+function testarVoz() { falarTexto("Olá, Chefe. O sistema está operando com telemetria."); }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
 
@@ -530,5 +521,4 @@ carregarContexto();
 </script>
 </body>
 </html>
-
 
