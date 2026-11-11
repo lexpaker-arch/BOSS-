@@ -85,13 +85,12 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 40px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(0,255,204,0.2); width: 300px; max-height: 80vh; overflow-y: auto; }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); width: 300px; max-height: 80vh; overflow-y: auto; }
 .config.open { display: block; }
 .config label { font-size: 10px; color: #00FFCC; margin-bottom:6px; display:block; font-family: monospace; margin-top: 12px; }
 .config select, .config input[type=range] { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
 .config .range-val { font-size: 11px; color: #64748B; text-align: right; margin-bottom: 5px; }
 .btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 15px;}
-.btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
 .modal-overlay.open { display: flex; }
@@ -123,7 +122,17 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .measure-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; padding: 12px; border: 1px dashed rgba(0,255,204,0.3); border-radius: 6px; }
 .measure-form input, .measure-form select { background: #05070A; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; }
 .btn-primary { background: rgba(0,255,204,0.15); border: 1px solid #00FFCC; color: #00FFCC; padding: 8px 14px; border-radius: 4px; font-family: monospace; font-size: 12px; cursor: pointer; width: 100%;}
+
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; }
+.video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; }
+.video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; }
+
+.draw-toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+.draw-tool { background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+.draw-tool.active { background: #00FFCC; color: #000; }
+#drawCanvasWrap { position: relative; display: inline-block; max-width: 100%; }
+#drawCanvas { max-width: 100%; display: block; border: 1px solid rgba(0,255,204,0.3); border-radius: 4px; cursor: crosshair; touch-action: none; }
 </style>
 </head>
 <body>
@@ -182,8 +191,9 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 
     <footer>
         <div class="footer-inputs">
-            <input type="file" id="fileInput" accept="image/*,application/pdf,text/*" style="display:none" onchange="lerArquivo(event)">
-            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar (Foto, PDF, Código)">📎</button>
+            <input type="file" id="fileInput" accept="image/*,text/*" style="display:none" onchange="lerArquivo(event)">
+            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
+            <button class="btn-attach" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar Foto">🖊</button>
             <button id="btnMicFooter" class="btn-attach" onclick="iniciarEscuta()" title="Falar">🎤</button>
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
             <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
@@ -235,19 +245,50 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
   </div>
 </div>
 
+<div class="modal-overlay" id="modalDraw" onclick="if(event.target===this)fecharModal('modalDraw')">
+  <div class="modal-box">
+    <div class="modal-header"><div class="modal-title">🖊 ANOTAR FOTO</div><button class="modal-close" onclick="fecharModal('modalDraw')">×</button></div>
+    <div class="modal-body">
+      <div class="draw-toolbar">
+        <button class="draw-tool active" data-tool="pen" onclick="setDrawTool('pen',this)">✏ Caneta</button>
+        <button class="draw-tool" data-tool="arrow" onclick="setDrawTool('arrow',this)">↗ Seta</button>
+        <button class="draw-tool" data-tool="circle" onclick="setDrawTool('circle',this)">◯ Círculo</button>
+        <button class="draw-tool" data-tool="text" onclick="setDrawTool('text',this)">T Texto</button>
+        <input type="color" id="drawColor" value="#FF3B30" onchange="drawColor=this.value">
+        <button class="draw-tool" onclick="undoDraw()">↶ Desfazer</button>
+        <button class="draw-tool" onclick="clearDraw()">🗑 Limpar</button>
+      </div>
+      <div id="drawCanvasWrap"><canvas id="drawCanvas"></canvas></div>
+      <div style="display:flex; gap:8px; margin-top:15px;">
+        <button class="btn-primary" onclick="salvarAnotacao()">💾 SALVAR</button>
+        <button class="btn-secondary" onclick="fecharModal('modalDraw')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+
 <script>
+mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
+const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
+let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let medicoes = JSON.parse(localStorage.getItem('boss_medicoes')) || [];
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 
+let repoTree = [];
+let fileCache = {};
+
+// INICIALIZAÇÃO UI
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 document.getElementById('rateSlider').value = vozRate;
@@ -284,6 +325,28 @@ function addMsg(tipo, texto, salvar = true) {
 }
 
 // ==========================================
+// FERRAMENTAS DE GITHUB (BUSCA E LEITURA)
+// ==========================================
+async function carregarRepoTree() {
+    if (repoTree.length > 0) return;
+    try {
+        const res = await fetch(`${WORKER_URL}/github-tree?repo=${REPO_PROJETO}`);
+        const data = await res.json();
+        if (data.tree) repoTree = data.tree.filter(f => f.type === 'blob').map(f => f.path);
+    } catch(e) { console.warn("Não foi possível carregar a árvore do repositório."); }
+}
+
+async function fetchGithubFile(path) {
+    if (fileCache[path]) return fileCache[path];
+    try {
+        const res = await fetch(`${WORKER_URL}/github?repo=${REPO_PROJETO}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (data.content) { const txt = decodeURIComponent(escape(atob(data.content))); fileCache[path] = txt; return txt; }
+        return data.message ? `[ERRO GITHUB API]: ${data.message}` : `[ERRO: Vazio]`;
+    } catch (e) { return `[ERRO DE REDE]: ${e.message}`; }
+}
+
+// ==========================================
 // CÉREBRO DINÂMICO E CONVERSACIONAL
 // ==========================================
 function buildSystemPrompt(isConversational = false) {
@@ -314,6 +377,19 @@ ${medicoes.length > 0 ? medicoes.map(m => `- ${m.ponto}: ${m.valor} ${m.unidade}
 === REGRA DE CONTEXTO ===
 - Siga o assunto da conversa. Se o usuário falar de um carro, responda sobre ele. Se mudar para código, acompanhe.
 - NUNCA chame o usuário de "Chefe". Chame de ${userRole}.
+
+=== FERRAMENTAS DISPONÍVEIS ===
+Você tem acesso total e irrestrito ao repositório \`lexpaker-arch/EXODASH--Local\`. Não peça permissão, use as tags.
+1. [GITHUB_SEARCH: termo] - Varre TODO o repositório em busca da palavra/função.
+2. [GITHUB_READ: caminho/do/arquivo.kt] - Lê o arquivo inteiro (se não souber o caminho, use o SEARCH antes).
+3. [VIDEO_SEARCH: termo] - Abre player de vídeo do YouTube.
+4. [IMAGE_SEARCH: termo] - Busca imagem real na web.
+5. [PROJECT: código_mermaid] - Gera diagramas e esquemas elétricos.
+6. [GENERATE_IMAGE: prompt em inglês] - Gera imagem via IA.
+
+=== REGRAS DE AÇÃO ===
+- Se o usuário pedir para analisar o código, consertar um bug ou buscar uma função, NÃO pergunte o caminho. Dispare \`[GITHUB_SEARCH: nome_da_funcao]\`. O sistema vai varrer e te devolver o código.
+- Se o usuário pedir um vídeo ou um esquema, use \`[VIDEO_SEARCH]\` ou \`[PROJECT]\`.
 `;
 
   if (isConversational) {
@@ -322,19 +398,17 @@ ${medicoes.length > 0 ? medicoes.map(m => `- ${m.ponto}: ${m.valor} ${m.unidade}
 - A pergunta atual é mais aberta/conversacional. Seja mais solto.
 - Use marcadores naturais: "Bem...", "Sabe?", "Na verdade", "Quer dizer".
 - Se estiver pensando, use "...". Se for surpresa, use "Hmm".
-- Não tenha medo de divagar um pouco se o assunto permitir.
 - SEMPRE adicione [VOZ: resumo curto em 1-2 frases] no final.`;
   }
 
   return base + `
 === MODO TÉCNICO (ATIVO AGORA) ===
 - A pergunta atual é técnica/objetiva. Vá direto ao ponto.
-- Pode usar listas quando for passo a passo real (ex: "1. Meça o pino 3...").
-- Se faltar dado, peça: "Preciso da tensão no pino X. Usa o painel 📋 e registra."
+- Use listas para passo a passo real (ex: "1. Meça o pino 3...").
 - SEMPRE adicione [VOZ: resumo curto em 1-2 frases] no final.`;
 }
 
-const PENSAMENTOS = ["Analisando o esquema...", "Olhando os dados aqui...", "Verificando a lógica...", "Péra, deixa eu pensar...", "Cruzando as informações...", "Buscando uma resposta..."];
+const PENSAMENTOS = ["Analisando o esquema...", "Olhando os dados aqui...", "Verificando a lógica...", "Péra, deixa eu pensar...", "Cruzando as informações...", "Buscando no código..."];
 
 async function enviar() {
   const input = document.getElementById('input'); const texto = input.value.trim();
@@ -353,54 +427,182 @@ async function enviar() {
         t.div.textContent = "Olhando a foto...";
         const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
         const vd = await vr.json();
-        contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na análise]";
-        imagemAnexadaBase64 = '';
+        contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
+        imagemAnexadaBase64 = ''; document.getElementById('btnDraw').style.display = 'none';
     }
 
     let userContent = texto;
     if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM ENVIADA]:\n${contextoVisao}\n\n[PERGUNTA DO USUÁRIO]:\n${texto || "O que você acha disso?"}`;
     if (arquivoAnexado) { userContent = `[ARQUIVO ANEXADO]:\n${arquivoAnexado}\n\n[PERGUNTA]:\n${texto}`; arquivoAnexado = ''; }
 
-    // MODO DINÂMICO
     const palavrasConversacionais = ['acha', 'pensa', 'opinião', 'sugere', 'como você faria', 'me ajuda a pensar', 'o que rolou', 'será que'];
     const isConversational = palavrasConversacionais.some(p => texto.toLowerCase().includes(p));
-    const systemPrompt = buildSystemPrompt(isConversational);
     
-    const msgs = [{ role: 'system', content: systemPrompt }, ...historico.slice(-6)];
+    let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational) }, ...historico.slice(-6)];
     if (userContent) msgs.push({ role: 'user', content: userContent });
 
-    const resp = await fetch(WORKER_URL, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ 
-            model: MODELO, 
-            messages: msgs, 
-            max_tokens: 2500, 
-            temperature: isConversational ? 0.65 : 0.2 
-        }) 
-    });
-    const data = await resp.json();
-    
-    if (data.usage) { metricTokens += data.usage.total_tokens; document.getElementById('metric-tokens').textContent = metricTokens; localStorage.setItem('metric_tokens', metricTokens); }
-    
-    let respostaFinal = data.choices?.[0]?.message?.content?.trim() || "Não consegui formular uma resposta.";
-    
+    let continuar = true, tentativas = 0, respostaFinal = "";
+
+    while (continuar && tentativas < 6) {
+        tentativas++;
+        const resp = await fetch(WORKER_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                model: MODELO, 
+                messages: msgs, 
+                max_tokens: 4000, 
+                temperature: isConversational ? 0.65 : 0.2 
+            }) 
+        });
+        const data = await resp.json();
+        
+        if (data.usage) { metricTokens += data.usage.total_tokens; document.getElementById('metric-tokens').textContent = metricTokens; localStorage.setItem('metric_tokens', metricTokens); }
+        
+        let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
+
+        // GITHUB SEARCH (ILIMITADO)
+        const searchM = [...resposta.matchAll(/\[GITHUB_SEARCH:\s*(.*?)\]/g)];
+        if (searchM.length > 0) {
+            await carregarRepoTree();
+            let allRes = "";
+            for (const m of searchM) {
+                const termo = m[1].trim();
+                t.div.textContent = `Buscando "${termo}" no repositório...`;
+                addLog(`GITHUB_SEARCH: ${termo}`);
+                
+                // Se não achou termo exato, varre os arquivos de código (limite de 15 arquivos p/ não estourar tokens)
+                const byName = repoTree.filter(p => p.toLowerCase().includes(termo.toLowerCase())).slice(0, 5);
+                const codeFiles = repoTree.filter(p => ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json'].some(e => p.toLowerCase().endsWith(e))).slice(0, 15);
+                const toScan = [...new Set([...byName, ...codeFiles])];
+                
+                let matches = "";
+                for (const path of toScan) {
+                    const content = await fetchGithubFile(path);
+                    if (content.startsWith('[ERRO')) continue;
+                    const lines = content.split('\n');
+                    lines.forEach((ln, i) => {
+                        if (ln.toLowerCase().includes(termo.toLowerCase())) {
+                            matches += `\n${path}:${i+1}: ${ln.trim().substring(0, 200)}`;
+                        }
+                    });
+                }
+                allRes += `\n=== BUSCA: "${termo}" ===\n${matches || '(Nenhum arquivo encontrado com este termo exato. Tente ler um arquivo específico.)'}`;
+            }
+            msgs.push({ role: 'assistant', content: resposta });
+            msgs.push({ role: 'user', content: `[SISTEMA]: Resultados da busca no repositório:\n${allRes}\n\nAgora responda a pergunta original com base nesses trechos.` });
+            continue;
+        }
+
+        // GITHUB READ
+        const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
+        if (readM.length > 0) {
+            await carregarRepoTree();
+            let all = ""; let cnt = 0;
+            for (const m of readM) {
+                let rp = m[1].trim(); let fp = rp;
+                if (!rp.includes('/') && repoTree.length > 0) { const f = repoTree.find(p => p.endsWith(rp)); if (f) fp = f; }
+                t.div.textContent = `Lendo ${fp}...`; addLog(`Lendo ${fp}`);
+                const fc = await fetchGithubFile(fp);
+                if (fc && !fc.startsWith('[ERRO')) { all += `\n=== ${fp} ===\n\`\`\`\n${fc}\n\`\`\`\n`; cnt++; }
+                else all += `\n=== ${fp} ===\n${fc}\n`;
+            }
+            msgs.push({ role: 'assistant', content: resposta });
+            msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo dos ${cnt} arquivos lidos:\n${all}\n\nAgora faça a análise.` });
+            continue;
+        }
+
+        // WEB SEARCH
+        const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
+        if (webM && tentativas === 1) {
+            t.div.textContent = `Buscando na web: "${webM[1]}"...`;
+            const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(webM[1])}`);
+            const sd = await sr.json();
+            msgs.push({ role: 'assistant', content: resposta });
+            msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca: ${sd.results}. Responda agora.` });
+        } else {
+            respostaFinal = resposta; continuar = false;
+        }
+    }
+
     const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
     let txtFalar = vozM ? vozM[1] : respostaFinal;
     if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
 
+    const mImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
+    const mVid = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
+    const mMer = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
+    const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
+    const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
+
     t.wrapper.remove();
-    const o = addMsg('boss', respostaFinal);
+
+    // Renderiza texto limpo
+    let limpo = respostaFinal
+        .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT):[\s\S]*?\]/g, '')
+        .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
+    if (limpo) { const o = addMsg('boss', limpo); }
+    
     falarTexto(txtFalar);
 
+    // RENDERIZA MÍDIAS
+    if (mGen) {
+        const w = document.createElement('div'); w.style.padding = '10px';
+        w.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px;">[ Gerando imagem... ]</div>`;
+        document.getElementById('chat').appendChild(w);
+        fetch(`${WORKER_URL}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: mGen[1] }) })
+          .then(r=>r.json()).then(d => {
+            if(d.image) { w.innerHTML = `<img src="${d.image}" class="msg-img">`; }
+            else { w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha: ${JSON.stringify(d.error)} ]</div>`; }
+          });
+    }
+
+    if (mProj || mMer) {
+        const mCode = mProj ? mProj[1] : mMer[1];
+        const w = document.createElement('div'); w.className = 'mermaid-container';
+        w.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
+        document.getElementById('chat').appendChild(w);
+        mermaid.run({ nodes: [w.querySelector('.mermaid')] });
+    }
+
+    if (mImg) {
+        const w = document.createElement('div'); w.style.padding='10px';
+        w.innerHTML = `<div style="color:#00FFCC; font-size:12px; font-family:monospace;">[ Buscando imagem... ]</div>`;
+        document.getElementById('chat').appendChild(w);
+        fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(mImg[1])}`).then(r=>r.json()).then(d => {
+            if(d.url) { const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>';}; w.innerHTML=''; w.appendChild(i); }
+            else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Não encontrada ]</div>`;
+        });
+    }
+
+    if (mVid) {
+        const w = document.createElement('div'); w.style.padding='10px';
+        w.innerHTML = `<div style="color:#00FFCC; font-size:12px; font-family:monospace;">[ Buscando vídeo... ]</div>`;
+        document.getElementById('chat').appendChild(w);
+        fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(mVid[1])}`).then(r=>r.json()).then(d => {
+            if(d.videos && d.videos.length > 0) {
+                const vid = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
+                if(vid) w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
+                else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC; font-family:monospace;">Assistir: ${d.videos[0].title}</a>`;
+            } else { w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Vídeo não encontrado ]</div>`; }
+        });
+    }
+
+    document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+    historico.push({ role: 'assistant', content: respostaFinal });
+    localStorage.setItem('boss_historico', JSON.stringify(historico));
+
   } catch (e) {
-    t.wrapper.remove(); addMsg('error', `Deu ruim na comunicação com o servidor. Tenta de novo? (${e.message})`);
+    t.wrapper.remove(); addMsg('error', `Deu ruim na comunicação: ${e.message}`);
   } finally {
     document.getElementById('send').disabled = false; input.focus();
     document.getElementById('exoContainer').classList.remove('pensando');
   }
 }
 
+// ==========================================
+// MEDIÇÕES, CALCULADORAS E CANETA
+// ==========================================
 function abrirMedicoes() {
     renderMedicoes();
     document.getElementById('modalMeasure').classList.add('open');
@@ -436,24 +638,89 @@ function buscarDTC() {
 }
 buscarDTC();
 
+// CANETA
+let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
+function abrirAnotacao() {
+    if (!imagemAnexadaBase64) { alert('Tire ou anexe uma foto primeiro.'); return; }
+    document.getElementById('modalDraw').classList.add('open');
+    setTimeout(() => {
+        const cv = document.getElementById('drawCanvas');
+        const img = new Image();
+        img.onload = () => {
+            cv.width = img.width; cv.height = img.height;
+            const ctx = cv.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)];
+            bindDrawEvents(cv);
+        };
+        img.src = imagemAnexadaBase64;
+    }, 150);
+}
+function bindDrawEvents(cv) {
+    const ctx = cv.getContext('2d');
+    const getPos = e => {
+        const r = cv.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) };
+    };
+    const start = e => {
+        e.preventDefault(); drawing = true;
+        const p = getPos(e); startX = p.x; startY = p.y;
+        drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height));
+        if (drawTool === 'text') {
+            const txt = prompt('Texto:'); if (txt) { ctx.fillStyle = drawColor; ctx.font = `20px sans-serif`; ctx.fillText(txt, p.x, p.y); } drawing = false;
+        }
+    };
+    const move = e => {
+        if (!drawing) return; e.preventDefault();
+        const p = getPos(e);
+        const snap = drawSnapshots[drawSnapshots.length-1];
+        ctx.putImageData(snap, 0, 0);
+        ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; }
+        else if (drawTool === 'circle') {
+            const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2;
+            ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke();
+        }
+        else if (drawTool === 'arrow') {
+            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke();
+            const ang = Math.atan2(p.y - startY, p.x - startX);
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill();
+        }
+    };
+    const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } };
+    cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end;
+    cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end;
+}
+function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-tool').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
+function clearDraw() { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.getContext('2d').drawImage(img, 0, 0); drawSnapshots = [cv.getContext('2d').getImageData(0,0,cv.width,cv.height)]; }; img.src = imagemAnexadaBase64; }
+function salvarAnotacao() {
+    const cv = document.getElementById('drawCanvas');
+    imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85);
+    addMsg('user', '[Foto anotada pronta para envio]');
+    fecharModal('modalDraw');
+    document.getElementById('btnDraw').style.display = 'flex';
+    document.getElementById('input').focus();
+}
+
+// UPLOAD
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
-    const fileNameLower = file.name.toLowerCase();
+    const n = file.name.toLowerCase();
     
-    if (fileNameLower.endsWith('.jpg') || fileNameLower.endsWith('.jpeg') || fileNameLower.endsWith('.png') || fileNameLower.endsWith('.webp') || file.type.startsWith("image/")) {
+    if (n.endsWith('.jpg') || n.endsWith('.jpeg') || n.endsWith('.png') || n.endsWith('.webp') || file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = function(e) { 
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 600;
-                const scaleSize = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * scaleSize;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const MW = 600, sc = MW / img.width;
+                canvas.width = MW; canvas.height = img.height * sc;
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                 imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.6);
                 addMsg('user', `[Foto "${file.name}" anexada]`); 
+                document.getElementById('btnDraw').style.display = 'flex';
                 document.getElementById('input').focus(); 
             }
             img.src = e.target.result;
@@ -491,6 +758,8 @@ function falarTexto(t) {
 }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
+// Puxa a árvore do repositório no fundo para deixar o GITHUB_SEARCH rápido
+carregarRepoTree();
 </script>
 </body>
 </html>
