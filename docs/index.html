@@ -7,65 +7,21 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-    /* =========================================
-       TEMAS E VARIÁVEIS GLOBAIS
-       ========================================= */
     :root {
         --font-mono: 'JetBrains Mono', monospace;
         --font-ui: 'Rajdhani', sans-serif;
-        
-        /* TEMA PADRÃO (CIANO) */
-        --bg-dark: #05070A;
-        --panel-bg: #0D1117;
-        --border-color: #1e293b;
-        --accent: #00FFCC;
-        --text-main: #E8EDF2;
-        --text-muted: #6A7A8A;
-        --orb-color: #00FFCC;
-        --radius: 4px;
+        --bg-dark: #05070A; --panel-bg: #0D1117; --border-color: #1e293b;
+        --accent: #00FFCC; --text-main: #E8EDF2; --text-muted: #6A7A8A;
+        --orb-color: #00FFCC; --radius: 4px;
     }
-
-    /* TEMA STEALTH (CARBONO/MILITAR) */
-    body.theme-stealth {
-        --bg-dark: #0a0a0a;
-        --panel-bg: #0d0d0d;
-        --border-color: #2a2a2a;
-        --accent: #d97706;
-        --text-main: #a3a3a3;
-        --text-muted: #525252;
-        --orb-color: #d97706;
-        --radius: 0px; /* Cantos retos */
-    }
+    body.theme-stealth { --bg-dark: #0a0a0a; --panel-bg: #0d0d0d; --border-color: #2a2a2a; --accent: #d97706; --text-main: #a3a3a3; --text-muted: #525252; --orb-color: #d97706; --radius: 0px; }
     body.theme-stealth .msg { border-left-width: 4px; }
     body.theme-stealth .widget { border-width: 2px; border-style: dashed; }
-
-    /* TEMA ALERTA (VERMELHO) */
-    body.theme-red {
-        --bg-dark: #0a0505;
-        --panel-bg: #140808;
-        --border-color: #3b1111;
-        --accent: #ef4444;
-        --text-main: #fca5a5;
-        --text-muted: #7f1d1d;
-        --orb-color: #ef4444;
-        --radius: 4px;
-    }
-
-    /* TEMA ÂMBAR (QUENTE) */
-    body.theme-amber {
-        --bg-dark: #0a0805;
-        --panel-bg: #14100a;
-        --border-color: #3b2a11;
-        --accent: #f59e0b;
-        --text-main: #fcd34d;
-        --text-muted: #78350f;
-        --orb-color: #f59e0b;
-        --radius: 8px;
-    }
+    body.theme-red { --bg-dark: #0a0505; --panel-bg: #140808; --border-color: #3b1111; --accent: #ef4444; --text-main: #fca5a5; --text-muted: #7f1d1d; --orb-color: #ef4444; --radius: 4px; }
+    body.theme-amber { --bg-dark: #0a0805; --panel-bg: #14100a; --border-color: #3b2a11; --accent: #f59e0b; --text-main: #fcd34d; --text-muted: #78350f; --orb-color: #f59e0b; --radius: 8px; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg-dark); color: var(--text-main); font-family: var(--font-mono); height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: background 0.3s, color 0.3s; }
-
     .hud-container { width: 100vw; height: 100dvh; background: var(--panel-bg); display: flex; flex-direction: column; position: relative; border: 1px solid var(--border-color); transition: 0.3s; }
     @media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; border-radius: var(--radius); } }
 
@@ -76,25 +32,24 @@
     .logo-sub { color: var(--text-muted); font-size: 9px; letter-spacing: 1px; display: none; }
     @media(min-width: 768px) { .logo-sub { display: block; } }
     
-    .header-center { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-ui); font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--text-main); display: none; }
-    @media(min-width: 768px) { .header-center { display: block; } }
-    
-    .header-status { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+    /* INDICADOR DE PROJETO ATIVO */
+    .active-project-box { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 11px; background: rgba(0,255,204,0.1); border: 1px solid var(--accent); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
+    .active-project-box span { color: var(--text-muted); }
+    .active-project-box b { color: var(--accent); text-transform: uppercase; }
+    @media(max-width: 600px) { .active-project-box { display: none; } }
+
+    .header-status { display: flex; align-items: center; gap: 8px; font-size: 11px; margin-left: auto; }
     .status-box { display: flex; align-items: center; gap: 6px; display: none; }
     @media(min-width: 768px) { .status-box { display: flex; } }
-    
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
     .status-dot.ok { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
     .status-dot.warn { background: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
     .status-dot.err { background: #ef4444; box-shadow: 0 0 5px #ef4444; }
-    
     .icon-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; transition: 0.2s; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: center; gap: 5px; }
     .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
 
-    /* MAIN WORKSPACE */
+    /* MAIN */
     main { flex: 1; display: flex; overflow: hidden; position: relative; }
-
-    /* SIDEBAR ESQUERDA (ESCONDE NO MOBILE) */
     .sidebar-left { width: 260px; border-right: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; background: var(--panel-bg); flex-shrink: 0; }
     @media (max-width: 1024px) { .sidebar-left { display: none; } }
     
@@ -104,9 +59,7 @@
     .widget-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; }
     .log-line { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
 
-    /* ÁREA CENTRAL (CHAT + ORBE) */
     .center-area { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, var(--bg-dark) 100%); min-width: 0; }
-    
     .orb-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 0; opacity: 0.15; pointer-events: none; display: flex; justify-content: center; align-items: center; }
     .orb { width: 250px; height: 250px; border-radius: 50%; border: 1px dashed var(--orb-color); display: flex; justify-content: center; align-items: center; animation: spin 30s linear infinite; transition: 0.3s; }
     .orb-2 { position: absolute; width: 150px; height: 150px; border-radius: 50%; border: 2px solid var(--orb-color); border-top-color: transparent; border-bottom-color: transparent; animation: spin 10s linear infinite reverse; }
@@ -123,7 +76,6 @@
     .msg.user::before { content: "USR > "; color: var(--text-muted); font-weight: bold; }
     .msg.thinking { color: var(--accent); font-style: italic; border-left-color: var(--accent); opacity: 0.7; }
 
-    /* BARRA DE COMANDO (FOOTER) */
     footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: center; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
     .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; }
     .cmd-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -131,14 +83,9 @@
     #input:focus { border-bottom-color: var(--accent); }
     .btn-send { background: var(--accent); color: var(--bg-dark); border: none; padding: 0 15px; height: 36px; border-radius: var(--radius); font-family: var(--font-ui); font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
 
-    /* SIDEBAR DIREITA (CONFIGURAÇÕES) */
     .sidebar-right { width: 300px; border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; gap: 10px; background: var(--bg-dark); overflow-y: auto; flex-shrink: 0; }
     .sidebar-right.open { display: flex; }
-    
-    @media (max-width: 1024px) {
-        .sidebar-right { position: absolute; right: 0; top: 0; bottom: 0; z-index: 100; box-shadow: -10px 0 20px rgba(0,0,0,0.8); width: 80%; max-width: 320px; }
-    }
-
+    @media (max-width: 1024px) { .sidebar-right { position: absolute; right: 0; top: 0; bottom: 0; z-index: 100; box-shadow: -10px 0 20px rgba(0,0,0,0.8); width: 80%; max-width: 320px; } }
     .config-label { font-size: 10px; color: var(--text-muted); margin-top: 10px; margin-bottom: 5px; letter-spacing: 1px; }
     .config-select, .config-input { width: 100%; background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: var(--radius); font-family: var(--font-mono); font-size: 12px; outline: none; margin-bottom: 5px; }
     .config-input:focus { border-color: var(--accent); }
@@ -146,8 +93,7 @@
     .btn-config-action:hover { border-color: var(--accent); color: var(--accent); }
     .btn-danger { border-color: #7f1d1d; color: #ef4444; }
     .btn-danger:hover { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
-    
-    /* MODAL DE ANOTAÇÃO */
+
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 10px; }
     .modal-overlay.open { display: flex; }
     .modal-box { background: var(--panel-bg); border: 1px solid var(--accent); border-radius: var(--radius); width: 100%; max-width: 800px; display: flex; flex-direction: column; max-height: 90vh; }
@@ -168,82 +114,43 @@
 
 <div class="hud-container">
     <header>
-        <div class="logo-area">
-            <div class="logo-title">EXODRIVE</div>
-            <div class="logo-sub">BOSS AI</div>
-        </div>
-        <div class="header-center">B O S S</div>
+        <div class="logo-area"><div class="logo-title">EXODRIVE</div><div class="logo-sub">BOSS AI</div></div>
         
+        <!-- FOCO ATUAL -->
+        <div class="active-project-box">
+            <span>FOCO:</span> <b id="displayActiveProject">CARREGANDO...</b>
+        </div>
+
         <div class="header-status">
-            <div class="status-box">
-                <div id="statusDot" class="status-dot ok"></div>
-                <span id="statusText">ONLINE</span>
-            </div>
+            <div class="status-box"><div id="statusDot" class="status-dot ok"></div><span id="statusText">ONLINE</span></div>
             <button class="icon-btn" onclick="toggleMute()" id="btnMute" title="Voz">🔊</button>
             <button class="icon-btn" onclick="toggleConfig()" title="Configurações">⚙</button>
         </div>
     </header>
 
     <main>
-        <!-- ESQUERDA: TELEMETRIA -->
         <aside class="sidebar-left">
             <div class="widget">
                 <div class="widget-title">STATUS DO SISTEMA</div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div id="net-dot" class="status-dot ok"></div>
-                    <span id="net-text" style="color:var(--accent); font-size:12px;">CONECTADO</span>
-                </div>
+                <div style="display:flex; align-items:center; gap:8px;"><div id="net-dot" class="status-dot ok"></div><span id="net-text" style="color:var(--accent); font-size:12px;">CONECTADO</span></div>
             </div>
-            
+            <div class="widget"><div class="widget-title">HORÁRIO LOCAL</div><div class="widget-val" id="metric-time" style="font-size:20px;">--:--:--</div><div class="widget-sub" id="metric-date">---</div></div>
+            <div class="widget"><div class="widget-title">CONSUMO DE TOKENS</div><div class="widget-val" id="metric-tokens">0</div></div>
             <div class="widget">
-                <div class="widget-title">LOCALIZAÇÃO</div>
-                <div class="widget-val" id="metric-location" style="font-size:12px; color:var(--text-main);">Buscando...</div>
+                <div class="widget-title">INDEXAÇÃO GITHUB</div>
+                <div class="widget-sub"><span>Repos Encontrados:</span> <span id="metric-repos">0</span></div>
+                <div class="widget-sub"><span>Arquivos (Cache):</span> <span id="metric-files">0</span></div>
+                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px;" onclick="mapearRepositorio()">SINCRONIZAR AGORA</button>
             </div>
-
-            <div class="widget">
-                <div class="widget-title">HORÁRIO LOCAL</div>
-                <div class="widget-val" id="metric-time" style="font-size:20px;">--:--:--</div>
-                <div class="widget-sub" id="metric-date">---</div>
-            </div>
-
-            <div class="widget">
-                <div class="widget-title">CONSUMO DE TOKENS</div>
-                <div class="widget-val" id="metric-tokens">0</div>
-            </div>
-
-            <div class="widget">
-                <div class="widget-title">FERRAMENTAS USADAS</div>
-                <div class="widget-sub"><span>Buscas Web:</span> <span id="metric-web">0</span></div>
-                <div class="widget-sub"><span>Imagens:</span> <span id="metric-img">0</span></div>
-                <div class="widget-sub"><span>Github:</span> <span id="metric-git">0</span></div>
-                <div class="widget-sub"><span>Visão AI:</span> <span id="metric-vision">0</span></div>
-            </div>
-
-            <div class="widget">
-                <div class="widget-title">LATÊNCIA (API)</div>
-                <div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div>
-            </div>
-
-            <div class="widget" style="flex:1;">
-                <div class="widget-title">LOG DE ATIVIDADE</div>
-                <div id="action-log">
-                    <div class="log-line">[SYS] Aguardando inicialização...</div>
-                </div>
-            </div>
+            <div class="widget"><div class="widget-title">LATÊNCIA (API)</div><div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div></div>
+            <div class="widget" style="flex:1;"><div class="widget-title">LOG DE ATIVIDADE</div><div id="action-log"><div class="log-line">[SYS] Aguardando inicialização...</div></div></div>
         </aside>
 
-        <!-- CENTRO: CHAT E ORBE -->
         <div class="center-area">
-            <div class="orb-container">
-                <div class="orb">
-                    <div class="orb-2"></div>
-                    <div class="orb-core"></div>
-                </div>
-            </div>
+            <div class="orb-container"><div class="orb"><div class="orb-2"></div><div class="orb-core"></div></div></div>
             <div id="chat"></div>
         </div>
 
-        <!-- DIREITA: CONFIGURAÇÕES -->
         <aside class="sidebar-right" id="configPanel">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
                 <div style="font-family: var(--font-ui); font-weight: 700; letter-spacing: 1px;">CONFIGURAÇÕES</div>
@@ -258,6 +165,10 @@
                 <option value="theme-red">Alerta Vermelho</option>
             </select>
 
+            <label class="config-label" style="color:var(--accent);">GITHUB USERNAME</label>
+            <input type="text" id="gitUserInput" class="config-input" placeholder="Ex: lexpaker-arch">
+            <button class="btn-config-action" onclick="salvarGitUser()">SALVAR E SINCRONIZAR</button>
+
             <label class="config-label">OPERATOR PROFILE</label>
             <select id="userSelect" class="config-select" onchange="mudarUsuario()">
                 <option value="Patrão">PATRÃO (Engenheiro)</option>
@@ -265,17 +176,12 @@
             </select>
 
             <label class="config-label">VOZ DO BOSS (SOTAQUES)</label>
-            <select id="voiceSelect" class="config-select" onchange="mudarVoz()">
-                <option value="">Padrão do navegador</option>
-            </select>
+            <select id="voiceSelect" class="config-select" onchange="mudarVoz()"><option value="">Padrão do navegador</option></select>
 
             <label class="config-label">VELOCIDADE DA VOZ: <span id="rateVal" style="color:var(--accent)">1.15</span>x</label>
             <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)" style="width:100%;">
-
             <label class="config-label">TOM DA VOZ: <span id="pitchVal" style="color:var(--accent)">1.05</span></label>
             <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)" style="width:100%;">
-
-            <button class="btn-config-action" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO</button>
             <button class="btn-config-action" onclick="testarVoz()">🔊 TESTAR VOZ</button>
 
             <label class="config-label" style="color:var(--accent); margin-top: 20px;">⚡ API RESERVA (GROQ)</label>
@@ -287,7 +193,6 @@
         </aside>
     </main>
 
-    <!-- FOOTER: INPUT DE COMANDO -->
     <footer>
         <input type="file" id="fileInput" accept="image/*,text/*" style="display:none" onchange="lerArquivo(event)">
         <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
@@ -298,13 +203,9 @@
     </footer>
 </div>
 
-<!-- MODAL DE ANOTAÇÃO -->
 <div class="modal-overlay" id="modalDraw">
     <div class="modal-box">
-        <div class="modal-header">
-            <span>ANOTAR FOTO</span>
-            <button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalDraw')">×</button>
-        </div>
+        <div class="modal-header"><span>ANOTAR FOTO</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalDraw')">×</button></div>
         <div class="modal-body">
             <div class="draw-toolbar">
                 <button class="draw-tool active" data-tool="pen" onclick="setDrawTool('pen',this)">✏ Caneta</button>
@@ -321,13 +222,9 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
-// ==========================================
-// CONFIGURAÇÕES E ESTADO GLOBAL
-// ==========================================
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
-const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
@@ -336,50 +233,49 @@ let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
 let temaAtual = localStorage.getItem('boss_theme') || 'theme-cyan';
+let gitUser = localStorage.getItem('boss_git_user') || 'lexpaker-arch';
+let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
-let localizacaoUsuario = 'Buscando...';
-let repoTree = [];
-let fileCache = {};
+
+let listaRepos = []; 
+let cacheTrees = {}; 
+let fileCache = {};  
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
-let metricWeb = parseInt(localStorage.getItem('metric_web')) || 0;
-let metricImg = parseInt(localStorage.getItem('metric_img')) || 0;
+let metricLatency = localStorage.getItem('metric_latency') || '--';
 let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
 let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
 
-// APLICA O TEMA SALVO
+// UI INIT
 document.body.className = temaAtual;
 document.getElementById('themeSelect').value = temaAtual;
-
 document.getElementById('userSelect').value = userRole;
-document.getElementById('rateSlider').value = vozRate;
-document.getElementById('rateVal').textContent = vozRate.toFixed(2);
-document.getElementById('pitchSlider').value = vozPitch;
-document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
+document.getElementById('rateSlider').value = vozRate; document.getElementById('rateVal').textContent = vozRate.toFixed(2);
+document.getElementById('pitchSlider').value = vozPitch; document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
 document.getElementById('groqKeyInput').value = localStorage.getItem('boss_groq_key') || '';
-atualizarMuteBtn();
-atualizarHUD();
+document.getElementById('gitUserInput').value = gitUser;
+atualizarMuteBtn(); atualizarHUD(); atualizarDisplayProjeto();
+
+function atualizarDisplayProjeto() {
+    const el = document.getElementById('displayActiveProject');
+    if (el) el.textContent = projetoAtivo ? projetoAtivo.split('/')[1] || projetoAtivo : 'NENHUM';
+}
 
 function atualizarHUD() {
     document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
-    document.getElementById('metric-web').textContent = metricWeb;
-    document.getElementById('metric-img').textContent = metricImg;
-    document.getElementById('metric-git').textContent = metricGit;
-    document.getElementById('metric-vision').textContent = metricVision;
+    document.getElementById('metric-repos').textContent = listaRepos.length;
+    document.getElementById('metric-files').textContent = Object.keys(fileCache).length;
+    document.getElementById('metric-latency').textContent = metricLatency + ' ms';
     localStorage.setItem('metric_tokens', metricTokens);
-    localStorage.setItem('metric_web', metricWeb);
-    localStorage.setItem('metric_img', metricImg);
-    localStorage.setItem('metric_git', metricGit);
-    localStorage.setItem('metric_vision', metricVision);
+    localStorage.setItem('metric_latency', metricLatency);
 }
 
 function addLog(texto) {
     const c = document.getElementById('action-log');
-    const n = document.createElement('div');
-    n.className = 'log-line';
+    const n = document.createElement('div'); n.className = 'log-line';
     n.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${texto}`;
     c.insertBefore(n, c.firstChild);
     if (c.children.length > 4) c.removeChild(c.lastChild);
@@ -391,57 +287,24 @@ setInterval(() => {
     document.getElementById('metric-date').textContent = a.toLocaleDateString('pt-BR');
 }, 1000);
 
-if ("geolocation" in navigator) {
-    navigator.geolocation.getCurrentPosition(async (p) => {
-        try {
-            const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=pt`);
-            const d = await r.json();
-            localizacaoUsuario = `${d.city || d.locality}, ${d.principalSubdivision}`;
-            document.getElementById('metric-location').textContent = localizacaoUsuario;
-        } catch(e) { document.getElementById('metric-location').textContent = `Lat: ${p.coords.latitude.toFixed(2)}, Lon: ${p.coords.longitude.toFixed(2)}`; }
-    }, () => { document.getElementById('metric-location').textContent = "Negado"; });
-}
-
 window.addEventListener('online', () => { document.getElementById('net-dot').className = 'status-dot ok'; document.getElementById('net-text').textContent = 'CONECTADO'; });
 window.addEventListener('offline', () => { document.getElementById('net-dot').className = 'status-dot err'; document.getElementById('net-text').textContent = 'OFFLINE'; });
 
-// UI E TEMA
-function mudarTema(tema) {
-    document.body.className = tema;
-    localStorage.setItem('boss_theme', tema);
-    temaAtual = tema;
-}
+function mudarTema(tema) { document.body.className = tema; localStorage.setItem('boss_theme', tema); temaAtual = tema; }
 function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
-function toggleMute() {
-    vozAtiva = !vozAtiva;
-    localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off');
-    atualizarMuteBtn();
-    if(!vozAtiva) window.speechSynthesis.cancel();
-}
-function atualizarMuteBtn() {
-    const btn = document.getElementById('btnMute');
-    btn.innerHTML = vozAtiva ? '🔊' : '🔇';
-    btn.style.color = vozAtiva ? 'var(--text-muted)' : '#ef4444';
-}
+function toggleMute() { vozAtiva = !vozAtiva; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); atualizarMuteBtn(); if(!vozAtiva) window.speechSynthesis.cancel(); }
+function atualizarMuteBtn() { const btn = document.getElementById('btnMute'); btn.innerHTML = vozAtiva ? '🔊' : '🔇'; btn.style.color = vozAtiva ? 'var(--text-muted)' : '#ef4444'; }
 function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); }
 function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
 function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
-function salvarGroqKey() {
-    const k = document.getElementById('groqKeyInput').value.trim();
-    localStorage.setItem('boss_groq_key', k);
-    alert(k ? 'Chave Groq salva!' : 'Chave removida.');
-}
+function salvarGroqKey() { const k = document.getElementById('groqKeyInput').value.trim(); localStorage.setItem('boss_groq_key', k); alert(k ? 'Chave Groq salva!' : 'Chave removida.'); }
+function salvarGitUser() { gitUser = document.getElementById('gitUserInput').value.trim(); localStorage.setItem('boss_git_user', gitUser); alert('Usuário do GitHub salvo. Sincronizando...'); mapearRepositorio(); }
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ==========================================
-// CÉREBRO DO BOSS
-// ==========================================
 function formatarTexto(texto) {
     texto = texto.replace(/\b(Chefe|chefe)\b/g, userRole);
-    texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
-        return `<pre><code class="language-${lang||'text'}">${code.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`;
-    });
+    texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => `<pre><code class="language-${lang||'text'}">${code.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`);
     return texto.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>').replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>').replace(/\n/g, '<br>');
 }
 
@@ -461,14 +324,18 @@ function addMsg(tipo, texto, salvar = true) {
 }
 
 function buildSystemPrompt(isConversational = false) {
-    const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. Fala como gente ("péra", "cara").
-NUNCA chame o usuário de "Chefe", chame de ${userRole}.
-Você tem memória. Tarefas atuais na agenda oculta: ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma'}.
-Se o usuário pedir para anotar, adicione a tag secreta [AGENDA_ADD: tarefa].
-Se pedir para apagar/concluir, adicione [AGENDA_DEL: tarefa].
-Se precisar calcular algo, faça a conta e responda.
-Se precisar buscar código, use [GITHUB_SEARCH: termo] ou [GITHUB_READ: arquivo].
-Sempre adicione [VOZ: resumo curto] no final.`;
+    const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. NUNCA chame o usuário de "Chefe", chame de ${userRole}.
+Você tem acesso aos repositórios do usuário '${gitUser}'. 
+**O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
+
+=== REGRAS DE AÇÃO ===
+1. Se o usuário pedir para mudar de projeto, disparar a tag [MUDAR_PROJETO: nome_do_repositorio] (ex: [MUDAR_PROJETO: lexpaker-arch/EXODASH--Local]).
+2. Se pedirem para buscar código NO PROJETO ATUAL, use [GITHUB_FIND: termo_palavra_chave]. O sistema fará a busca local.
+3. Se pedirem para ler um arquivo específico, use [GITHUB_READ: caminho/do/arquivo.ext]. O sistema lerá apenas o projeto ativo.
+4. Se você não achar algo no projeto ativo, avise que talvez esteja em outro projeto e pergunte se deve mudar.
+5. Se pedirem para anotar algo, use [AGENDA_ADD: tarefa].
+6. Se pedirem para apagar, use [AGENDA_DEL: termo].
+7. Sempre adicione [VOZ: resumo curto] no final.`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -479,52 +346,111 @@ async function chamarIA(messages, temp) {
     try {
         const st = performance.now();
         const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        document.getElementById('metric-latency').textContent = `${Math.round(performance.now() - st)} ms`;
+        const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
         if (!resp.ok) throw new Error(resp.status === 429 ? "COTA_ESGOTADA" : `Erro ${resp.status}`);
-        document.getElementById('statusDot').className = 'status-dot ok';
-        document.getElementById('statusText').textContent = 'ONLINE';
+        document.getElementById('statusDot').className = 'status-dot ok'; document.getElementById('statusText').textContent = 'ONLINE';
         return await resp.json();
     } catch (e1) {
         addLog(`Falha Principal. Tentando Groq...`);
         const groqKey = localStorage.getItem('boss_groq_key');
         if (!groqKey) {
-            document.getElementById('statusDot').className = 'status-dot err';
-            document.getElementById('statusText').textContent = 'SEM API';
+            document.getElementById('statusDot').className = 'status-dot err'; document.getElementById('statusText').textContent = 'SEM API';
             throw new Error(`API Principal falhou e não há chave Groq configurada.`);
         }
         try {
-            document.getElementById('statusDot').className = 'status-dot warn';
-            document.getElementById('statusText').textContent = 'FALLBACK';
-            const resp2 = await fetch(GROQ_URL_DIRETA, { 
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, 
-                body: JSON.stringify({ model: GROQ_MODELO, messages: messages, temperature: temp }) 
-            });
+            document.getElementById('statusDot').className = 'status-dot warn'; document.getElementById('statusText').textContent = 'FALLBACK';
+            const st = performance.now();
+            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify({ model: GROQ_MODELO, messages: messages, temperature: temp }) });
+            const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
             if (!resp2.ok) throw new Error(`Erro Groq: ${resp2.status}`);
             return await resp2.json();
         } catch (e2) {
-            document.getElementById('statusDot').className = 'status-dot err';
-            document.getElementById('statusText').textContent = 'OFFLINE';
+            document.getElementById('statusDot').className = 'status-dot err'; document.getElementById('statusText').textContent = 'OFFLINE';
             throw new Error(`Ambas APIs falharam. (${e1.message} / ${e2.message})`);
         }
     }
 }
 
-async function carregarRepoTree() {
-    if (repoTree.length > 0) return;
+async function mapearRepositorio() {
+    toggleConfig();
+    addMsg('boss', '⚙ Sincronizando repositórios do GitHub. Isso pode levar alguns segundos...');
+    listaRepos = []; cacheTrees = {};
     try {
-        const res = await fetch(`${WORKER_URL}/github-tree?repo=${REPO_PROJETO}`);
+        const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&sort=updated`);
+        if(!res.ok) throw new Error("Usuário não encontrado ou limite de API atingido.");
         const data = await res.json();
-        if (data.tree) repoTree = data.tree.filter(f => f.type === 'blob').map(f => f.path);
-    } catch(e) {}
+        
+        for (let repo of data) {
+            listaRepos.push(repo.full_name);
+            fetch(`${WORKER_URL}/github-tree?repo=${repo.full_name}`)
+                .then(r => r.json())
+                .then(treeData => {
+                    if(treeData.tree) cacheTrees[repo.full_name] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
+                }).catch(()=>{});
+        }
+        atualizarHUD();
+        setTimeout(() => addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios. Qual deles vamos usar agora? Diga "mudar para [nome do repositório]".`), 2000);
+    } catch(e) {
+        addMsg('error', `Erro ao puxar repos: ${e.message}`);
+    }
 }
-async function fetchGithubFile(path) {
-    if (fileCache[path]) return fileCache[path];
+
+async function fetchGithubFile(repo, path) {
+    const key = `${repo}/${path}`;
+    if (fileCache[key]) return fileCache[key];
     try {
-        const res = await fetch(`${WORKER_URL}/github?repo=${REPO_PROJETO}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
+        const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
-        if (data.content) { const txt = decodeURIComponent(escape(atob(data.content))); fileCache[path] = txt; return txt; }
-        return data.message ? `[ERRO GITHUB]: ${data.message}` : `[ERRO: Vazio]`;
-    } catch (e) { return `[ERRO REDE]: ${e.message}`; }
+        if (data.content) { 
+            const txt = decodeURIComponent(escape(atob(data.content))); 
+            fileCache[key] = txt; atualizarHUD(); return txt; 
+        }
+        return `[ERRO GITHUB]`;
+    } catch (e) { return `[ERRO REDE]`; }
+}
+
+// A MÁGICA DA BUSCA ZERO-TOKEN (RESTRITA AO PROJETO ATIVO)
+async function buscarZeroToken(termo) {
+    if (!projetoAtivo) return "(Nenhum projeto ativo selecionado. Use o comando 'mudar para [nome_do_projeto]'.)";
+    
+    const tree = cacheTrees[projetoAtivo];
+    if(!tree) return `(Não foi possível ler a árvore do projeto ${projetoAtivo}. Tente sincronizar novamente.)`;
+
+    let resultados = "";
+    let arquivosLidos = 0;
+    
+    // 1. Encontra arquivos cujo NOME tem o termo
+    const matchesName = tree.filter(p => p.toLowerCase().includes(termo.toLowerCase()));
+    
+    // 2. Pega arquivos de código prováveis
+    const codeExts = ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json'];
+    const codeFiles = tree.filter(p => codeExts.some(e => p.toLowerCase().endsWith(e)));
+    
+    const toScan = [...new Set([...matchesName, ...codeFiles.slice(0, 15)])].slice(0, 10); // Limite de 10 arquivos
+
+    for (const path of toScan) {
+        const content = await fetchGithubFile(projetoAtivo, path);
+        if (content.startsWith('[ERRO')) continue;
+        
+        // 3. Vasculha o conteúdo no JS (Zero token)
+        const lines = content.split('\n');
+        let trecho = "";
+        lines.forEach((ln, i) => {
+            if (ln.toLowerCase().includes(termo.toLowerCase())) {
+                const start = Math.max(0, i - 2);
+                const end = Math.min(lines.length, i + 3);
+                const snippet = lines.slice(start, end).join('\n');
+                trecho += `\nLinha ${i+1}:\n\`\`\`\n${snippet}\n\`\`\`\n`;
+            }
+        });
+        
+        if(trecho) {
+            resultados += `\n=== ENCONTRADO EM: ${path} ===\n${trecho}`;
+            arquivosLidos++;
+        }
+        if(arquivosLidos >= 5) break; 
+    }
+    return resultados || "(Nenhum trecho encontrado no projeto ativo.)";
 }
 
 async function enviar() {
@@ -534,8 +460,7 @@ async function enviar() {
 
     input.value = '';
     if (texto) addMsg('user', texto);
-    
-    const t = addMsg('thinking', 'Analisando dados...', false);
+    const t = addMsg('thinking', 'Analisando...', false);
     document.getElementById('send').disabled = true;
 
     try {
@@ -547,12 +472,12 @@ async function enviar() {
             t.div.textContent = "Processando visão..."; metricVision++; atualizarHUD();
             const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
             const vd = await vr.json();
-            contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na imagem]";
+            contextoVisao = vd.choices?.[0]?.message?.content || "[Falha]";
             imagemAnexadaBase64 = ''; document.getElementById('btnDraw').style.display = 'none';
         }
-        if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "Analise isso."}`;
+        if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "Analise."}`;
 
-        const isConversational = ['acha', 'pensa', 'opinião', 'sugere', 'me ajuda'].some(p => texto.toLowerCase().includes(p));
+        const isConversational = ['acha', 'pensa', 'opinião'].some(p => texto.toLowerCase().includes(p));
         let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational) }, ...historico.slice(-6)];
         if (userContent) msgs.push({ role: 'user', content: userContent });
 
@@ -564,40 +489,58 @@ async function enviar() {
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
-            const searchM = [...resposta.matchAll(/\[GITHUB_SEARCH:\s*(.*?)\]/g)];
-            if (searchM.length > 0) {
-                await carregarRepoTree();
+            // MUDAR PROJETO (HANDS-FREE)
+            const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
+            if (switchM) {
+                const novoProjeto = switchM[1].trim();
+                // Tenta achar o nome exato ou aproximado
+                const match = listaRepos.find(r => r.toLowerCase().includes(novoProjeto.toLowerCase()));
+                if (match) {
+                    projetoAtivo = match;
+                    localStorage.setItem('boss_active_repo', projetoAtivo);
+                    atualizarDisplayProjeto();
+                    addLog(`Foco alterado para: ${projetoAtivo}`);
+                    resposta = resposta.replace(switchM[0], '').trim();
+                    // Se a resposta estava vazia, coloca um texto padrão
+                    if(!resposta) resposta = `Foco alterado para o projeto **${projetoAtivo.split('/')[1]}**. O que precisamos fazer?`;
+                } else {
+                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Aviso: Não encontrei o repositório "${novoProjeto}" na sua lista. Verifique se o nome está correto.)*`;
+                }
+            }
+
+            // BUSCA GLOBAL (ZERO-TOKEN)
+            const findM = [...resposta.matchAll(/\[GITHUB_FIND:\s*(.*?)\]/g)];
+            if (findM.length > 0) {
                 let allRes = "";
-                for (const m of searchM) {
-                    const termo = m[1].trim(); t.div.textContent = `Buscando "${termo}"...`; metricGit++; atualizarHUD();
-                    const codeFiles = repoTree.filter(p => ['.kt','.java','.js','.ts','.html','.xml','.py'].some(e => p.endsWith(e))).slice(0, 10);
-                    let matches = "";
-                    for (const path of codeFiles) {
-                        const content = await fetchGithubFile(path);
-                        if (content.startsWith('[ERRO')) continue;
-                        content.split('\n').forEach((ln, i) => { if (ln.toLowerCase().includes(termo.toLowerCase())) matches += `\n${path}:${i+1}: ${ln.trim()}`; });
-                    }
-                    allRes += `\nBusca "${termo}":\n${matches || '(Nada encontrado)'}`;
+                for (const m of findM) {
+                    const termo = m[1].trim();
+                    t.div.textContent = `Buscando "${termo}" no projeto ${projetoAtivo.split('/')[1]}...`; 
+                    metricGit++; atualizarHUD();
+                    allRes += `\n${await buscarZeroToken(termo)}`;
                 }
                 msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Resultados do repo:\n${allRes}\n\nResponda.` });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Busca concluída. Aqui estão os trechos exatos:\n${allRes}\n\nAgora responda.` });
                 continue;
             }
 
+            // LEITURA DE ARQUIVO ESPECÍFICO
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
-                await carregarRepoTree();
-                let all = ""; 
-                for (const m of readM) {
-                    let rp = m[1].trim(); let fp = rp;
-                    if (!rp.includes('/') && repoTree.length > 0) { const f = repoTree.find(p => p.endsWith(rp)); if (f) fp = f; }
-                    t.div.textContent = `Lendo ${fp}...`; metricGit++; atualizarHUD();
-                    const fc = await fetchGithubFile(fp);
-                    all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
+                if (!projetoAtivo) {
+                    resposta = "Não posso ler arquivos sem um projeto ativo. Diga 'mudar para [nome]' primeiro.";
+                    resposta = resposta.replace(readM[0], '').trim();
+                } else {
+                    let all = ""; 
+                    for (const m of readM) {
+                        let fp = m[1].trim().replace(projetoAtivo + '/', ''); 
+                        t.div.textContent = `Lendo ${fp}...`; metricGit++; atualizarHUD();
+                        const fc = await fetchGithubFile(projetoAtivo, fp);
+                        all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
+                    }
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo:\n${all}\n\nAnalise.` });
+                    continue;
                 }
-                msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo:\n${all}\n\nAnalise.` });
-                continue;
             }
 
             respostaFinal = resposta; continuar = false;
@@ -634,70 +577,25 @@ async function enviar() {
     }
 }
 
-// CANETA DE ANOTAÇÃO
+// UTILITÁRIOS (VOZ, ANOTAÇÃO, ETC)
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
-function abrirAnotacao() {
-    if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto primeiro.');
-    document.getElementById('modalDraw').classList.add('open');
-    setTimeout(() => {
-        const cv = document.getElementById('drawCanvas'); const img = new Image();
-        img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); };
-        img.src = imagemAnexadaBase64;
-    }, 150);
-}
-function bindDrawEvents(cv) {
-    const ctx = cv.getContext('2d');
-    const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; };
-    const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); };
-    const move = e => {
-        if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0);
-        ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round';
-        if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; }
-        else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); }
-        else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); }
-    };
-    const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } };
-    cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end;
-}
+function abrirAnotacao() { if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); document.getElementById('modalDraw').classList.add('open'); setTimeout(() => { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); }; img.src = imagemAnexadaBase64; }, 150); }
+function bindDrawEvents(cv) { const ctx = cv.getContext('2d'); const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); }; const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } }; cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; }
 function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-tool').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-// UTILITÁRIOS
-function falarTexto(t) {
-    if (!vozAtiva || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' '));
-    u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch;
-    if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; }
-    window.speechSynthesis.speak(u);
-}
+function falarTexto(t) { if (!vozAtiva || !('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' ')); u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch; if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } window.speechSynthesis.speak(u); }
 function testarVoz() { falarTexto("Sistemas de voz do BOSS operando."); }
 
 let reconhecimento;
-function iniciarEscuta() {
-    if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte.");
-    reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    reconhecimento.lang = 'pt-BR';
-    reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; };
-    reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); };
-    reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; };
-    reconhecimento.start();
-}
+function iniciarEscuta() { if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte."); reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); reconhecimento.lang = 'pt-BR'; reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; }; reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); }; reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; }; reconhecimento.start(); }
 
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
     if (file.type.startsWith("image/")) {
         const reader = new FileReader();
-        reader.onload = function(e) { 
-            const img = new Image(); img.onload = function() { 
-                const canvas = document.createElement('canvas'); const MW = 800, sc = MW / img.width; canvas.width = MW; canvas.height = img.height * sc;
-                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.8);
-                addMsg('user', `[Imagem anexada]`); document.getElementById('btnDraw').style.display = 'flex';
-            };
-            img.src = e.target.result;
-        };
+        reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const MW = 800, sc = MW / img.width; canvas.width = MW; canvas.height = img.height * sc; canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.8); addMsg('user', `[Imagem anexada]`); document.getElementById('btnDraw').style.display = 'flex'; }; img.src = e.target.result; };
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
@@ -707,8 +605,7 @@ function lerArquivo(event) {
     event.target.value = '';
 }
 
-function mapearRepositorio() { toggleConfig(); addMsg('boss', '✅ Repositório lido. Pode pedir para buscar funções.'); carregarRepoTree(); }
-function limparHistorico() { if(confirm("Apagar todo o histórico?")) { localStorage.clear(); location.reload(); } }
+function limparHistorico() { if(confirm("Apagar todo o histórico e memórias locais?")) { localStorage.clear(); location.reload(); } }
 
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
@@ -717,7 +614,7 @@ if (window.speechSynthesis) {
         vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
     };
 }
-carregarRepoTree();
+mapearRepositorio();
 </script>
 </body>
 </html>
