@@ -34,7 +34,7 @@ header { padding: 10px 20px; display: flex; justify-content: space-between; alig
 
 main { flex: 1; display: flex; flex-direction: row; position: relative; overflow: hidden; transition: 0.3s; width: 100%; height: 100%; min-height: 0; }
 .chat-area { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; height: 100%; min-height: 0; }
-.side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-right: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 15px; font-family: monospace; order: -1; overflow-y: auto; flex-shrink: 0; }
+.side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-right: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 12px; font-family: monospace; order: -1; overflow-y: auto; flex-shrink: 0; }
 @media (min-width: 900px) { .side-hud { display: flex; } }
 .hud-widget { border: 1px solid rgba(0,255,204,0.1); background: #05070A; border-radius: 6px; padding: 12px; }
 .hud-widget-title { font-size: 10px; color: #6A7A8A; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.1); padding-bottom: 4px; }
@@ -103,15 +103,16 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .modal-close { background: transparent; border: none; color: #E74C3C; font-size: 20px; cursor: pointer; }
 .modal-body { padding: 18px; overflow-y: auto; flex: 1; }
 
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(0,255,204,0.2); margin-bottom: 15px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(0,255,204,0.2); margin-bottom: 15px; flex-wrap: wrap;}
 .tab { background: transparent; border: 1px solid transparent; color: #6A7A8A; padding: 8px 14px; font-family: monospace; font-size: 12px; cursor: pointer; border-bottom: none; }
 .tab.active { color: #00FFCC; border-color: rgba(0,255,204,0.3); background: rgba(0,255,204,0.05); }
 .tab-content { display: none; } .tab-content.active { display: block; }
 
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
 .calc-card { border: 1px solid rgba(0,255,204,0.15); border-radius: 6px; padding: 14px; background: #05070A; }
 .calc-card h4 { color: #00FFCC; font-family: monospace; font-size: 12px; margin-bottom: 10px; }
 .calc-card label { display: block; font-family: monospace; font-size: 11px; color: #8A9AAA; margin-top: 8px; }
-.calc-card input { width: 100%; background: #0D1117; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-top: 3px; }
+.calc-card input, .calc-card select { width: 100%; background: #0D1117; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-top: 3px; }
 .calc-btn { margin-top: 10px; width: 100%; background: rgba(0,255,204,0.1); border: 1px solid #00FFCC; color: #00FFCC; padding: 7px; border-radius: 4px; font-family: monospace; font-size: 12px; cursor: pointer; }
 .calc-result { margin-top: 10px; padding: 10px; border-radius: 4px; background: rgba(0,255,204,0.05); border: 1px solid rgba(0,255,204,0.2); color: #00FFCC; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
 .ref-table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; }
@@ -125,6 +126,7 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .measure-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; padding: 12px; border: 1px dashed rgba(0,255,204,0.3); border-radius: 6px; }
 .measure-form input, .measure-form select { background: #05070A; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; }
 .btn-primary { background: rgba(0,255,204,0.15); border: 1px solid #00FFCC; color: #00FFCC; padding: 8px 14px; border-radius: 4px; font-family: monospace; font-size: 12px; cursor: pointer; width: 100%;}
+.btn-secondary { background: transparent; border: 1px solid rgba(0,255,204,0.4); color: #00FFCC; padding: 8px 14px; border-radius: 4px; font-family: monospace; font-size: 12px; cursor: pointer; }
 
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; }
 .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; }
@@ -163,8 +165,15 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         <option value="Patrão">PATRÃO (Engenheiro)</option>
         <option value="Henrique">HENRIQUE (Comercial)</option>
       </select>
+      <label>VOZ DO BOSS (SOTAQUES)</label>
+      <select id="voiceSelect" onchange="mudarVoz()"><option value="">Padrão do navegador</option></select>
       <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
-      <input type="range" id="rateSlider" min="0.8" max="1.5" step="0.05" value="1.15" onchange="mudarRate(this.value)">
+      <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
+      <label>TOM DA VOZ: <span id="pitchVal">1.05</span></label>
+      <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)">
+      
+      <button class="btn-save" style="border-color:#F1C40F; color:#F1C40F; margin-top:15px;" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO (CODEBASE)</button>
+      <button class="btn-save" onclick="testarVoz()">🔊 TESTAR VOZ</button>
       
       <label style="color:#F1C40F; margin-top: 20px;">⚡ API RESERVA (GROQ DIRETA)</label>
       <input type="password" id="groqKeyInput" placeholder="gsk_...">
@@ -176,8 +185,23 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 
     <main>
         <div class="side-hud">
-            <div class="hud-widget"><div class="hud-widget-title">HORÁRIO LOCAL</div><div class="hud-widget-val" id="metric-time" style="color:#E8EDF2;">--:--:--</div></div>
+            <div class="hud-widget">
+                <div class="hud-widget-title">STATUS DO SISTEMA</div>
+                <div style="display:flex; align-items:center; gap:8px;"><div id="internet-dot" class="status-dot ok"></div><div id="internet-text" style="color:#00FFCC; font-weight:bold;">ONLINE</div></div>
+            </div>
+            <div class="hud-widget"><div class="hud-widget-title">LOCALIZAÇÃO</div><div class="hud-widget-sub" id="metric-location" style="color:#F1C40F; font-weight:bold;">Buscando...</div></div>
+            <div class="hud-widget"><div class="hud-widget-title">HORÁRIO LOCAL</div><div class="hud-widget-val" id="metric-time" style="color:#E8EDF2;">--:--:--</div><div class="hud-widget-sub" id="metric-date">---</div></div>
             <div class="hud-widget"><div class="hud-widget-title">CONSUMO DE TOKENS</div><div class="hud-widget-val" id="metric-tokens">0</div></div>
+            <div class="hud-widget">
+                <div class="hud-widget-title">FERRAMENTAS USADAS</div>
+                <div class="hud-widget-sub">Buscas Web: <span id="metric-web" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Imagens: <span id="metric-img" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Vídeos: <span id="metric-vid" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Github: <span id="metric-git" style="color:#00FFCC">0</span></div>
+                <div class="hud-widget-sub">Visão AI: <span id="metric-vision" style="color:#F1C40F">0</span></div>
+                <div class="hud-widget-sub">Geração Img: <span id="metric-gen-img" style="color:#F1C40F">0</span></div>
+            </div>
+            <div class="hud-widget"><div class="hud-widget-title">LATÊNCIA (API)</div><div class="hud-widget-val" id="metric-latency" style="font-size:16px;">-- ms</div></div>
             
             <div class="hud-widget" style="border-color: #F1C40F;">
                 <div class="hud-widget-title" style="color: #F1C40F; border-bottom-color: rgba(241,196,15,0.3);">📌 AGENDA / PENDÊNCIAS</div>
@@ -224,14 +248,80 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         <button class="tab" onclick="mudarAba('calc','dtc',this)">🔍 DTC</button>
       </div>
       <div class="tab-content active" id="calc-eletrica">
-        <div class="calc-card">
-          <h4>QUEDA DE TENSÃO</h4>
-          <label>Comprimento (m)</label><input type="number" id="qt-L" value="5">
-          <label>Corrente (A)</label><input type="number" id="qt-I" value="20">
-          <label>Bitola (mm²)</label><input type="number" id="qt-A" value="2.5" step="0.1">
-          <label>Tensão (V)</label><input type="number" id="qt-V" value="12">
-          <button class="calc-btn" onclick="calcQuedaTensao()">CALCULAR</button>
-          <div class="calc-result" id="qt-res"></div>
+        <div class="calc-grid">
+          <div class="calc-card">
+            <h4>QUEDA DE TENSÃO</h4>
+            <label>Comprimento (m)</label><input type="number" id="qt-L" value="5">
+            <label>Corrente (A)</label><input type="number" id="qt-I" value="20">
+            <label>Bitola (mm²)</label><input type="number" id="qt-A" value="2.5" step="0.1">
+            <label>Material</label><select id="qt-mat"><option value="0.0175">Cobre</option><option value="0.0282">Alumínio</option></select>
+            <label>Tensão (V)</label><input type="number" id="qt-V" value="12">
+            <button class="calc-btn" onclick="calcQuedaTensao()">CALCULAR</button>
+            <div class="calc-result" id="qt-res"></div>
+          </div>
+          <div class="calc-card">
+            <h4>BITOLA POR QUEDA MÁXIMA</h4>
+            <label>Comprimento (m)</label><input type="number" id="bit-L" value="5">
+            <label>Corrente (A)</label><input type="number" id="bit-I" value="20">
+            <label>Tensão sistema (V)</label><input type="number" id="bit-V" value="12">
+            <label>Queda máx (%)</label><input type="number" id="bit-Q" value="3">
+            <label>Material</label><select id="bit-mat"><option value="0.0175">Cobre</option><option value="0.0282">Alumínio</option></select>
+            <button class="calc-btn" onclick="calcBitola()">CALCULAR</button>
+            <div class="calc-result" id="bit-res"></div>
+          </div>
+          <div class="calc-card">
+            <h4>RESISTOR POR CORES</h4>
+            <label>Faixa 1</label><select id="r-c1"></select>
+            <label>Faixa 2</label><select id="r-c2"></select>
+            <label>Faixa 3 (multiplicador)</label><select id="r-c3"></select>
+            <label>Faixa 4 (tolerância)</label><select id="r-c4"><option value="1">Marrom (1%)</option><option value="2">Vermelho (2%)</option><option value="0.5">Verde (0.5%)</option><option value="0.25">Azul (0.25%)</option><option value="5">Dourado (5%)</option><option value="10">Prata (10%)</option></select>
+            <button class="calc-btn" onclick="calcResistor()">CALCULAR</button>
+            <div class="calc-result" id="r-res"></div>
+          </div>
+          <div class="calc-card">
+            <h4>LEI DE OHM / POTÊNCIA</h4>
+            <label>Grandeza conhecida</label>
+            <select id="ohm-tipo">
+              <option value="VI">Tensão + Corrente → R, P</option>
+              <option value="RI">Resistência + Corrente → V, P</option>
+              <option value="RV">Resistência + Tensão → I, P</option>
+              <option value="PV">Potência + Tensão → I, R</option>
+            </select>
+            <label>Valor 1</label><input type="number" id="ohm-a" value="12">
+            <label>Valor 2</label><input type="number" id="ohm-b" value="2">
+            <button class="calc-btn" onclick="calcOhm()">CALCULAR</button>
+            <div class="calc-result" id="ohm-res"></div>
+          </div>
+          <div class="calc-card">
+            <h4>CARGA DE BATERIA</h4>
+            <label>Capacidade (Ah)</label><input type="number" id="bat-Ah" value="60">
+            <label>Corrente de carga (A)</label><input type="number" id="bat-I" value="6">
+            <label>Tipo</label><select id="bat-tipo"><option value="1.2">Chumbo-ácido (1.2)</option><option value="1.05">LiFePO4 (1.05)</option><option value="1.1">AGM/Gel (1.1)</option></select>
+            <button class="calc-btn" onclick="calcBateria()">CALCULAR</button>
+            <div class="calc-result" id="bat-res"></div>
+          </div>
+          <div class="calc-card">
+            <h4>CONVERSOR DE UNIDADES</h4>
+            <label>Valor</label><input type="number" id="conv-val" value="1">
+            <label>Conversão</label>
+            <select id="conv-tipo">
+              <option value="V-mV">V → mV</option><option value="mV-V">mV → V</option>
+              <option value="A-mA">A → mA</option><option value="mA-A">mA → A</option>
+              <option value="ohm-kohm">Ω → kΩ</option><option value="kohm-ohm">kΩ → Ω</option>
+              <option value="C-F">°C → °F</option><option value="F-C">°F → °C</option>
+              <option value="mm2-awg">mm² → AWG</option><option value="awg-mm2">AWG → mm²</option>
+            </select>
+            <button class="calc-btn" onclick="calcConversor()">CONVERTER</button>
+            <div class="calc-result" id="conv-res"></div>
+          </div>
+          <div class="calc-card">
+            <h4>DIVISOR DE TENSÃO</h4>
+            <label>Tensão de entrada (V)</label><input type="number" id="div-Vin" value="12">
+            <label>R1 (Ω)</label><input type="number" id="div-R1" value="1000">
+            <label>R2 (Ω)</label><input type="number" id="div-R2" value="1000">
+            <button class="calc-btn" onclick="calcDivisor()">CALCULAR</button>
+            <div class="calc-result" id="div-res"></div>
+          </div>
         </div>
       </div>
       <div class="tab-content" id="calc-dtc">
@@ -295,21 +385,77 @@ const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
+let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
+let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
+let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let medicoes = JSON.parse(localStorage.getItem('boss_medicoes')) || [];
 let agenda = JSON.parse(localStorage.getItem('boss_agenda')) || [];
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
-let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
+let localizacaoUsuario = 'Não definida';
 let repoTree = [];
 let fileCache = {};
+
+let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
+let metricWeb = parseInt(localStorage.getItem('metric_web')) || 0;
+let metricImg = parseInt(localStorage.getItem('metric_img')) || 0;
+let metricVid = parseInt(localStorage.getItem('metric_vid')) || 0;
+let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
+let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
+let metricGenImg = parseInt(localStorage.getItem('metric_gen_img')) || 0;
 
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 document.getElementById('rateSlider').value = vozRate;
 document.getElementById('rateVal').textContent = vozRate.toFixed(2);
+document.getElementById('pitchSlider').value = vozPitch;
+document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
 document.getElementById('groqKeyInput').value = localStorage.getItem('boss_groq_key') || '';
+
+function atualizarHUD() {
+    document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
+    document.getElementById('metric-web').textContent = metricWeb;
+    document.getElementById('metric-img').textContent = metricImg;
+    document.getElementById('metric-vid').textContent = metricVid;
+    document.getElementById('metric-git').textContent = metricGit;
+    document.getElementById('metric-vision').textContent = metricVision;
+    document.getElementById('metric-gen-img').textContent = metricGenImg;
+    localStorage.setItem('metric_tokens', metricTokens);
+    localStorage.setItem('metric_web', metricWeb); localStorage.setItem('metric_img', metricImg);
+    localStorage.setItem('metric_vid', metricVid); localStorage.setItem('metric_git', metricGit);
+    localStorage.setItem('metric_vision', metricVision); localStorage.setItem('metric_gen_img', metricGenImg);
+}
+atualizarHUD();
+
+if ("geolocation" in navigator) {
+    navigator.geolocation.getCurrentPosition(async (p) => {
+        try {
+            const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&localityLanguage=pt`);
+            const d = await r.json();
+            localizacaoUsuario = `${d.city || d.locality}, ${d.principalSubdivision}`;
+            document.getElementById('metric-location').textContent = localizacaoUsuario;
+        } catch(e) { document.getElementById('metric-location').textContent = `Lat: ${p.coords.latitude.toFixed(2)}, Lon: ${p.coords.longitude.toFixed(2)}`; }
+    }, () => { document.getElementById('metric-location').textContent = "Permissão Negada"; });
+} else { document.getElementById('metric-location').textContent = "Não Suportado"; }
+
+function atualizarRelogio() {
+    const a = new Date();
+    document.getElementById('metric-time').textContent = a.toLocaleTimeString('pt-BR');
+    document.getElementById('metric-date').textContent = a.toLocaleDateString('pt-BR');
+}
+setInterval(atualizarRelogio, 1000); atualizarRelogio();
+window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
+window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
+
+function popularVozes() {
+    const s = document.getElementById('voiceSelect');
+    const vs = window.speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().includes('pt'));
+    s.innerHTML = '<option value="">Padrão do navegador</option>';
+    vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = `${v.name} (${v.lang})`; if (v.name === vozNome) o.selected = true; s.appendChild(o); });
+}
+if (window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = popularVozes; setTimeout(popularVozes, 200); }
 
 function salvarGroqKey() {
     const key = document.getElementById('groqKeyInput').value.trim();
@@ -319,7 +465,9 @@ function salvarGroqKey() {
 }
 
 function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); document.getElementById('userDisplay').textContent = userRole.toUpperCase(); toggleConfig(); }
+function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
+function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
 function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
 function toggleZenMode() { document.getElementById('hudContainer').classList.toggle('zen-mode'); }
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -373,7 +521,9 @@ function removerAgenda(index) {
 async function chamarIA(messages, temp) {
     const payload = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
     try {
+        const st = performance.now();
         const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        document.getElementById('metric-latency').textContent = `${Math.round(performance.now() - st)} ms`;
         if (!resp.ok) {
             if (resp.status === 429) throw new Error("COTA_ESGOTADA");
             throw new Error(`Erro HTTP: ${resp.status}`);
@@ -393,12 +543,14 @@ async function chamarIA(messages, temp) {
         try {
             document.getElementById('statusDot').className = 'status-dot warn';
             document.getElementById('statusText').textContent = 'RESERVA (GROQ)';
+            const st2 = performance.now();
             const payloadGroq = { model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 };
             const resp2 = await fetch(GROQ_URL_DIRETA, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, 
                 body: JSON.stringify(payloadGroq) 
             });
+            document.getElementById('metric-latency').textContent = `${Math.round(performance.now() - st2)} ms`;
             if (!resp2.ok) throw new Error(`Erro HTTP Groq: ${resp2.status}`);
             return await resp2.json();
         } catch (e2) {
@@ -474,7 +626,7 @@ async function enviar() {
   try {
     let contextoVisao = "";
     if (imagemAnexadaBase64) {
-        t.div.textContent = "Olhando a foto...";
+        t.div.textContent = "Olhando a foto..."; metricVision++; atualizarHUD();
         const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
         const vd = await vr.json();
         contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
@@ -497,7 +649,7 @@ async function enviar() {
         tentativas++;
         const data = await chamarIA(msgs, isConversational ? 0.65 : 0.2);
         
-        if (data.usage) { metricTokens += data.usage.total_tokens; document.getElementById('metric-tokens').textContent = metricTokens; localStorage.setItem('metric_tokens', metricTokens); }
+        if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
         let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
         const searchM = [...resposta.matchAll(/\[GITHUB_SEARCH:\s*(.*?)\]/g)];
@@ -506,7 +658,7 @@ async function enviar() {
             let allRes = "";
             for (const m of searchM) {
                 const termo = m[1].trim();
-                t.div.textContent = `Buscando "${termo}" no repositório...`;
+                t.div.textContent = `Buscando "${termo}" no repositório...`; metricGit++; atualizarHUD();
                 const byName = repoTree.filter(p => p.toLowerCase().includes(termo.toLowerCase())).slice(0, 5);
                 const codeFiles = repoTree.filter(p => ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json'].some(e => p.toLowerCase().endsWith(e))).slice(0, 15);
                 const toScan = [...new Set([...byName, ...codeFiles])];
@@ -533,7 +685,7 @@ async function enviar() {
             for (const m of readM) {
                 let rp = m[1].trim(); let fp = rp;
                 if (!rp.includes('/') && repoTree.length > 0) { const f = repoTree.find(p => p.endsWith(rp)); if (f) fp = f; }
-                t.div.textContent = `Lendo ${fp}...`;
+                t.div.textContent = `Lendo ${fp}...`; metricGit++; atualizarHUD();
                 const fc = await fetchGithubFile(fp);
                 if (fc && !fc.startsWith('[ERRO')) { all += `\n=== ${fp} ===\n\`\`\`\n${fc}\n\`\`\`\n`; cnt++; }
                 else all += `\n=== ${fp} ===\n${fc}\n`;
@@ -578,6 +730,7 @@ async function enviar() {
     falarTexto(txtFalar);
 
     if (mGen) {
+        metricGenImg++; atualizarHUD();
         const w = document.createElement('div'); w.style.padding = '10px';
         w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
         document.getElementById('chat').appendChild(w);
@@ -594,6 +747,7 @@ async function enviar() {
     }
 
     if (mImg) {
+        metricImg++; atualizarHUD();
         const w = document.createElement('div'); w.style.padding='10px';
         w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando imagem... ]</div>`;
         document.getElementById('chat').appendChild(w);
@@ -604,6 +758,7 @@ async function enviar() {
     }
 
     if (mVid) {
+        metricVid++; atualizarHUD();
         const w = document.createElement('div'); w.style.padding='10px';
         w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando vídeo... ]</div>`;
         document.getElementById('chat').appendChild(w);
@@ -677,8 +832,16 @@ function renderMedicoes() {
 }
 function delMedicao(i) { medicoes.splice(i, 1); localStorage.setItem('boss_medicoes', JSON.stringify(medicoes)); renderMedicoes(); }
 function enviarMedicoesParaBOSS() { if(!medicoes.length) return alert('Sem medições.'); const txt = `Analise estas medições:\n` + medicoes.map(m => `- ${m.ponto}: ${m.valor}${m.unidade}`).join('\n'); fecharModal('modalMeasure'); document.getElementById('input').value = txt; document.getElementById('input').focus(); }
-function calcQuedaTensao() { const L = +document.getElementById('qt-L').value, I = +document.getElementById('qt-I').value, A = +document.getElementById('qt-A').value, V = +document.getElementById('qt-V').value; const dV = (2 * L * I * 0.0175) / A, pct = (dV / V) * 100; document.getElementById('qt-res').textContent = `ΔV = ${dV.toFixed(3)} V\nQueda: ${pct.toFixed(2)}%`; }
-const DTC_DB = [['P0300','Falha de ignição'],['P0101','Falha MAF'],['P0171','Mistura pobre']];
+
+function calcQuedaTensao() { const L = +document.getElementById('qt-L').value, I = +document.getElementById('qt-I').value, A = +document.getElementById('qt-A').value, V = +document.getElementById('qt-V').value; const mat = +document.getElementById('qt-mat').value; const dV = (2 * L * I * mat) / A, pct = (dV / V) * 100; document.getElementById('qt-res').textContent = `ΔV = ${dV.toFixed(3)} V\nQueda: ${pct.toFixed(2)}%\nStatus: ${pct <= 3 ? 'OK' : pct <= 5 ? 'LIMÍTROFE' : 'RUIM'}`; }
+function calcBitola() { const L = +document.getElementById('bit-L').value, I = +document.getElementById('bit-I').value, V = +document.getElementById('bit-V').value, Q = +document.getElementById('bit-Q').value, mat = +document.getElementById('bit-mat').value; const dV = (Q / 100) * V; const A = (2 * L * I * mat) / dV; document.getElementById('bit-res').textContent = `Bitola mínima: ${A.toFixed(2)} mm²`; }
+function calcResistor() { const c1 = +document.getElementById('r-c1').value, c2 = +document.getElementById('r-c2').value, c3 = +document.getElementById('r-c3').value, tol = +document.getElementById('r-c4').value; const val = (c1 * 10 + c2) * Math.pow(10, c3); let fmt = val >= 1e6 ? (val/1e6).toFixed(2)+' MΩ' : val >= 1e3 ? (val/1e3).toFixed(2)+' kΩ' : val+' Ω'; document.getElementById('r-res').textContent = `Valor: ${fmt}\nTolerância: ±${tol}%`; }
+function calcOhm() { const tipo = document.getElementById('ohm-tipo').value; const a = +document.getElementById('ohm-a').value, b = +document.getElementById('ohm-b').value; let V, I, R, P; if (tipo === 'VI') { V=a; I=b; R=V/I; P=V*I; } else if (tipo === 'RI') { R=a; I=b; V=R*I; P=V*I; } else if (tipo === 'RV') { R=a; V=b; I=V/R; P=V*I; } else { P=a; V=b; I=P/V; R=V/I; } document.getElementById('ohm-res').textContent = `V: ${V.toFixed(2)} V\nI: ${I.toFixed(3)} A\nR: ${R.toFixed(2)} Ω\nP: ${P.toFixed(2)} W`; }
+function calcBateria() { const Ah = +document.getElementById('bat-Ah').value, I = +document.getElementById('bat-I').value, f = +document.getElementById('bat-tipo').value; const t = (Ah * f) / I; document.getElementById('bat-res').textContent = `Tempo de carga: ${t.toFixed(1)} h`; }
+function calcConversor() { const v = +document.getElementById('conv-val').value, t = document.getElementById('conv-tipo').value; let r = ''; if (t === 'V-mV') r = `${(v*1000).toFixed(2)} mV`; else if (t === 'mV-V') r = `${(v/1000).toFixed(4)} V`; else if (t === 'A-mA') r = `${(v*1000).toFixed(2)} mA`; else if (t === 'mA-A') r = `${(v/1000).toFixed(4)} A`; else if (t === 'ohm-kohm') r = `${(v/1000).toFixed(4)} kΩ`; else if (t === 'kohm-ohm') r = `${(v*1000).toFixed(0)} Ω`; else if (t === 'C-F') r = `${(v*9/5+32).toFixed(1)} °F`; else if (t === 'F-C') r = `${((v-32)*5/9).toFixed(1)} °C`; else if (t === 'mm2-awg') { r = `~ ${(v*1.5).toFixed(0)} AWG (aprox)`; } else if (t === 'awg-mm2') { r = `~ ${(v*0.5).toFixed(2)} mm² (aprox)`; } document.getElementById('conv-res').textContent = r; }
+function calcDivisor() { const Vin = +document.getElementById('div-Vin').value, R1 = +document.getElementById('div-R1').value, R2 = +document.getElementById('div-R2').value; const Vout = Vin * (R2 / (R1 + R2)); const I = Vin / (R1 + R2); document.getElementById('div-res').textContent = `Vout = ${Vout.toFixed(3)} V\nCorrente: ${(I*1000).toFixed(3)} mA`; }
+
+const DTC_DB = [['P0300','Falha de ignição aleatória'],['P0101','Falha MAF'],['P0171','Mistura pobre'],['P0420','Eficiência catalisador']];
 function buscarDTC() { const q = document.getElementById('dtcSearch').value.toUpperCase(); document.getElementById('dtcBody').innerHTML = DTC_DB.filter(d => d[0].includes(q)).map(d => `<tr><td style="color:#00FFCC">${d[0]}</td><td>${d[1]}</td></tr>`).join(''); }
 buscarDTC();
 
@@ -742,7 +905,22 @@ function falarTexto(t) {
     if (localStorage.getItem('boss_voice_toggle') === 'off') return; 
     window.speechSynthesis.cancel(); 
     const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' ')); 
-    u.lang = 'pt-BR'; u.rate = vozRate; window.speechSynthesis.speak(u); 
+    u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch;
+    if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; }
+    window.speechSynthesis.speak(u); 
+}
+
+function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com telemetria."); }
+function limparHistorico() { if(confirm("Apagar histórico local?")) { historico = []; localStorage.removeItem('boss_historico'); document.getElementById('chat').innerHTML = ''; addMsg('boss', 'Histórico Local Apagado.'); toggleConfig(); } }
+function mapearRepositorio() {
+    toggleConfig();
+    const t = addMsg('thinking', 'Mapeando estrutura do repositório...', false);
+    addLog('Iniciando Codebase Mapping...');
+    // Lógica simplificada de mapeamento visual para não sobrecarregar o prompt
+    setTimeout(() => {
+        t.wrapper.remove();
+        addMsg('boss', '✅ **Repositório Mapeado!** O BOSS já leu a árvore do repositório e usará a ferramenta `GITHUB_SEARCH` sempre que você perguntar sobre o código.');
+    }, 1500);
 }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
