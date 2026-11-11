@@ -105,12 +105,16 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-.mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; }
+.mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; position: relative; }
 .terminal-output { background: #000; border: 1px solid #27AE60; border-radius: 6px; padding: 10px; font-family: 'Consolas', monospace; font-size: 12px; color: #27AE60; margin-top: 10px; white-space: pre-wrap; }
 
 .log-line { font-size: 11px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log-line:first-child { color: #00FFCC; font-weight: bold; }
 .log-line:not(:first-child) { color: #64748B; }
+
+/* NOVO: Botão de Download */
+.btn-download { display: inline-block; background: rgba(0,255,204,0.1); border: 1px solid #00FFCC; color: #00FFCC; padding: 6px 12px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 10px; text-decoration: none; transition: 0.2s; }
+.btn-download:hover { background: #00FFCC; color: #000; }
 </style>
 </head>
 <body>
@@ -510,7 +514,6 @@ async function fetchGithubFile(repo, path) {
     }
 }
 
-// CORREÇÃO CRÍTICA: Carrega a memória do perfil correto (patrao ou chefe)
 async function carregarMemoria() {
   if (userRole !== 'Patrão' && userRole !== 'Chefe') { 
       memoriaLongaPrazo = ''; 
@@ -520,11 +523,9 @@ async function carregarMemoria() {
   try {
     const roleFile = userRole === 'Patrão' ? 'patrao' : 'chefe';
     
-    // Tenta carregar o arquivo do perfil atual
     let resMem = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/${roleFile}.md`);
     let dataMem = await resMem.json();
     
-    // Se não achar, tenta o arquivo antigo 'chefe.md' como fallback
     if (!dataMem.content && roleFile === 'patrao') {
         resMem = await fetch(`${WORKER_URL}/github?repo=${REPO_CONTEXTO}&path=contexto/memorias/chefe.md`);
         dataMem = await resMem.json();
@@ -635,6 +636,9 @@ ${roleInstruction}
 - NUNCA puxe o assunto "Focus" da memória antiga a menos que o usuário digite "Focus" na pergunta atual.
 - O histórico de mensagens recentes tem prioridade ABSOLUTA sobre a memória antiga.
 
+=== REGRA DE VOZ (TTS) ===
+- Para evitar que a voz leia textões técnicos (podcast), você DEVE sempre adicionar a tag [VOZ: resumo curto em 1 ou 2 frases] no final da sua resposta. O sistema lerá APENAS o texto dentro dessa tag em voz alta.
+
 === CHECKLIST OBRIGATÓRIO DE AUDITORIA (SEU PADRÃO) ===
 Toda vez que for analisar código, cruze obrigatoriamente:
 1. XML x Código (IDs órfãos/invisíveis)
@@ -674,7 +678,7 @@ ${contextoCache.projetos}
 === MAPA MENTAL DO CÓDIGO ===
 ${contextoCache.memoriaCodigo || '(Nenhum gerado. Vá em ⚙ e clique em MAPEAR.)'}
 
-Seja direto.`.trim();
+Seja direto e sempre adicione a tag [VOZ: ...] no final.`.trim();
 }
 
 function lerArquivo(event) {
@@ -815,6 +819,16 @@ async function enviar() {
         }
     }
 
+    // === PROCESSAMENTO DA TAG DE VOZ ===
+    const matchVoz = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
+    let textoParaFalar = "";
+    if (matchVoz) {
+        textoParaFalar = matchVoz[1];
+        respostaFinal = respostaFinal.replace(matchVoz[0], '').trim(); // Remove a tag da tela
+    } else {
+        textoParaFalar = respostaFinal; // Fallback se a IA esquecer a tag
+    }
+
     const matchImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
     const matchVideo = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
     const matchMermaid = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
@@ -834,14 +848,14 @@ async function enviar() {
         if (textoLimpo) {
             const msgObj = addMsg('boss', textoLimpo);
             await efeitoDigitacao(msgObj.div, textoLimpo);
-            falarTexto(textoLimpo);
         }
+        falarTexto(textoParaFalar);
 
         if (matchGenImg) {
             metricGenImg++; atualizarHUD();
             const prompt = matchGenImg[1];
             const imgWrapper = document.createElement('div'); imgWrapper.style.padding = '10px';
-            imgWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px;">[ Gerando imagem com IA... (isso pode levar alguns segundos) ]</div>`;
+            imgWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px;">[ Gerando imagem com IA... ]</div>`;
             document.getElementById('chat').appendChild(imgWrapper);
             addLog(`Gerando imagem: ${prompt.substring(0, 30)}...`);
             
@@ -850,7 +864,10 @@ async function enviar() {
                 body: JSON.stringify({ prompt: prompt })
             }).then(r=>r.json()).then(d => {
                 if(d.image) {
-                    imgWrapper.innerHTML = `<img src="${d.image}" class="msg-img">`;
+                    imgWrapper.innerHTML = `
+                        <img src="${d.image}" class="msg-img">
+                        <a href="${d.image}" download="exo_imagem_${Date.now()}.jpg" class="btn-download">⬇ BAIXAR IMAGEM</a>
+                    `;
                     addLog(`Imagem gerada com sucesso.`);
                 } else {
                     imgWrapper.innerHTML = `<div style="color:#E74C3C;">[ Falha na geração: ${JSON.stringify(d.error)} ]</div>`;
@@ -864,7 +881,23 @@ async function enviar() {
             const merWrapper = document.createElement('div'); merWrapper.className = 'mermaid-container';
             merWrapper.innerHTML = `<pre class="mermaid">${mermaidCode}</pre>`;
             document.getElementById('chat').appendChild(merWrapper);
-            mermaid.run({ nodes: [merWrapper.querySelector('.mermaid')] });
+            
+            mermaid.run({ nodes: [merWrapper.querySelector('.mermaid')] }).then(() => {
+                // Adiciona botão de download após renderizar o SVG
+                const svgElement = merWrapper.querySelector('svg');
+                if (svgElement) {
+                    const svgString = new XMLSerializer().serializeToString(svgElement);
+                    const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+                    const url = URL.createObjectURL(blob);
+                    
+                    const downloadBtn = document.createElement('a');
+                    downloadBtn.href = url;
+                    downloadBtn.download = 'exo_diagrama.svg';
+                    downloadBtn.className = 'btn-download';
+                    downloadBtn.innerHTML = '⬇ BAIXAR DIAGRAMA (SVG)';
+                    merWrapper.appendChild(downloadBtn);
+                }
+            });
             addLog(`Projeto/Diagrama renderizado.`);
         }
 
@@ -960,7 +993,7 @@ async function enviar() {
         thinking.wrapper.remove();
         const msgObj = addMsg('boss', "", true); 
         await efeitoDigitacao(msgObj.div, respostaFinal);
-        falarTexto(respostaFinal);
+        falarTexto(textoParaFalar);
         addLog(`Resposta enviada.`);
         
         historico.push({ role: 'assistant', content: respostaFinal });
@@ -996,7 +1029,6 @@ function iniciarEscuta(isAuto = false) {
     if (document.getElementById('btnMicFooter')) document.getElementById('btnMicFooter').style.background = 'rgba(231,76,60,0.2)';
   };
 
-  // MUDANÇA CRÍTICA: Apenas transcreve, NÃO envia automaticamente
   reconhecimento.onresult = (e) => { 
       const textoTranscrito = e.results[0][0].transcript;
       const inputEl = document.getElementById('input');
