@@ -8,123 +8,156 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
     /* =========================================
-       VARIÁVEIS DE TEMA (Padrão Cyan / Stealth)
+       TEMAS E VARIÁVEIS GLOBAIS
        ========================================= */
     :root {
         --font-mono: 'JetBrains Mono', monospace;
         --font-ui: 'Rajdhani', sans-serif;
         
-        /* TEMA PADRÃO (CYAN) */
+        /* TEMA PADRÃO (CIANO) */
         --bg-dark: #05070A;
         --panel-bg: #0D1117;
         --border-color: #1e293b;
         --accent: #00FFCC;
-        --accent-hover: #00ccaa;
         --text-main: #E8EDF2;
         --text-muted: #6A7A8A;
         --orb-color: #00FFCC;
-        --orb-glow: rgba(0, 255, 204, 0.4);
+        --radius: 4px;
     }
 
+    /* TEMA STEALTH (CARBONO/MILITAR) */
     body.theme-stealth {
-        /* TEMA STEALTH (ÂMBAR) */
-        --bg-dark: #050505;
-        --panel-bg: #0a0a0a;
-        --border-color: #222;
+        --bg-dark: #0a0a0a;
+        --panel-bg: #0d0d0d;
+        --border-color: #2a2a2a;
         --accent: #d97706;
-        --accent-hover: #b45309;
-        --text-main: #d1d5db;
-        --text-muted: #6b7280;
+        --text-main: #a3a3a3;
+        --text-muted: #525252;
         --orb-color: #d97706;
-        --orb-glow: rgba(217, 119, 6, 0.4);
+        --radius: 0px; /* Cantos retos */
+    }
+    body.theme-stealth .msg { border-left-width: 4px; }
+    body.theme-stealth .widget { border-width: 2px; border-style: dashed; }
+
+    /* TEMA ALERTA (VERMELHO) */
+    body.theme-red {
+        --bg-dark: #0a0505;
+        --panel-bg: #140808;
+        --border-color: #3b1111;
+        --accent: #ef4444;
+        --text-main: #fca5a5;
+        --text-muted: #7f1d1d;
+        --orb-color: #ef4444;
+        --radius: 4px;
+    }
+
+    /* TEMA ÂMBAR (QUENTE) */
+    body.theme-amber {
+        --bg-dark: #0a0805;
+        --panel-bg: #14100a;
+        --border-color: #3b2a11;
+        --accent: #f59e0b;
+        --text-main: #fcd34d;
+        --text-muted: #78350f;
+        --orb-color: #f59e0b;
+        --radius: 8px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg-dark); color: var(--text-main); font-family: var(--font-mono); height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: background 0.3s; }
+    body { background: var(--bg-dark); color: var(--text-main); font-family: var(--font-mono); height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: background 0.3s, color 0.3s; }
 
     .hud-container { width: 100vw; height: 100dvh; background: var(--panel-bg); display: flex; flex-direction: column; position: relative; border: 1px solid var(--border-color); transition: 0.3s; }
-    @media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; } }
+    @media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; border-radius: var(--radius); } }
 
     /* HEADER */
-    header { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--bg-dark); flex-shrink: 0; z-index: 10; }
+    header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--bg-dark); flex-shrink: 0; z-index: 10; }
     .logo-area { display: flex; flex-direction: column; }
     .logo-title { color: var(--text-main); font-size: 14px; font-weight: 700; letter-spacing: 2px; }
-    .logo-sub { color: var(--text-muted); font-size: 9px; letter-spacing: 1px; }
+    .logo-sub { color: var(--text-muted); font-size: 9px; letter-spacing: 1px; display: none; }
+    @media(min-width: 768px) { .logo-sub { display: block; } }
     
-    .header-center { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-ui); font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--text-main); }
+    .header-center { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-ui); font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--text-main); display: none; }
+    @media(min-width: 768px) { .header-center { display: block; } }
     
-    .header-status { display: flex; align-items: center; gap: 10px; font-size: 11px; }
-    .status-box { display: flex; align-items: center; gap: 6px; }
+    .header-status { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+    .status-box { display: flex; align-items: center; gap: 6px; display: none; }
+    @media(min-width: 768px) { .status-box { display: flex; } }
+    
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
     .status-dot.ok { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
     .status-dot.warn { background: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
     .status-dot.err { background: #ef4444; box-shadow: 0 0 5px #ef4444; }
     
-    .icon-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: center; gap: 5px; }
+    .icon-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; transition: 0.2s; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: center; gap: 5px; }
     .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
 
     /* MAIN WORKSPACE */
-    main { flex: 1; display: flex; overflow: hidden; }
+    main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
-    /* SIDEBAR ESQUERDA */
+    /* SIDEBAR ESQUERDA (ESCONDE NO MOBILE) */
     .sidebar-left { width: 260px; border-right: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; background: var(--panel-bg); flex-shrink: 0; }
-    .widget { border: 1px solid var(--border-color); padding: 12px; border-radius: 4px; background: var(--bg-dark); }
+    @media (max-width: 1024px) { .sidebar-left { display: none; } }
+    
+    .widget { border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius); background: var(--bg-dark); }
     .widget-title { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; letter-spacing: 1px; }
     .widget-val { font-size: 16px; color: var(--accent); font-weight: bold; }
     .widget-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; }
     .log-line { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
 
     /* ÁREA CENTRAL (CHAT + ORBE) */
-    .center-area { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, #111 0%, var(--bg-dark) 100%); min-width: 0; transition: 0.3s; }
+    .center-area { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, var(--bg-dark) 100%); min-width: 0; }
     
-    /* O ORBE */
     .orb-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 0; opacity: 0.15; pointer-events: none; display: flex; justify-content: center; align-items: center; }
-    .orb { width: 300px; height: 300px; border-radius: 50%; border: 1px dashed var(--orb-color); display: flex; justify-content: center; align-items: center; animation: spin 30s linear infinite; transition: 0.3s; }
-    .orb-2 { position: absolute; width: 200px; height: 200px; border-radius: 50%; border: 2px solid var(--orb-color); border-top-color: transparent; border-bottom-color: transparent; animation: spin 10s linear infinite reverse; }
-    .orb-core { width: 80px; height: 80px; background: var(--orb-color); border-radius: 50%; filter: blur(20px); animation: pulse 2s ease-in-out infinite; transition: 0.3s; }
+    .orb { width: 250px; height: 250px; border-radius: 50%; border: 1px dashed var(--orb-color); display: flex; justify-content: center; align-items: center; animation: spin 30s linear infinite; transition: 0.3s; }
+    .orb-2 { position: absolute; width: 150px; height: 150px; border-radius: 50%; border: 2px solid var(--orb-color); border-top-color: transparent; border-bottom-color: transparent; animation: spin 10s linear infinite reverse; }
+    .orb-core { width: 60px; height: 60px; background: var(--orb-color); border-radius: 50%; filter: blur(20px); animation: pulse 2s ease-in-out infinite; transition: 0.3s; }
     @keyframes spin { 100% { transform: rotate(360deg); } }
     @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
 
-    #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1; scroll-behavior: smooth; }
+    #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; z-index: 1; scroll-behavior: smooth; }
     .msg-wrapper { display: flex; width: 100%; }
-    .msg { font-size: 13px; line-height: 1.6; max-width: 85%; padding: 10px; border-left: 2px solid transparent; }
-    .msg.user { border-left-color: var(--text-muted); color: #999; background: rgba(255,255,255,0.02); align-self: flex-end; margin-left: auto; border-radius: 4px 0 0 4px; }
-    .msg.boss { border-left-color: var(--accent); color: var(--text-main); background: rgba(255, 255, 255, 0.05); border-radius: 0 4px 4px 0; }
+    .msg { font-size: 13px; line-height: 1.6; max-width: 90%; padding: 10px; border-left: 2px solid transparent; border-radius: 0 var(--radius) var(--radius) 0; }
+    .msg.user { border-left: none; border-right: 2px solid var(--text-muted); color: var(--text-muted); background: rgba(255,255,255,0.02); align-self: flex-end; margin-left: auto; border-radius: var(--radius) 0 0 var(--radius); text-align: right; }
+    .msg.boss { border-left-color: var(--accent); color: var(--text-main); background: rgba(255, 255, 255, 0.03); }
     .msg.boss::before { content: "SYS > "; color: var(--accent); font-weight: bold; }
     .msg.user::before { content: "USR > "; color: var(--text-muted); font-weight: bold; }
     .msg.thinking { color: var(--accent); font-style: italic; border-left-color: var(--accent); opacity: 0.7; }
 
     /* BARRA DE COMANDO (FOOTER) */
-    footer { padding: 15px 20px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 10px; align-items: center; z-index: 10; flex-shrink: 0; }
-    .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; }
+    footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: center; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
+    .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; }
     .cmd-btn:hover { border-color: var(--accent); color: var(--accent); }
-    #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-color); color: var(--accent); padding: 10px; font-family: var(--font-mono); font-size: 14px; outline: none; transition: 0.3s; }
+    #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-color); color: var(--accent); padding: 8px; font-family: var(--font-mono); font-size: 13px; outline: none; transition: 0.3s; min-width: 0; }
     #input:focus { border-bottom-color: var(--accent); }
-    .btn-send { background: var(--accent); color: var(--bg-dark); border: none; padding: 0 20px; height: 40px; border-radius: 4px; font-family: var(--font-ui); font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; }
+    .btn-send { background: var(--accent); color: var(--bg-dark); border: none; padding: 0 15px; height: 36px; border-radius: var(--radius); font-family: var(--font-ui); font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
 
     /* SIDEBAR DIREITA (CONFIGURAÇÕES) */
     .sidebar-right { width: 300px; border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; gap: 10px; background: var(--bg-dark); overflow-y: auto; flex-shrink: 0; }
     .sidebar-right.open { display: flex; }
+    
+    @media (max-width: 1024px) {
+        .sidebar-right { position: absolute; right: 0; top: 0; bottom: 0; z-index: 100; box-shadow: -10px 0 20px rgba(0,0,0,0.8); width: 80%; max-width: 320px; }
+    }
+
     .config-label { font-size: 10px; color: var(--text-muted); margin-top: 10px; margin-bottom: 5px; letter-spacing: 1px; }
-    .config-select, .config-input { width: 100%; background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px; outline: none; margin-bottom: 5px; }
+    .config-select, .config-input { width: 100%; background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: var(--radius); font-family: var(--font-mono); font-size: 12px; outline: none; margin-bottom: 5px; }
     .config-input:focus { border-color: var(--accent); }
-    .btn-config-action { width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 11px; margin-top: 5px; transition: 0.2s; }
+    .btn-config-action { width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--radius); cursor: pointer; font-family: var(--font-mono); font-size: 11px; margin-top: 5px; transition: 0.2s; }
     .btn-config-action:hover { border-color: var(--accent); color: var(--accent); }
     .btn-danger { border-color: #7f1d1d; color: #ef4444; }
     .btn-danger:hover { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
     
     /* MODAL DE ANOTAÇÃO */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 10px; }
     .modal-overlay.open { display: flex; }
-    .modal-box { background: var(--panel-bg); border: 1px solid var(--accent); border-radius: 6px; width: 100%; max-width: 800px; display: flex; flex-direction: column; }
-    .modal-header { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; color: var(--accent); font-family: var(--font-ui); font-weight: bold; }
-    .modal-body { padding: 15px; display: flex; flex-direction: column; gap: 15px; align-items: center; }
+    .modal-box { background: var(--panel-bg); border: 1px solid var(--accent); border-radius: var(--radius); width: 100%; max-width: 800px; display: flex; flex-direction: column; max-height: 90vh; }
+    .modal-header { padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; color: var(--accent); font-family: var(--font-ui); font-weight: bold; }
+    .modal-body { padding: 12px; display: flex; flex-direction: column; gap: 12px; align-items: center; overflow-y: auto; }
     .draw-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; }
-    .draw-tool { background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+    .draw-tool { background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
     .draw-tool.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
     #drawCanvas { max-width: 100%; border: 1px solid var(--border-color); cursor: crosshair; touch-action: none; }
 
-    /* SCROLLBAR */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
@@ -136,7 +169,7 @@
 <div class="hud-container">
     <header>
         <div class="logo-area">
-            <div class="logo-title">EXODRIVE SISTEMAS</div>
+            <div class="logo-title">EXODRIVE</div>
             <div class="logo-sub">BOSS AI</div>
         </div>
         <div class="header-center">B O S S</div>
@@ -146,10 +179,8 @@
                 <div id="statusDot" class="status-dot ok"></div>
                 <span id="statusText">ONLINE</span>
             </div>
-            <!-- BOTÕES DE AÇÃO DO TOPO -->
-            <button class="icon-btn" onclick="toggleTheme()" id="btnTheme" title="Alternar Tema">🎨 TEMA</button>
-            <button class="icon-btn" onclick="toggleMute()" id="btnMute" title="Silenciar Voz">🔊 VOZ</button>
-            <button class="icon-btn" onclick="toggleConfig()" title="Configurações">⚙ CONFIG</button>
+            <button class="icon-btn" onclick="toggleMute()" id="btnMute" title="Voz">🔊</button>
+            <button class="icon-btn" onclick="toggleConfig()" title="Configurações">⚙</button>
         </div>
     </header>
 
@@ -214,8 +245,19 @@
 
         <!-- DIREITA: CONFIGURAÇÕES -->
         <aside class="sidebar-right" id="configPanel">
-            <div style="font-family: var(--font-ui); font-weight: 700; letter-spacing: 1px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">CONFIGURAÇÕES</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">
+                <div style="font-family: var(--font-ui); font-weight: 700; letter-spacing: 1px;">CONFIGURAÇÕES</div>
+                <button style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;" onclick="toggleConfig()">×</button>
+            </div>
             
+            <label class="config-label">TEMA VISUAL</label>
+            <select id="themeSelect" class="config-select" onchange="mudarTema(this.value)">
+                <option value="theme-cyan">Ciano (Padrão)</option>
+                <option value="theme-stealth">Stealth (Militar)</option>
+                <option value="theme-amber">Âmbar (Quente)</option>
+                <option value="theme-red">Alerta Vermelho</option>
+            </select>
+
             <label class="config-label">OPERATOR PROFILE</label>
             <select id="userSelect" class="config-select" onchange="mudarUsuario()">
                 <option value="Patrão">PATRÃO (Engenheiro)</option>
@@ -233,15 +275,15 @@
             <label class="config-label">TOM DA VOZ: <span id="pitchVal" style="color:var(--accent)">1.05</span></label>
             <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)" style="width:100%;">
 
-            <button class="btn-config-action" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO (CODEBASE)</button>
+            <button class="btn-config-action" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO</button>
             <button class="btn-config-action" onclick="testarVoz()">🔊 TESTAR VOZ</button>
 
-            <label class="config-label" style="color:var(--accent); margin-top: 20px;">⚡ API RESERVA (GROQ DIRETA)</label>
+            <label class="config-label" style="color:var(--accent); margin-top: 20px;">⚡ API RESERVA (GROQ)</label>
             <input type="password" id="groqKeyInput" class="config-input" placeholder="gsk_...">
-            <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE GROQ</button>
+            <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE</button>
 
             <label class="config-label" style="color:#ef4444; margin-top: 20px;">ZONA DE PERIGO</label>
-            <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
+            <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR HISTÓRICO</button>
         </aside>
     </main>
 
@@ -249,9 +291,9 @@
     <footer>
         <input type="file" id="fileInput" accept="image/*,text/*" style="display:none" onchange="lerArquivo(event)">
         <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
-        <button class="cmd-btn" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar Foto">🖊</button>
+        <button class="cmd-btn" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar">🖊</button>
         <button class="cmd-btn" onclick="iniciarEscuta()" title="Falar">🎤</button>
-        <input type="text" id="input" placeholder="INSERIR DIRETRIZ..." onkeydown="if(event.key==='Enter')enviar()">
+        <input type="text" id="input" placeholder="DIRETRIZ..." onkeydown="if(event.key==='Enter')enviar()">
         <button class="btn-send" id="send" onclick="enviar()">EXEC</button>
     </footer>
 </div>
@@ -272,7 +314,7 @@
                 <button class="draw-tool" onclick="undoDraw()">↶ Desfazer</button>
             </div>
             <div id="drawCanvasWrap"><canvas id="drawCanvas"></canvas></div>
-            <button class="btn-send" style="width:100%;" onclick="salvarAnotacao()">💾 SALVAR ANOTAÇÃO</button>
+            <button class="btn-send" style="width:100%; padding:10px;" onclick="salvarAnotacao()">💾 SALVAR ANOTAÇÃO</button>
         </div>
     </div>
 </div>
@@ -293,7 +335,7 @@ let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
-let temaAtual = localStorage.getItem('boss_theme') || 'default';
+let temaAtual = localStorage.getItem('boss_theme') || 'theme-cyan';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let imagemAnexadaBase64 = '';
@@ -308,8 +350,9 @@ let metricImg = parseInt(localStorage.getItem('metric_img')) || 0;
 let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
 let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
 
-// INICIALIZAÇÃO
-if (temaAtual === 'stealth') document.body.classList.add('theme-stealth');
+// APLICA O TEMA SALVO
+document.body.className = temaAtual;
+document.getElementById('themeSelect').value = temaAtual;
 
 document.getElementById('userSelect').value = userRole;
 document.getElementById('rateSlider').value = vozRate;
@@ -363,10 +406,10 @@ window.addEventListener('online', () => { document.getElementById('net-dot').cla
 window.addEventListener('offline', () => { document.getElementById('net-dot').className = 'status-dot err'; document.getElementById('net-text').textContent = 'OFFLINE'; });
 
 // UI E TEMA
-function toggleTheme() {
-    document.body.classList.toggle('theme-stealth');
-    temaAtual = document.body.classList.contains('theme-stealth') ? 'stealth' : 'default';
-    localStorage.setItem('boss_theme', temaAtual);
+function mudarTema(tema) {
+    document.body.className = tema;
+    localStorage.setItem('boss_theme', tema);
+    temaAtual = tema;
 }
 function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
 function toggleMute() {
@@ -377,7 +420,7 @@ function toggleMute() {
 }
 function atualizarMuteBtn() {
     const btn = document.getElementById('btnMute');
-    btn.innerHTML = vozAtiva ? '🔊 VOZ' : '🔇 MUDO';
+    btn.innerHTML = vozAtiva ? '🔊' : '🔇';
     btn.style.color = vozAtiva ? 'var(--text-muted)' : '#ef4444';
 }
 function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); }
@@ -392,7 +435,7 @@ function salvarGroqKey() {
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
 // ==========================================
-// CÉREBRO DO BOSS (PROMPT)
+// CÉREBRO DO BOSS
 // ==========================================
 function formatarTexto(texto) {
     texto = texto.replace(/\b(Chefe|chefe)\b/g, userRole);
@@ -431,9 +474,6 @@ Sempre adicione [VOZ: resumo curto] no final.`;
     return base + `\nSeja técnico e direto ao ponto.`;
 }
 
-// ==========================================
-// ENVIAR E FALLBACK API
-// ==========================================
 async function chamarIA(messages, temp) {
     const payload = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
     try {
@@ -594,9 +634,7 @@ async function enviar() {
     }
 }
 
-// ==========================================
-// CANETA DE ANOTAÇÃO (RESTITUÍDA)
-// ==========================================
+// CANETA DE ANOTAÇÃO
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
 function abrirAnotacao() {
     if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto primeiro.');
@@ -625,9 +663,7 @@ function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-to
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-// ==========================================
 // UTILITÁRIOS
-// ==========================================
 function falarTexto(t) {
     if (!vozAtiva || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
@@ -645,7 +681,7 @@ function iniciarEscuta() {
     reconhecimento.lang = 'pt-BR';
     reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; };
     reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); };
-    reconhecimento.onend = () => { document.getElementById('input').placeholder = "INSERIR DIRETRIZ..."; };
+    reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; };
     reconhecimento.start();
 }
 
@@ -671,8 +707,8 @@ function lerArquivo(event) {
     event.target.value = '';
 }
 
-function mapearRepositorio() { toggleConfig(); addMsg('boss', '✅ Repositório lido. Pode pedir para buscar funções ou arquivos.'); carregarRepoTree(); }
-function limparHistorico() { if(confirm("Apagar todo o histórico e memórias locais?")) { localStorage.clear(); location.reload(); } }
+function mapearRepositorio() { toggleConfig(); addMsg('boss', '✅ Repositório lido. Pode pedir para buscar funções.'); carregarRepoTree(); }
+function limparHistorico() { if(confirm("Apagar todo o histórico?")) { localStorage.clear(); location.reload(); } }
 
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
