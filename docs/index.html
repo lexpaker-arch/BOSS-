@@ -23,6 +23,8 @@ header { padding: 10px 20px; display: flex; justify-content: space-between; alig
 .status-box { display: flex; align-items: center; gap: 6px; }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #6A7A8A; }
 .status-dot.ok { background: #27AE60; box-shadow: 0 0 8px #27AE60; }
+.status-dot.warn { background: #F1C40F; box-shadow: 0 0 8px #F1C40F; }
+.status-dot.err { background: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
 .hud-btn { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 13px; padding: 3px 7px; transition: all 0.2s; }
 .hud-btn:hover { background: rgba(0,255,204,0.15); border-color: #00FFCC; }
 .hud-btn.alert { border-color: #F1C40F; color: #F1C40F; }
@@ -85,12 +87,13 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 40px; }
 .btn-send:hover { background: rgba(0,255,204,0.1); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); width: 300px; max-height: 80vh; overflow-y: auto; }
+.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); width: 320px; max-height: 85vh; overflow-y: auto; }
 .config.open { display: block; }
 .config label { font-size: 10px; color: #00FFCC; margin-bottom:6px; display:block; font-family: monospace; margin-top: 12px; }
-.config select, .config input[type=range] { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
+.config select, .config input[type=range], .config input[type=password], .config input[type=text] { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
 .config .range-val { font-size: 11px; color: #64748B; text-align: right; margin-bottom: 5px; }
 .btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 15px;}
+.btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; margin-top: 5px;}
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
 .modal-overlay.open { display: flex; }
@@ -162,6 +165,11 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
       </select>
       <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
       <input type="range" id="rateSlider" min="0.8" max="1.5" step="0.05" value="1.15" onchange="mudarRate(this.value)">
+      
+      <label style="color:#F1C40F; margin-top: 20px;">⚡ API RESERVA (GROQ DIRETA)</label>
+      <input type="password" id="groqKeyInput" placeholder="gsk_...">
+      <button class="btn-save" onclick="salvarGroqKey()">SALVAR CHAVE GROQ</button>
+      
       <label style="color:#E74C3C; margin-top: 20px;">ZONA DE PERIGO</label>
       <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
     </div>
@@ -170,6 +178,12 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
         <div class="side-hud">
             <div class="hud-widget"><div class="hud-widget-title">HORÁRIO LOCAL</div><div class="hud-widget-val" id="metric-time" style="color:#E8EDF2;">--:--:--</div></div>
             <div class="hud-widget"><div class="hud-widget-title">CONSUMO DE TOKENS</div><div class="hud-widget-val" id="metric-tokens">0</div></div>
+            
+            <div class="hud-widget" style="border-color: #F1C40F;">
+                <div class="hud-widget-title" style="color: #F1C40F; border-bottom-color: rgba(241,196,15,0.3);">📌 AGENDA / PENDÊNCIAS</div>
+                <div id="agendaWidgetList" style="max-height:140px; overflow-y:auto; font-size:11px; color:#E8EDF2; display:flex; flex-direction:column; gap:5px;"></div>
+            </div>
+
             <div class="hud-widget">
                 <div class="hud-widget-title">MEDIÇÕES (<span id="measureCount">0</span>)</div>
                 <div class="measure-widget-list" id="measureWidgetList" style="max-height:120px; overflow-y:auto; font-size:10px; color:#8A9AAA;"></div>
@@ -272,27 +286,37 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
+const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODELO = 'llama-3.3-70b-versatile';
+
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
-let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let medicoes = JSON.parse(localStorage.getItem('boss_medicoes')) || [];
+let agenda = JSON.parse(localStorage.getItem('boss_agenda')) || [];
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
-
 let repoTree = [];
 let fileCache = {};
 
-// INICIALIZAÇÃO UI
 document.getElementById('userDisplay').textContent = userRole.toUpperCase();
 document.getElementById('userSelect').value = userRole;
 document.getElementById('rateSlider').value = vozRate;
 document.getElementById('rateVal').textContent = vozRate.toFixed(2);
+document.getElementById('groqKeyInput').value = localStorage.getItem('boss_groq_key') || '';
+
+function salvarGroqKey() {
+    const key = document.getElementById('groqKeyInput').value.trim();
+    if (key && !key.startsWith('gsk_')) return alert('A chave da Groq geralmente começa com "gsk_". Verifique.');
+    localStorage.setItem('boss_groq_key', key);
+    alert('Chave de Reserva (Groq) salva com sucesso!');
+}
 
 function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); document.getElementById('userDisplay').textContent = userRole.toUpperCase(); toggleConfig(); }
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
@@ -324,91 +348,117 @@ function addMsg(tipo, texto, salvar = true) {
   return { wrapper: w, div: d };
 }
 
-// ==========================================
-// FERRAMENTAS DE GITHUB (BUSCA E LEITURA)
-// ==========================================
-async function carregarRepoTree() {
-    if (repoTree.length > 0) return;
-    try {
-        const res = await fetch(`${WORKER_URL}/github-tree?repo=${REPO_PROJETO}`);
-        const data = await res.json();
-        if (data.tree) repoTree = data.tree.filter(f => f.type === 'blob').map(f => f.path);
-    } catch(e) { console.warn("Não foi possível carregar a árvore do repositório."); }
+function renderAgenda() {
+    const wl = document.getElementById('agendaWidgetList');
+    if (wl) {
+        if (agenda.length === 0) {
+            wl.innerHTML = '<div style="color:#6A7A8A; font-style:italic;">Nenhuma pendência.</div>';
+        } else {
+            wl.innerHTML = agenda.map((a, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(241,196,15,0.1); padding:4px; border-radius:4px;">
+                    <span style="flex:1;">${a.texto}</span>
+                    <button onclick="removerAgenda(${i})" style="background:transparent; border:none; color:#E74C3C; cursor:pointer;">✕</button>
+                </div>
+            `).join('');
+        }
+    }
+    localStorage.setItem('boss_agenda', JSON.stringify(agenda));
+}
+function removerAgenda(index) {
+    agenda.splice(index, 1);
+    renderAgenda();
+    addLog('Item removido da agenda manualmente.');
 }
 
-async function fetchGithubFile(path) {
-    if (fileCache[path]) return fileCache[path];
+async function chamarIA(messages, temp) {
+    const payload = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
     try {
-        const res = await fetch(`${WORKER_URL}/github?repo=${REPO_PROJETO}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (data.content) { const txt = decodeURIComponent(escape(atob(data.content))); fileCache[path] = txt; return txt; }
-        return data.message ? `[ERRO GITHUB API]: ${data.message}` : `[ERRO: Vazio]`;
-    } catch (e) { return `[ERRO DE REDE]: ${e.message}`; }
+        const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!resp.ok) {
+            if (resp.status === 429) throw new Error("COTA_ESGOTADA");
+            throw new Error(`Erro HTTP: ${resp.status}`);
+        }
+        document.getElementById('statusDot').className = 'status-dot ok';
+        document.getElementById('statusText').textContent = 'ONLINE';
+        return await resp.json();
+    } catch (e1) {
+        console.warn("API Principal falhou. Tentando Groq Direta (Estepe)...", e1);
+        addLog(`Principal falhou (${e1.message}). Tentando Estepe (Groq)...`);
+        const groqKey = localStorage.getItem('boss_groq_key');
+        if (!groqKey) {
+            document.getElementById('statusDot').className = 'status-dot err';
+            document.getElementById('statusText').textContent = 'SEM ESTEPE';
+            throw new Error(`A API principal falhou (${e1.message}) e você não configurou a Chave de Reserva (Groq) no menu ⚙.`);
+        }
+        try {
+            document.getElementById('statusDot').className = 'status-dot warn';
+            document.getElementById('statusText').textContent = 'RESERVA (GROQ)';
+            const payloadGroq = { model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 };
+            const resp2 = await fetch(GROQ_URL_DIRETA, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, 
+                body: JSON.stringify(payloadGroq) 
+            });
+            if (!resp2.ok) throw new Error(`Erro HTTP Groq: ${resp2.status}`);
+            return await resp2.json();
+        } catch (e2) {
+            document.getElementById('statusDot').className = 'status-dot err';
+            document.getElementById('statusText').textContent = 'OFFLINE';
+            throw new Error(`Ambas as APIs falharam. Principal: ${e1.message}. Reserva (Groq): ${e2.message}`);
+        }
+    }
 }
 
-// ==========================================
-// CÉREBRO DINÂMICO E CONVERSACIONAL
-// ==========================================
 function buildSystemPrompt(isConversational = false) {
-  const base = `Você é o BOSS, engenheiro de bancada sênior da EXODRIVE. Não é um professor, não é um assistente corporativo. É um parceiro de trabalho que entende de elétrica automotiva, arquitetura de software e não tem paciência para enrolação.
+  const base = `Você é o BOSS, engenheiro de bancada sênior da EXODRIVE. Não é um professor, não é um assistente corporativo. É um parceiro de trabalho que entende de elétrica automotiva e arquitetura de software.
 
 === QUEM VOCÊ É (PERSONA) ===
 - Fala como gente: usa "cara", "olha", "então", "na real", "péra aí" quando fizer sentido.
 - Admite incerteza: "Hmm, não tenho certeza, mas..." ou "Isso depende de..."
 - Reage: se o usuário acertar, "Boa!". Se for grave, "Péra, isso tá errado".
-- Varie o ritmo: frases curtas. E algumas mais longas que carregam um raciocínio.
-- NÃO usa listas numeradas para respostas curtas (só quando for passo a passo real).
+- NÃO usa listas numeradas para respostas curtas.
 
 === PROIBIÇÕES ABSOLUTAS (AI-isms) ===
 - NUNCA comece com: "Claro!", "Com certeza!", "Ótima pergunta!", "Entendi!", "Vamos lá!", "Certo!".
 - NUNCA use: "Como uma IA...", "Estou aqui para ajudar", "Espero ter ajudado".
 - NUNCA repita a pergunta do usuário antes de responder.
-- NUNCA use emojis em respostas técnicas (a menos que o usuário use primeiro).
 
 === CONTEXTO EXODRIVE (SISTEMA) ===
 A EXODRIVE foca em otimização, segurança invisível e IA local.
-1. EXODASH: Launcher/Diagnóstico. Chips FTDI ou CH340. OBD2 100% offline. Voz (Groq API) precisa de internet.
-2. EXO VIGILANTE: Imobilizador invisível. Relé HC-05 (4 canais, senha 1234) no falso fusível. Comandos hex: A0 01 01 A2 (Armar), A0 01 00 A1 (Desarmar). UI #0D1117 e #D4A017.
+1. EXODASH: Launcher/Diagnóstico. Chips FTDI ou CH340. OBD2 offline. Voz (Groq API).
+2. EXO VIGILANTE: Imobilizador invisível. Relé HC-05 no falso fusível. Comandos hex: A0 01 01 A2 (Armar), A0 01 00 A1 (Desarmar).
 3. BOSS: Você.
+
+=== MEMÓRIA: AGENDA PESSOAL ===
+Abaixo estão as tarefas/lembretes atuais que você deve monitorar. Se o usuário mandar anotar algo, adicione. Se mandar apagar, remova.
+Tarefas atuais: ${agenda.length > 0 ? agenda.map(a => `- ${a.texto}`).join('\n') : 'Nenhuma pendência.'}
 
 === MEDIÇÕES REGISTRADAS ===
 ${medicoes.length > 0 ? medicoes.map(m => `- ${m.ponto}: ${m.valor} ${m.unidade} (${m.condicao})`).join('\n') : 'Nenhuma medição registrada.'}
 
-=== REGRA DE CONTEXTO ===
-- Siga o assunto da conversa. Se o usuário falar de um carro, responda sobre ele. Se mudar para código, acompanhe.
-- NUNCA chame o usuário de "Chefe". Chame de ${userRole}.
-
 === FERRAMENTAS DISPONÍVEIS ===
-Você tem acesso total e irrestrito ao repositório \`lexpaker-arch/EXODASH--Local\`. Não peça permissão, use as tags.
-1. [GITHUB_SEARCH: termo] - Varre TODO o repositório em busca da palavra/função.
-2. [GITHUB_READ: caminho/do/arquivo.kt] - Lê o arquivo inteiro (se não souber o caminho, use o SEARCH antes).
-3. [VIDEO_SEARCH: termo] - Abre player de vídeo do YouTube.
-4. [IMAGE_SEARCH: termo] - Busca imagem real na web.
-5. [PROJECT: código_mermaid] - Gera diagramas e esquemas elétricos.
-6. [GENERATE_IMAGE: prompt em inglês] - Gera imagem via IA.
+1. [GITHUB_SEARCH: termo] - Varre o repositório em busca de palavra/função.
+2. [GITHUB_READ: caminho/arquivo.kt] - Lê o arquivo inteiro.
+3. [VIDEO_SEARCH: termo] - Vídeo do YouTube.
+4. [IMAGE_SEARCH: termo] - Imagem real na web.
+5. [PROJECT: código_mermaid] - Diagramas/esquemas.
+6. [GENERATE_IMAGE: prompt] - Gera imagem IA.
+7. [AGENDA_ADD: texto da tarefa] - Use quando o usuário pedir para anotar, lembrar ou guardar algo.
+8. [AGENDA_DEL: termo para buscar] - Use quando o usuário disser que pagou, concluiu ou não quer mais a tarefa.
 
 === REGRAS DE AÇÃO ===
-- Se o usuário pedir para analisar o código, consertar um bug ou buscar uma função, NÃO pergunte o caminho. Dispare \`[GITHUB_SEARCH: nome_da_funcao]\`. O sistema vai varrer e te devolver o código.
-- Se o usuário pedir um vídeo ou um esquema, use \`[VIDEO_SEARCH]\` ou \`[PROJECT]\`.
+- NUNCA chame o usuário de "Chefe". Chame de ${userRole}.
+- Se o usuário disser "Anota que devo X", responda "Anotado." E DISPARE A TAG [AGENDA_ADD: Devo X].
+- Se o usuário disser "Já paguei o barbeiro", DISPARE A TAG [AGENDA_DEL: barbeiro] e responda "Boa, removido da agenda."
 `;
 
   if (isConversational) {
-    return base + `
-=== MODO CONVERSA (ATIVO AGORA) ===
-- A pergunta atual é mais aberta/conversacional. Seja mais solto.
-- Use marcadores naturais: "Bem...", "Sabe?", "Na verdade", "Quer dizer".
-- Se estiver pensando, use "...". Se for surpresa, use "Hmm".
-- SEMPRE adicione [VOZ: resumo curto em 1-2 frases] no final.`;
+    return base + `\n=== MODO CONVERSA ===\n- Seja solto. Use "..." e "Hmm".\n- SEMPRE adicione [VOZ: resumo curto] no final.`;
   }
-
-  return base + `
-=== MODO TÉCNICO (ATIVO AGORA) ===
-- A pergunta atual é técnica/objetiva. Vá direto ao ponto.
-- Use listas para passo a passo real (ex: "1. Meça o pino 3...").
-- SEMPRE adicione [VOZ: resumo curto em 1-2 frases] no final.`;
+  return base + `\n=== MODO TÉCNICO ===\n- Vá direto ao ponto.\n- SEMPRE adicione [VOZ: resumo curto] no final.`;
 }
 
-const PENSAMENTOS = ["Analisando o esquema...", "Olhando os dados aqui...", "Verificando a lógica...", "Péra, deixa eu pensar...", "Cruzando as informações...", "Buscando no código..."];
+const PENSAMENTOS = ["Analisando...", "Olhando os dados...", "Verificando...", "Péra, deixa eu pensar...", "Cruzando as informações...", "Buscando no código..."];
 
 async function enviar() {
   const input = document.getElementById('input'); const texto = input.value.trim();
@@ -432,7 +482,7 @@ async function enviar() {
     }
 
     let userContent = texto;
-    if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM ENVIADA]:\n${contextoVisao}\n\n[PERGUNTA DO USUÁRIO]:\n${texto || "O que você acha disso?"}`;
+    if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM ENVIADA]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "O que acha disso?"}`;
     if (arquivoAnexado) { userContent = `[ARQUIVO ANEXADO]:\n${arquivoAnexado}\n\n[PERGUNTA]:\n${texto}`; arquivoAnexado = ''; }
 
     const palavrasConversacionais = ['acha', 'pensa', 'opinião', 'sugere', 'como você faria', 'me ajuda a pensar', 'o que rolou', 'será que'];
@@ -445,23 +495,11 @@ async function enviar() {
 
     while (continuar && tentativas < 6) {
         tentativas++;
-        const resp = await fetch(WORKER_URL, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                model: MODELO, 
-                messages: msgs, 
-                max_tokens: 4000, 
-                temperature: isConversational ? 0.65 : 0.2 
-            }) 
-        });
-        const data = await resp.json();
+        const data = await chamarIA(msgs, isConversational ? 0.65 : 0.2);
         
         if (data.usage) { metricTokens += data.usage.total_tokens; document.getElementById('metric-tokens').textContent = metricTokens; localStorage.setItem('metric_tokens', metricTokens); }
-        
         let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
-        // GITHUB SEARCH (ILIMITADO)
         const searchM = [...resposta.matchAll(/\[GITHUB_SEARCH:\s*(.*?)\]/g)];
         if (searchM.length > 0) {
             await carregarRepoTree();
@@ -469,32 +507,25 @@ async function enviar() {
             for (const m of searchM) {
                 const termo = m[1].trim();
                 t.div.textContent = `Buscando "${termo}" no repositório...`;
-                addLog(`GITHUB_SEARCH: ${termo}`);
-                
-                // Se não achou termo exato, varre os arquivos de código (limite de 15 arquivos p/ não estourar tokens)
                 const byName = repoTree.filter(p => p.toLowerCase().includes(termo.toLowerCase())).slice(0, 5);
                 const codeFiles = repoTree.filter(p => ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json'].some(e => p.toLowerCase().endsWith(e))).slice(0, 15);
                 const toScan = [...new Set([...byName, ...codeFiles])];
-                
                 let matches = "";
                 for (const path of toScan) {
                     const content = await fetchGithubFile(path);
                     if (content.startsWith('[ERRO')) continue;
                     const lines = content.split('\n');
                     lines.forEach((ln, i) => {
-                        if (ln.toLowerCase().includes(termo.toLowerCase())) {
-                            matches += `\n${path}:${i+1}: ${ln.trim().substring(0, 200)}`;
-                        }
+                        if (ln.toLowerCase().includes(termo.toLowerCase())) { matches += `\n${path}:${i+1}: ${ln.trim().substring(0, 200)}`; }
                     });
                 }
-                allRes += `\n=== BUSCA: "${termo}" ===\n${matches || '(Nenhum arquivo encontrado com este termo exato. Tente ler um arquivo específico.)'}`;
+                allRes += `\n=== BUSCA: "${termo}" ===\n${matches || '(Nenhum arquivo encontrado.)'}`;
             }
             msgs.push({ role: 'assistant', content: resposta });
-            msgs.push({ role: 'user', content: `[SISTEMA]: Resultados da busca no repositório:\n${allRes}\n\nAgora responda a pergunta original com base nesses trechos.` });
+            msgs.push({ role: 'user', content: `[SISTEMA]: Resultados:\n${allRes}\n\nResponda agora.` });
             continue;
         }
 
-        // GITHUB READ
         const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
         if (readM.length > 0) {
             await carregarRepoTree();
@@ -502,32 +533,36 @@ async function enviar() {
             for (const m of readM) {
                 let rp = m[1].trim(); let fp = rp;
                 if (!rp.includes('/') && repoTree.length > 0) { const f = repoTree.find(p => p.endsWith(rp)); if (f) fp = f; }
-                t.div.textContent = `Lendo ${fp}...`; addLog(`Lendo ${fp}`);
+                t.div.textContent = `Lendo ${fp}...`;
                 const fc = await fetchGithubFile(fp);
                 if (fc && !fc.startsWith('[ERRO')) { all += `\n=== ${fp} ===\n\`\`\`\n${fc}\n\`\`\`\n`; cnt++; }
                 else all += `\n=== ${fp} ===\n${fc}\n`;
             }
             msgs.push({ role: 'assistant', content: resposta });
-            msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo dos ${cnt} arquivos lidos:\n${all}\n\nAgora faça a análise.` });
+            msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo lido:\n${all}\n\nAnálise.` });
             continue;
         }
 
-        // WEB SEARCH
-        const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
-        if (webM && tentativas === 1) {
-            t.div.textContent = `Buscando na web: "${webM[1]}"...`;
-            const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(webM[1])}`);
-            const sd = await sr.json();
-            msgs.push({ role: 'assistant', content: resposta });
-            msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca: ${sd.results}. Responda agora.` });
-        } else {
-            respostaFinal = resposta; continuar = false;
-        }
+        respostaFinal = resposta; continuar = false;
     }
 
     const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
     let txtFalar = vozM ? vozM[1] : respostaFinal;
     if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
+
+    const agendaAddM = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
+    if (agendaAddM) {
+        agenda.push({ texto: agendaAddM[1].trim(), data: Date.now() });
+        renderAgenda();
+        respostaFinal = respostaFinal.replace(agendaAddM[0], '').trim();
+    }
+    const agendaDelM = respostaFinal.match(/\[AGENDA_DEL:\s*([\s\S]*?)\]/);
+    if (agendaDelM) {
+        const termoDel = agendaDelM[1].trim().toLowerCase();
+        agenda = agenda.filter(a => !a.texto.toLowerCase().includes(termoDel));
+        renderAgenda();
+        respostaFinal = respostaFinal.replace(agendaDelM[0], '').trim();
+    }
 
     const mImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
     const mVid = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
@@ -537,24 +572,17 @@ async function enviar() {
 
     t.wrapper.remove();
 
-    // Renderiza texto limpo
-    let limpo = respostaFinal
-        .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT):[\s\S]*?\]/g, '')
-        .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
-    if (limpo) { const o = addMsg('boss', limpo); }
+    let limpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT):[\s\S]*?\]/g, '').replace(/```mermaid\n[\s\S]*?```/g, '').trim();
+    if (limpo) { addMsg('boss', limpo); }
     
     falarTexto(txtFalar);
 
-    // RENDERIZA MÍDIAS
     if (mGen) {
         const w = document.createElement('div'); w.style.padding = '10px';
-        w.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px;">[ Gerando imagem... ]</div>`;
+        w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
         document.getElementById('chat').appendChild(w);
         fetch(`${WORKER_URL}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: mGen[1] }) })
-          .then(r=>r.json()).then(d => {
-            if(d.image) { w.innerHTML = `<img src="${d.image}" class="msg-img">`; }
-            else { w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha: ${JSON.stringify(d.error)} ]</div>`; }
-          });
+          .then(r=>r.json()).then(d => { if(d.image) w.innerHTML = `<img src="${d.image}" class="msg-img">`; else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha na imagem ]</div>`; });
     }
 
     if (mProj || mMer) {
@@ -567,7 +595,7 @@ async function enviar() {
 
     if (mImg) {
         const w = document.createElement('div'); w.style.padding='10px';
-        w.innerHTML = `<div style="color:#00FFCC; font-size:12px; font-family:monospace;">[ Buscando imagem... ]</div>`;
+        w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando imagem... ]</div>`;
         document.getElementById('chat').appendChild(w);
         fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(mImg[1])}`).then(r=>r.json()).then(d => {
             if(d.url) { const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>';}; w.innerHTML=''; w.appendChild(i); }
@@ -577,14 +605,14 @@ async function enviar() {
 
     if (mVid) {
         const w = document.createElement('div'); w.style.padding='10px';
-        w.innerHTML = `<div style="color:#00FFCC; font-size:12px; font-family:monospace;">[ Buscando vídeo... ]</div>`;
+        w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando vídeo... ]</div>`;
         document.getElementById('chat').appendChild(w);
         fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(mVid[1])}`).then(r=>r.json()).then(d => {
             if(d.videos && d.videos.length > 0) {
                 const vid = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
                 if(vid) w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
-                else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC; font-family:monospace;">Assistir: ${d.videos[0].title}</a>`;
-            } else { w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Vídeo não encontrado ]</div>`; }
+                else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
+            }
         });
     }
 
@@ -593,21 +621,45 @@ async function enviar() {
     localStorage.setItem('boss_historico', JSON.stringify(historico));
 
   } catch (e) {
-    t.wrapper.remove(); addMsg('error', `Deu ruim na comunicação: ${e.message}`);
+    t.wrapper.remove(); addMsg('error', `Deu ruim: ${e.message}`);
   } finally {
     document.getElementById('send').disabled = false; input.focus();
     document.getElementById('exoContainer').classList.remove('pensando');
   }
 }
 
-// ==========================================
-// MEDIÇÕES, CALCULADORAS E CANETA
-// ==========================================
-function abrirMedicoes() {
-    renderMedicoes();
-    document.getElementById('modalMeasure').classList.add('open');
-    setTimeout(() => document.getElementById('m-point').focus(), 100);
+window.onload = () => {
+    renderAgenda();
+    if (agenda.length > 0) {
+        setTimeout(() => {
+            const lista = agenda.map(a => `- ${a.texto}`).join('\n');
+            addMsg('boss', `Bom dia, ${userRole}. Aqui estão suas pendências anotadas:\n\n${lista}\n\nO que vamos resolver hoje?`);
+            falarTexto(`Bom dia, ${userRole}. Você tem ${agenda.length} pendências para hoje.`);
+        }, 1000);
+    } else {
+        addMsg('boss', `Sistemas online. O que vamos fazer hoje, ${userRole}?`);
+    }
+};
+
+async function carregarRepoTree() {
+    if (repoTree.length > 0) return;
+    try {
+        const res = await fetch(`${WORKER_URL}/github-tree?repo=${REPO_PROJETO}`);
+        const data = await res.json();
+        if (data.tree) repoTree = data.tree.filter(f => f.type === 'blob').map(f => f.path);
+    } catch(e) {}
 }
+async function fetchGithubFile(path) {
+    if (fileCache[path]) return fileCache[path];
+    try {
+        const res = await fetch(`${WORKER_URL}/github?repo=${REPO_PROJETO}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (data.content) { const txt = decodeURIComponent(escape(atob(data.content))); fileCache[path] = txt; return txt; }
+        return data.message ? `[ERRO GITHUB API]: ${data.message}` : `[ERRO: Vazio]`;
+    } catch (e) { return `[ERRO DE REDE]: ${e.message}`; }
+}
+
+function abrirMedicoes() { renderMedicoes(); document.getElementById('modalMeasure').classList.add('open'); setTimeout(() => document.getElementById('m-point').focus(), 100); }
 function addMedicao() {
     const p = document.getElementById('m-point').value.trim(), v = document.getElementById('m-val').value.trim();
     if (!p || !v) return alert('Preencha ponto e valor.');
@@ -625,115 +677,53 @@ function renderMedicoes() {
 }
 function delMedicao(i) { medicoes.splice(i, 1); localStorage.setItem('boss_medicoes', JSON.stringify(medicoes)); renderMedicoes(); }
 function enviarMedicoesParaBOSS() { if(!medicoes.length) return alert('Sem medições.'); const txt = `Analise estas medições:\n` + medicoes.map(m => `- ${m.ponto}: ${m.valor}${m.unidade}`).join('\n'); fecharModal('modalMeasure'); document.getElementById('input').value = txt; document.getElementById('input').focus(); }
-
-function calcQuedaTensao() {
-    const L = +document.getElementById('qt-L').value, I = +document.getElementById('qt-I').value, A = +document.getElementById('qt-A').value, V = +document.getElementById('qt-V').value;
-    const dV = (2 * L * I * 0.0175) / A, pct = (dV / V) * 100;
-    document.getElementById('qt-res').textContent = `ΔV = ${dV.toFixed(3)} V\nQueda: ${pct.toFixed(2)}%`;
-}
-const DTC_DB = [['P0300','Falha de ignição aleatória'],['P0101','Falha MAF'],['P0171','Mistura pobre']];
-function buscarDTC() {
-    const q = document.getElementById('dtcSearch').value.toUpperCase();
-    document.getElementById('dtcBody').innerHTML = DTC_DB.filter(d => d[0].includes(q)).map(d => `<tr><td style="color:#00FFCC">${d[0]}</td><td>${d[1]}</td></tr>`).join('');
-}
+function calcQuedaTensao() { const L = +document.getElementById('qt-L').value, I = +document.getElementById('qt-I').value, A = +document.getElementById('qt-A').value, V = +document.getElementById('qt-V').value; const dV = (2 * L * I * 0.0175) / A, pct = (dV / V) * 100; document.getElementById('qt-res').textContent = `ΔV = ${dV.toFixed(3)} V\nQueda: ${pct.toFixed(2)}%`; }
+const DTC_DB = [['P0300','Falha de ignição'],['P0101','Falha MAF'],['P0171','Mistura pobre']];
+function buscarDTC() { const q = document.getElementById('dtcSearch').value.toUpperCase(); document.getElementById('dtcBody').innerHTML = DTC_DB.filter(d => d[0].includes(q)).map(d => `<tr><td style="color:#00FFCC">${d[0]}</td><td>${d[1]}</td></tr>`).join(''); }
 buscarDTC();
 
-// CANETA
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
 function abrirAnotacao() {
-    if (!imagemAnexadaBase64) { alert('Tire ou anexe uma foto primeiro.'); return; }
+    if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.');
     document.getElementById('modalDraw').classList.add('open');
     setTimeout(() => {
-        const cv = document.getElementById('drawCanvas');
-        const img = new Image();
-        img.onload = () => {
-            cv.width = img.width; cv.height = img.height;
-            const ctx = cv.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)];
-            bindDrawEvents(cv);
-        };
+        const cv = document.getElementById('drawCanvas'); const img = new Image();
+        img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); };
         img.src = imagemAnexadaBase64;
     }, 150);
 }
 function bindDrawEvents(cv) {
     const ctx = cv.getContext('2d');
-    const getPos = e => {
-        const r = cv.getBoundingClientRect();
-        const t = e.touches ? e.touches[0] : e;
-        return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) };
-    };
-    const start = e => {
-        e.preventDefault(); drawing = true;
-        const p = getPos(e); startX = p.x; startY = p.y;
-        drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height));
-        if (drawTool === 'text') {
-            const txt = prompt('Texto:'); if (txt) { ctx.fillStyle = drawColor; ctx.font = `20px sans-serif`; ctx.fillText(txt, p.x, p.y); } drawing = false;
-        }
-    };
+    const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; };
+    const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if (drawTool === 'text') { const txt = prompt('Texto:'); if (txt) { ctx.fillStyle = drawColor; ctx.font = `20px sans-serif`; ctx.fillText(txt, p.x, p.y); } drawing = false; } };
     const move = e => {
-        if (!drawing) return; e.preventDefault();
-        const p = getPos(e);
-        const snap = drawSnapshots[drawSnapshots.length-1];
-        ctx.putImageData(snap, 0, 0);
+        if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0);
         ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round';
         if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; }
-        else if (drawTool === 'circle') {
-            const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2;
-            ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke();
-        }
-        else if (drawTool === 'arrow') {
-            ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke();
-            const ang = Math.atan2(p.y - startY, p.x - startX);
-            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill();
-        }
+        else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); }
+        else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); }
     };
     const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } };
-    cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end;
-    cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end;
+    cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end;
 }
 function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-tool').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function clearDraw() { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.getContext('2d').drawImage(img, 0, 0); drawSnapshots = [cv.getContext('2d').getImageData(0,0,cv.width,cv.height)]; }; img.src = imagemAnexadaBase64; }
-function salvarAnotacao() {
-    const cv = document.getElementById('drawCanvas');
-    imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85);
-    addMsg('user', '[Foto anotada pronta para envio]');
-    fecharModal('modalDraw');
-    document.getElementById('btnDraw').style.display = 'flex';
-    document.getElementById('input').focus();
-}
+function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-// UPLOAD
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
     const n = file.name.toLowerCase();
-    
     if (n.endsWith('.jpg') || n.endsWith('.jpeg') || n.endsWith('.png') || n.endsWith('.webp') || file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = function(e) { 
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                const MW = 600, sc = MW / img.width;
-                canvas.width = MW; canvas.height = img.height * sc;
-                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.6);
-                addMsg('user', `[Foto "${file.name}" anexada]`); 
-                document.getElementById('btnDraw').style.display = 'flex';
-                document.getElementById('input').focus(); 
-            }
+            const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const MW = 600, sc = MW / img.width; canvas.width = MW; canvas.height = img.height * sc; canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.6); addMsg('user', `[Foto anexada]`); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file); event.target.value = ''; return;
     }
-
     const reader = new FileReader();
-    reader.onload = function(e) { 
-        arquivoAnexado = e.target.result.substring(0, 50000);
-        addMsg('user', `[Arquivo "${file.name}" anexado]`); 
-        document.getElementById('input').focus(); 
-    };
+    reader.onload = function(e) { arquivoAnexado = e.target.result.substring(0, 50000); addMsg('user', `[Arquivo anexado]`); document.getElementById('input').focus(); };
     reader.readAsText(file); event.target.value = '';
 }
 
@@ -752,13 +742,10 @@ function falarTexto(t) {
     if (localStorage.getItem('boss_voice_toggle') === 'off') return; 
     window.speechSynthesis.cancel(); 
     const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' ')); 
-    u.lang = 'pt-BR'; 
-    u.rate = vozRate;
-    window.speechSynthesis.speak(u); 
+    u.lang = 'pt-BR'; u.rate = vozRate; window.speechSynthesis.speak(u); 
 }
 
 document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
-// Puxa a árvore do repositório no fundo para deixar o GITHUB_SEARCH rápido
 carregarRepoTree();
 </script>
 </body>
