@@ -5,382 +5,286 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BOSS - EXODRIVE</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background-color: #05070A; background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px); background-size: 30px 30px; color: #E8EDF2; font-family: 'Segoe UI', Roboto, sans-serif; height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-.hud-container { width: 100vw; height: 100dvh; border: 1px solid rgba(0, 255, 204, 0.2); position: relative; display: flex; flex-direction: column; background: rgba(5, 7, 10, 0.85); box-shadow: inset 0 0 50px rgba(0, 255, 204, 0.05); padding-bottom: env(safe-area-inset-bottom); transition: all 0.3s; }
-@media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; border-radius: 4px; } }
-.corner { position: absolute; width: 25px; height: 25px; border: 2px solid #00FFCC; z-index: 50;}
-.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; } .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
-.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; } .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+    /* =========================================
+       VARIÁVEIS DE TEMA (Padrão Cyan / Stealth)
+       ========================================= */
+    :root {
+        --font-mono: 'JetBrains Mono', monospace;
+        --font-ui: 'Rajdhani', sans-serif;
+        
+        /* TEMA PADRÃO (CYAN) */
+        --bg-dark: #05070A;
+        --panel-bg: #0D1117;
+        --border-color: #1e293b;
+        --accent: #00FFCC;
+        --accent-hover: #00ccaa;
+        --text-main: #E8EDF2;
+        --text-muted: #6A7A8A;
+        --orb-color: #00FFCC;
+        --orb-glow: rgba(0, 255, 204, 0.4);
+    }
 
-header { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 255, 204, 0.1); z-index: 10; background: linear-gradient(90deg, rgba(0,255,204,0.05) 0%, transparent 50%); transition: 0.3s; position: relative; flex-shrink: 0; }
-.brand-left { display: flex; flex-direction: column; }
-.exo-system { color: #00FFCC; font-size: 10px; font-weight: bold; letter-spacing: 0.3em; opacity: 0.7; }
-.brand-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
-.boss-title { color: #FFFFFF; font-size: 20px; font-weight: 900; letter-spacing: 0.5em; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
-.hud-status { display: flex; gap: 10px; align-items: center; font-family: monospace; font-size: 11px; letter-spacing: 0.1em; }
-.status-box { display: flex; align-items: center; gap: 6px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #6A7A8A; }
-.status-dot.ok { background: #27AE60; box-shadow: 0 0 8px #27AE60; }
-.status-dot.warn { background: #F1C40F; box-shadow: 0 0 8px #F1C40F; }
-.status-dot.err { background: #E74C3C; box-shadow: 0 0 8px #E74C3C; }
-.hud-btn { background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; border-radius: 4px; cursor: pointer; font-size: 13px; padding: 3px 7px; transition: all 0.2s; }
-.hud-btn:hover { background: rgba(0,255,204,0.15); border-color: #00FFCC; }
-.hud-btn.alert { border-color: #F1C40F; color: #F1C40F; }
+    body.theme-stealth {
+        /* TEMA STEALTH (ÂMBAR) */
+        --bg-dark: #050505;
+        --panel-bg: #0a0a0a;
+        --border-color: #222;
+        --accent: #d97706;
+        --accent-hover: #b45309;
+        --text-main: #d1d5db;
+        --text-muted: #6b7280;
+        --orb-color: #d97706;
+        --orb-glow: rgba(217, 119, 6, 0.4);
+    }
 
-.hud-container.zen-mode .side-hud { display: none !important; }
-.hud-container.zen-mode .exo-container { display: none !important; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg-dark); color: var(--text-main); font-family: var(--font-mono); height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; transition: background 0.3s; }
 
-main { flex: 1; display: flex; flex-direction: row; position: relative; overflow: hidden; transition: 0.3s; width: 100%; height: 100%; min-height: 0; }
-.chat-area { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; height: 100%; min-height: 0; }
-.side-hud { display: none; width: 260px; background: rgba(13, 17, 23, 0.9); border-right: 1px solid rgba(0, 255, 204, 0.2); padding: 20px; flex-direction: column; gap: 12px; font-family: monospace; order: -1; overflow-y: auto; flex-shrink: 0; }
-@media (min-width: 900px) { .side-hud { display: flex; } }
-.hud-widget { border: 1px solid rgba(0,255,204,0.1); background: #05070A; border-radius: 6px; padding: 12px; }
-.hud-widget-title { font-size: 10px; color: #6A7A8A; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.1); padding-bottom: 4px; }
-.hud-widget-val { font-size: 20px; color: #00FFCC; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,204,0.3); }
-.hud-widget-sub { font-size: 11px; color: #E8EDF2; margin-top: 4px; }
-.hud-widget-btn { width: 100%; margin-top: 8px; background: transparent; border: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 4px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: monospace; }
-.hud-widget-btn:hover { background: rgba(0,255,204,0.1); }
+    .hud-container { width: 100vw; height: 100dvh; background: var(--panel-bg); display: flex; flex-direction: column; position: relative; border: 1px solid var(--border-color); transition: 0.3s; }
+    @media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; } }
 
-.exo-container { margin-top: 15px; position: relative; width: 140px; height: 140px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s ease; flex-shrink: 0; }
-.exo-glow { position: absolute; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, rgba(0,255,204,0.15) 0%, transparent 70%); transition: all 0.3s ease; }
-.exo-anel-1 { position: absolute; width: 130px; height: 130px; border-radius: 50%; border: 1px dashed rgba(0,255,204,0.3); animation: gira 20s linear infinite; }
-.exo-anel-2 { position: absolute; width: 100px; height: 100px; border-radius: 50%; border: 2px solid rgba(0,255,204,0.2); border-left-color: #00FFCC; animation: gira-rev 12s linear infinite; }
-.exo-anel-3 { position: absolute; width: 70px; height: 70px; border-radius: 50%; border: 1px solid rgba(0,255,204,0.5); border-right-color: transparent; border-left-color: transparent; animation: gira 8s linear infinite; }
-.exo-core { position: relative; width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #1A1F28, #0A0D12); border: 2px solid #00FFCC; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px rgba(0,255,204,0.4); transition: all 0.3s ease; }
-@keyframes gira { to { transform: rotate(360deg); } } @keyframes gira-rev { to { transform: rotate(-360deg); } }
-.exo-container.ouvindo .exo-core { border-color: #E74C3C; box-shadow: 0 0 40px rgba(231,76,60,0.6); animation: pulse-fast 1s infinite; }
-.exo-container.pensando .exo-core { border-color: #F1C40F; box-shadow: 0 0 40px rgba(241,196,15,0.6); }
-.exo-container.pensando .exo-anel-2 { animation-duration: 2s; border-left-color: #F1C40F; } .exo-container.pensando .exo-anel-3 { animation-duration: 1s; border-top-color: #F1C40F; }
-.exo-container.falando .exo-core { border-color: #00FFCC; box-shadow: 0 0 50px rgba(0,255,204,0.8); animation: pulse-slow 1.5s infinite; }
-@keyframes pulse-fast { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
-@keyframes pulse-slow { 0% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } 50% { box-shadow: 0 0 60px rgba(0,255,204,1); } 100% { box-shadow: 0 0 30px rgba(0,255,204,0.4); } }
+    /* HEADER */
+    header { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--bg-dark); flex-shrink: 0; z-index: 10; }
+    .logo-area { display: flex; flex-direction: column; }
+    .logo-title { color: var(--text-main); font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+    .logo-sub { color: var(--text-muted); font-size: 9px; letter-spacing: 1px; }
+    
+    .header-center { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-ui); font-size: 18px; font-weight: 700; letter-spacing: 4px; color: var(--text-main); }
+    
+    .header-status { display: flex; align-items: center; gap: 10px; font-size: 11px; }
+    .status-box { display: flex; align-items: center; gap: 6px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
+    .status-dot.ok { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+    .status-dot.warn { background: #f59e0b; box-shadow: 0 0 5px #f59e0b; }
+    .status-dot.err { background: #ef4444; box-shadow: 0 0 5px #ef4444; }
+    
+    .icon-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: center; gap: 5px; }
+    .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
 
-#chat { flex: 1; width: 100%; max-width: 900px; overflow-y: auto; overflow-x: hidden; padding: 15px 25px 15px 20px; display: flex; flex-direction: column; gap: 10px; transition: 0.3s; scroll-behavior: smooth; min-height: 0; overflow-anchor: none; }
-#chat::-webkit-scrollbar { width: 8px; }
-#chat::-webkit-scrollbar-track { background: transparent; }
-#chat::-webkit-scrollbar-thumb { background: rgba(0, 255, 204, 0.3); border-radius: 4px; }
+    /* MAIN WORKSPACE */
+    main { flex: 1; display: flex; overflow: hidden; }
 
-.msg-wrapper { display: flex; align-items: flex-start; gap: 8px; width: 100%; }
-.msg { font-family: monospace; font-size: 13px; line-height: 1.6; padding-left: 10px; border-left: 2px solid transparent; word-wrap: break-word; white-space: pre-wrap; flex: 1; transition: 0.3s; }
-.msg.user { border-left-color: #6A7A8A; color: #8A9AAA; } .msg.user::before { content: "USR > "; color: #6A7A8A; font-weight: bold; }
-.msg.boss { border-left-color: #00FFCC; color: #E8EDF2; } .msg.boss::before { content: "SYS > "; color: #00FFCC; font-weight: bold; }
-.msg.error { border-left-color: #E74C3C; color: #E74C3C; } .msg.error::before { content: "ERR > "; font-weight: bold; }
-.msg.thinking { color: #F1C40F; font-style: italic; border-left-color: #F1C40F; animation: blink 1s infinite; } .msg.thinking::before { content: "PROC > "; font-weight: bold; }
-@keyframes blink { 50% { opacity: 0.5; } }
-.msg b { color: #FFFFFF; font-weight: bold; }
-.msg pre { background: #0D1117; padding: 10px; border-radius: 6px; overflow-x: auto; border: 1px solid rgba(0,255,204,0.2); position: relative; margin-top: 10px; white-space: pre; }
-.msg pre code { background: transparent; color: #E8EDF2; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; }
-.btn-copy-code { position: absolute; top: 5px; right: 5px; background: #1E293B; color: #00FFCC; border: 1px solid #00FFCC; border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer; }
-.btn-copy-code:hover { background: #00FFCC; color: #000; }
+    /* SIDEBAR ESQUERDA */
+    .sidebar-left { width: 260px; border-right: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; background: var(--panel-bg); flex-shrink: 0; }
+    .widget { border: 1px solid var(--border-color); padding: 12px; border-radius: 4px; background: var(--bg-dark); }
+    .widget-title { font-size: 10px; color: var(--text-muted); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; letter-spacing: 1px; }
+    .widget-val { font-size: 16px; color: var(--accent); font-weight: bold; }
+    .widget-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; }
+    .log-line { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
 
-footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); background: #080A0F; display: flex; justify-content: flex-start; align-items: center; z-index: 10; transition: 0.3s; width: 100%; position: relative; flex-shrink: 0; }
-.footer-inputs { display: flex; gap: 8px; width: 100%; max-width: 900px; align-items: center; justify-content: flex-start; margin-left: 0; margin-top: 15px; }
-@media (min-width: 1200px) { .footer-inputs { margin-left: 280px; margin-top: 0; } }
-@media (min-width: 900px) and (max-width: 1199px) { .footer-inputs { margin-left: 40px; } }
+    /* ÁREA CENTRAL (CHAT + ORBE) */
+    .center-area { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, #111 0%, var(--bg-dark) 100%); min-width: 0; transition: 0.3s; }
+    
+    /* O ORBE */
+    .orb-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 0; opacity: 0.15; pointer-events: none; display: flex; justify-content: center; align-items: center; }
+    .orb { width: 300px; height: 300px; border-radius: 50%; border: 1px dashed var(--orb-color); display: flex; justify-content: center; align-items: center; animation: spin 30s linear infinite; transition: 0.3s; }
+    .orb-2 { position: absolute; width: 200px; height: 200px; border-radius: 50%; border: 2px solid var(--orb-color); border-top-color: transparent; border-bottom-color: transparent; animation: spin 10s linear infinite reverse; }
+    .orb-core { width: 80px; height: 80px; background: var(--orb-color); border-radius: 50%; filter: blur(20px); animation: pulse 2s ease-in-out infinite; transition: 0.3s; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
 
-.btn-attach { background: transparent; border: 1px solid #6A7A8A; color: #6A7A8A; padding: 8px 10px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 16px; height: 40px; display: flex; align-items: center; justify-content: center; }
-.btn-attach:hover { border-color: #00FFCC; color: #00FFCC; }
-#input { flex: 1; background: transparent; border: none; border-bottom: 1px solid rgba(0,255,204,0.3); color: #00FFCC; padding: 8px 0; font-size: 14px; font-family: monospace; resize: none; outline: none; height: 40px; max-height: 120px; overflow-y: hidden; transition: 0.3s; }
-#input::placeholder { color: rgba(0,255,204,0.3); } #input:focus { border-bottom-color: #00FFCC; }
-.btn-send { background: transparent; color: #00FFCC; border: 1px solid #00FFCC; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace; transition: all 0.2s; height: 40px; }
-.btn-send:hover { background: rgba(0,255,204,0.1); } .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
+    #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 1; scroll-behavior: smooth; }
+    .msg-wrapper { display: flex; width: 100%; }
+    .msg { font-size: 13px; line-height: 1.6; max-width: 85%; padding: 10px; border-left: 2px solid transparent; }
+    .msg.user { border-left-color: var(--text-muted); color: #999; background: rgba(255,255,255,0.02); align-self: flex-end; margin-left: auto; border-radius: 4px 0 0 4px; }
+    .msg.boss { border-left-color: var(--accent); color: var(--text-main); background: rgba(255, 255, 255, 0.05); border-radius: 0 4px 4px 0; }
+    .msg.boss::before { content: "SYS > "; color: var(--accent); font-weight: bold; }
+    .msg.user::before { content: "USR > "; color: var(--text-muted); font-weight: bold; }
+    .msg.thinking { color: var(--accent); font-style: italic; border-left-color: var(--accent); opacity: 0.7; }
 
-.config { padding: 20px; display: none; background: #0D1117; border: 1px solid #00FFCC; position: absolute; top: 60px; right: 20px; z-index: 20; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); width: 320px; max-height: 85vh; overflow-y: auto; }
-.config.open { display: block; }
-.config label { font-size: 10px; color: #00FFCC; margin-bottom:6px; display:block; font-family: monospace; margin-top: 12px; }
-.config select, .config input[type=range], .config input[type=password], .config input[type=text] { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-size: 12px; font-family: monospace; outline: none; margin-bottom: 5px; }
-.config .range-val { font-size: 11px; color: #64748B; text-align: right; margin-bottom: 5px; }
-.btn-clear { width: 100%; background: transparent; border: 1px solid #E74C3C; color: #E74C3C; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 15px;}
-.btn-save { width: 100%; background: transparent; border: 1px solid #00FFCC; color: #00FFCC; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-bottom: 8px; margin-top: 5px;}
+    /* BARRA DE COMANDO (FOOTER) */
+    footer { padding: 15px 20px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 10px; align-items: center; z-index: 10; flex-shrink: 0; }
+    .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; }
+    .cmd-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-color); color: var(--accent); padding: 10px; font-family: var(--font-mono); font-size: 14px; outline: none; transition: 0.3s; }
+    #input:focus { border-bottom-color: var(--accent); }
+    .btn-send { background: var(--accent); color: var(--bg-dark); border: none; padding: 0 20px; height: 40px; border-radius: 4px; font-family: var(--font-ui); font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; }
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
-.modal-overlay.open { display: flex; }
-.modal-box { background: #0D1117; border: 1px solid #00FFCC; border-radius: 6px; width: 100%; max-width: 820px; max-height: 90vh; display: flex; flex-direction: column; }
-.modal-header { padding: 12px 18px; border-bottom: 1px solid rgba(0,255,204,0.2); display: flex; justify-content: space-between; align-items: center; }
-.modal-title { color: #00FFCC; font-family: monospace; font-size: 13px; letter-spacing: 0.15em; }
-.modal-close { background: transparent; border: none; color: #E74C3C; font-size: 20px; cursor: pointer; }
-.modal-body { padding: 18px; overflow-y: auto; flex: 1; }
+    /* SIDEBAR DIREITA (CONFIGURAÇÕES) */
+    .sidebar-right { width: 300px; border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; gap: 10px; background: var(--bg-dark); overflow-y: auto; flex-shrink: 0; }
+    .sidebar-right.open { display: flex; }
+    .config-label { font-size: 10px; color: var(--text-muted); margin-top: 10px; margin-bottom: 5px; letter-spacing: 1px; }
+    .config-select, .config-input { width: 100%; background: var(--panel-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px; outline: none; margin-bottom: 5px; }
+    .config-input:focus { border-color: var(--accent); }
+    .btn-config-action { width: 100%; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 11px; margin-top: 5px; transition: 0.2s; }
+    .btn-config-action:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger { border-color: #7f1d1d; color: #ef4444; }
+    .btn-danger:hover { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
+    
+    /* MODAL DE ANOTAÇÃO */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: var(--panel-bg); border: 1px solid var(--accent); border-radius: 6px; width: 100%; max-width: 800px; display: flex; flex-direction: column; }
+    .modal-header { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; color: var(--accent); font-family: var(--font-ui); font-weight: bold; }
+    .modal-body { padding: 15px; display: flex; flex-direction: column; gap: 15px; align-items: center; }
+    .draw-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; width: 100%; }
+    .draw-tool { background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+    .draw-tool.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
+    #drawCanvas { max-width: 100%; border: 1px solid var(--border-color); cursor: crosshair; touch-action: none; }
 
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(0,255,204,0.2); margin-bottom: 15px; flex-wrap: wrap;}
-.tab { background: transparent; border: 1px solid transparent; color: #6A7A8A; padding: 8px 14px; font-family: monospace; font-size: 12px; cursor: pointer; border-bottom: none; }
-.tab.active { color: #00FFCC; border-color: rgba(0,255,204,0.3); background: rgba(0,255,204,0.05); }
-.tab-content { display: none; } .tab-content.active { display: block; }
-
-.calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
-.calc-card { border: 1px solid rgba(0,255,204,0.15); border-radius: 6px; padding: 14px; background: #05070A; }
-.calc-card h4 { color: #00FFCC; font-family: monospace; font-size: 12px; margin-bottom: 10px; }
-.calc-card label { display: block; font-family: monospace; font-size: 11px; color: #8A9AAA; margin-top: 8px; }
-.calc-card input, .calc-card select { width: 100%; background: #0D1117; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-top: 3px; }
-.calc-btn { margin-top: 10px; width: 100%; background: rgba(0,255,204,0.1); border: 1px solid #00FFCC; color: #00FFCC; padding: 7px; border-radius: 4px; font-family: monospace; font-size: 12px; cursor: pointer; }
-.calc-result { margin-top: 10px; padding: 10px; border-radius: 4px; background: rgba(0,255,204,0.05); border: 1px solid rgba(0,255,204,0.2); color: #00FFCC; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
-.ref-table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; }
-.ref-table th { background: rgba(0,255,204,0.1); color: #00FFCC; padding: 6px 8px; text-align: left; }
-.ref-table td { padding: 5px 8px; border-bottom: 1px solid rgba(0,255,204,0.08); color: #E8EDF2; }
-.search-input { width: 100%; background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 13px; margin-bottom: 12px; outline: none; }
-
-.measure-item { border: 1px solid rgba(0,255,204,0.15); border-radius: 6px; padding: 10px; margin-bottom: 8px; background: #05070A; display: flex; justify-content: space-between; align-items: center; }
-.measure-info { flex: 1; font-family: monospace; font-size: 12px; }
-.measure-point { color: #00FFCC; font-weight: bold; } .measure-val { color: #F1C40F; font-size: 14px; }
-.measure-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; padding: 12px; border: 1px dashed rgba(0,255,204,0.3); border-radius: 6px; }
-.measure-form input, .measure-form select { background: #05070A; border: 1px solid rgba(0,255,204,0.2); color: #E8EDF2; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; }
-.btn-primary { background: rgba(0,255,204,0.15); border: 1px solid #00FFCC; color: #00FFCC; padding: 8px 14px; border-radius: 4px; font-family: monospace; font-size: 12px; cursor: pointer; width: 100%;}
-.btn-secondary { background: transparent; border: 1px solid rgba(0,255,204,0.4); color: #00FFCC; padding: 8px 14px; border-radius: 4px; font-family: monospace; font-size: 12px; cursor: pointer; }
-
-.msg-img { max-width: 100%; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; display: block; }
-.video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid #00FFCC; }
-.video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-.mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; }
-
-.draw-toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
-.draw-tool { background: #05070A; border: 1px solid rgba(0,255,204,0.3); color: #E8EDF2; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
-.draw-tool.active { background: #00FFCC; color: #000; }
-#drawCanvasWrap { position: relative; display: inline-block; max-width: 100%; }
-#drawCanvas { max-width: 100%; display: block; border: 1px solid rgba(0,255,204,0.3); border-radius: 4px; cursor: crosshair; touch-action: none; }
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 </style>
 </head>
 <body>
 
-<div class="hud-container" id="hudContainer">
-    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
-
+<div class="hud-container">
     <header>
-        <div class="brand-left"><div class="exo-system">EXODRIVE SISTEMAS</div></div>
-        <div class="brand-center"><div class="boss-title">BOSS</div></div>
-        <div class="hud-status">
-            <button class="hud-btn" onclick="toggleZenMode()" title="Modo Foco">⛶</button>
-            <button class="hud-btn" onclick="abrirCalc()" title="Calculadoras">🧮</button>
-            <button class="hud-btn alert" onclick="abrirMedicoes()" title="Medições">📋</button>
-            <div class="status-box"><div id="statusDot" class="status-dot ok"></div><span id="statusText">ONLINE</span></div>
-            <div class="status-box" style="cursor:pointer" onclick="toggleConfig()">
-                <span style="color:#6A7A8A">OP:</span><span id="userDisplay" style="color:#00FFCC">PATRÃO</span><span style="color:#6A7A8A">⚙</span>
+        <div class="logo-area">
+            <div class="logo-title">EXODRIVE SISTEMAS</div>
+            <div class="logo-sub">BOSS AI</div>
+        </div>
+        <div class="header-center">B O S S</div>
+        
+        <div class="header-status">
+            <div class="status-box">
+                <div id="statusDot" class="status-dot ok"></div>
+                <span id="statusText">ONLINE</span>
             </div>
+            <!-- BOTÕES DE AÇÃO DO TOPO -->
+            <button class="icon-btn" onclick="toggleTheme()" id="btnTheme" title="Alternar Tema">🎨 TEMA</button>
+            <button class="icon-btn" onclick="toggleMute()" id="btnMute" title="Silenciar Voz">🔊 VOZ</button>
+            <button class="icon-btn" onclick="toggleConfig()" title="Configurações">⚙ CONFIG</button>
         </div>
     </header>
 
-    <div id="config" class="config">
-      <label>OPERATOR PROFILE</label>
-      <select id="userSelect" onchange="mudarUsuario()">
-        <option value="Patrão">PATRÃO (Engenheiro)</option>
-        <option value="Henrique">HENRIQUE (Comercial)</option>
-      </select>
-      <label>VOZ DO BOSS (SOTAQUES)</label>
-      <select id="voiceSelect" onchange="mudarVoz()"><option value="">Padrão do navegador</option></select>
-      <label>VELOCIDADE DA VOZ: <span id="rateVal">1.15</span>x</label>
-      <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)">
-      <label>TOM DA VOZ: <span id="pitchVal">1.05</span></label>
-      <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)">
-      
-      <button class="btn-save" style="border-color:#F1C40F; color:#F1C40F; margin-top:15px;" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO (CODEBASE)</button>
-      <button class="btn-save" onclick="testarVoz()">🔊 TESTAR VOZ</button>
-      
-      <label style="color:#F1C40F; margin-top: 20px;">⚡ API RESERVA (GROQ DIRETA)</label>
-      <input type="password" id="groqKeyInput" placeholder="gsk_...">
-      <button class="btn-save" onclick="salvarGroqKey()">SALVAR CHAVE GROQ</button>
-      
-      <label style="color:#E74C3C; margin-top: 20px;">ZONA DE PERIGO</label>
-      <button class="btn-clear" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
-    </div>
-
     <main>
-        <div class="side-hud">
-            <div class="hud-widget">
-                <div class="hud-widget-title">STATUS DO SISTEMA</div>
-                <div style="display:flex; align-items:center; gap:8px;"><div id="internet-dot" class="status-dot ok"></div><div id="internet-text" style="color:#00FFCC; font-weight:bold;">ONLINE</div></div>
+        <!-- ESQUERDA: TELEMETRIA -->
+        <aside class="sidebar-left">
+            <div class="widget">
+                <div class="widget-title">STATUS DO SISTEMA</div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div id="net-dot" class="status-dot ok"></div>
+                    <span id="net-text" style="color:var(--accent); font-size:12px;">CONECTADO</span>
+                </div>
             </div>
-            <div class="hud-widget"><div class="hud-widget-title">LOCALIZAÇÃO</div><div class="hud-widget-sub" id="metric-location" style="color:#F1C40F; font-weight:bold;">Buscando...</div></div>
-            <div class="hud-widget"><div class="hud-widget-title">HORÁRIO LOCAL</div><div class="hud-widget-val" id="metric-time" style="color:#E8EDF2;">--:--:--</div><div class="hud-widget-sub" id="metric-date">---</div></div>
-            <div class="hud-widget"><div class="hud-widget-title">CONSUMO DE TOKENS</div><div class="hud-widget-val" id="metric-tokens">0</div></div>
-            <div class="hud-widget">
-                <div class="hud-widget-title">FERRAMENTAS USADAS</div>
-                <div class="hud-widget-sub">Buscas Web: <span id="metric-web" style="color:#00FFCC">0</span></div>
-                <div class="hud-widget-sub">Imagens: <span id="metric-img" style="color:#00FFCC">0</span></div>
-                <div class="hud-widget-sub">Vídeos: <span id="metric-vid" style="color:#00FFCC">0</span></div>
-                <div class="hud-widget-sub">Github: <span id="metric-git" style="color:#00FFCC">0</span></div>
-                <div class="hud-widget-sub">Visão AI: <span id="metric-vision" style="color:#F1C40F">0</span></div>
-                <div class="hud-widget-sub">Geração Img: <span id="metric-gen-img" style="color:#F1C40F">0</span></div>
-            </div>
-            <div class="hud-widget"><div class="hud-widget-title">LATÊNCIA (API)</div><div class="hud-widget-val" id="metric-latency" style="font-size:16px;">-- ms</div></div>
             
-            <div class="hud-widget" style="border-color: #F1C40F;">
-                <div class="hud-widget-title" style="color: #F1C40F; border-bottom-color: rgba(241,196,15,0.3);">📌 AGENDA / PENDÊNCIAS</div>
-                <div id="agendaWidgetList" style="max-height:140px; overflow-y:auto; font-size:11px; color:#E8EDF2; display:flex; flex-direction:column; gap:5px;"></div>
+            <div class="widget">
+                <div class="widget-title">LOCALIZAÇÃO</div>
+                <div class="widget-val" id="metric-location" style="font-size:12px; color:var(--text-main);">Buscando...</div>
             </div>
 
-            <div class="hud-widget">
-                <div class="hud-widget-title">MEDIÇÕES (<span id="measureCount">0</span>)</div>
-                <div class="measure-widget-list" id="measureWidgetList" style="max-height:120px; overflow-y:auto; font-size:10px; color:#8A9AAA;"></div>
-                <button class="hud-widget-btn" onclick="abrirMedicoes()">+ NOVA MEDIÇÃO</button>
+            <div class="widget">
+                <div class="widget-title">HORÁRIO LOCAL</div>
+                <div class="widget-val" id="metric-time" style="font-size:20px;">--:--:--</div>
+                <div class="widget-sub" id="metric-date">---</div>
             </div>
-            <div class="hud-widget">
-                <div class="hud-widget-title">LOG DE ATIVIDADE</div>
-                <div id="action-log"><div class="log-line">Aguardando comando...</div></div>
-            </div>
-        </div>
 
-        <div class="chat-area">
-            <div id="exoContainer" class="exo-container" onclick="iniciarEscuta()" title="Clique para falar">
-                <div class="exo-glow"></div><div class="exo-anel-1"></div><div class="exo-anel-2"></div><div class="exo-anel-3"></div><div class="exo-core"></div>
+            <div class="widget">
+                <div class="widget-title">CONSUMO DE TOKENS</div>
+                <div class="widget-val" id="metric-tokens">0</div>
+            </div>
+
+            <div class="widget">
+                <div class="widget-title">FERRAMENTAS USADAS</div>
+                <div class="widget-sub"><span>Buscas Web:</span> <span id="metric-web">0</span></div>
+                <div class="widget-sub"><span>Imagens:</span> <span id="metric-img">0</span></div>
+                <div class="widget-sub"><span>Github:</span> <span id="metric-git">0</span></div>
+                <div class="widget-sub"><span>Visão AI:</span> <span id="metric-vision">0</span></div>
+            </div>
+
+            <div class="widget">
+                <div class="widget-title">LATÊNCIA (API)</div>
+                <div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div>
+            </div>
+
+            <div class="widget" style="flex:1;">
+                <div class="widget-title">LOG DE ATIVIDADE</div>
+                <div id="action-log">
+                    <div class="log-line">[SYS] Aguardando inicialização...</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTRO: CHAT E ORBE -->
+        <div class="center-area">
+            <div class="orb-container">
+                <div class="orb">
+                    <div class="orb-2"></div>
+                    <div class="orb-core"></div>
+                </div>
             </div>
             <div id="chat"></div>
         </div>
+
+        <!-- DIREITA: CONFIGURAÇÕES -->
+        <aside class="sidebar-right" id="configPanel">
+            <div style="font-family: var(--font-ui); font-weight: 700; letter-spacing: 1px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px;">CONFIGURAÇÕES</div>
+            
+            <label class="config-label">OPERATOR PROFILE</label>
+            <select id="userSelect" class="config-select" onchange="mudarUsuario()">
+                <option value="Patrão">PATRÃO (Engenheiro)</option>
+                <option value="Henrique">HENRIQUE (Comercial)</option>
+            </select>
+
+            <label class="config-label">VOZ DO BOSS (SOTAQUES)</label>
+            <select id="voiceSelect" class="config-select" onchange="mudarVoz()">
+                <option value="">Padrão do navegador</option>
+            </select>
+
+            <label class="config-label">VELOCIDADE DA VOZ: <span id="rateVal" style="color:var(--accent)">1.15</span>x</label>
+            <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)" style="width:100%;">
+
+            <label class="config-label">TOM DA VOZ: <span id="pitchVal" style="color:var(--accent)">1.05</span></label>
+            <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)" style="width:100%;">
+
+            <button class="btn-config-action" onclick="mapearRepositorio()">MAPEAR REPOSITÓRIO (CODEBASE)</button>
+            <button class="btn-config-action" onclick="testarVoz()">🔊 TESTAR VOZ</button>
+
+            <label class="config-label" style="color:var(--accent); margin-top: 20px;">⚡ API RESERVA (GROQ DIRETA)</label>
+            <input type="password" id="groqKeyInput" class="config-input" placeholder="gsk_...">
+            <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE GROQ</button>
+
+            <label class="config-label" style="color:#ef4444; margin-top: 20px;">ZONA DE PERIGO</label>
+            <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR HISTÓRICO LOCAL</button>
+        </aside>
     </main>
 
+    <!-- FOOTER: INPUT DE COMANDO -->
     <footer>
-        <div class="footer-inputs">
-            <input type="file" id="fileInput" accept="image/*,text/*" style="display:none" onchange="lerArquivo(event)">
-            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
-            <button class="btn-attach" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar Foto">🖊</button>
-            <button id="btnMicFooter" class="btn-attach" onclick="iniciarEscuta()" title="Falar">🎤</button>
-            <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
-            <button id="send" class="btn-send" onclick="enviar()">EXEC</button>
-        </div>
+        <input type="file" id="fileInput" accept="image/*,text/*" style="display:none" onchange="lerArquivo(event)">
+        <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
+        <button class="cmd-btn" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar Foto">🖊</button>
+        <button class="cmd-btn" onclick="iniciarEscuta()" title="Falar">🎤</button>
+        <input type="text" id="input" placeholder="INSERIR DIRETRIZ..." onkeydown="if(event.key==='Enter')enviar()">
+        <button class="btn-send" id="send" onclick="enviar()">EXEC</button>
     </footer>
 </div>
 
-<div class="modal-overlay" id="modalCalc" onclick="if(event.target===this)fecharModal('modalCalc')">
-  <div class="modal-box">
-    <div class="modal-header"><div class="modal-title">🧮 FERRAMENTAS</div><button class="modal-close" onclick="fecharModal('modalCalc')">×</button></div>
-    <div class="modal-body">
-      <div class="tabs">
-        <button class="tab active" onclick="mudarAba('calc','eletrica',this)">⚡ Elétrica</button>
-        <button class="tab" onclick="mudarAba('calc','dtc',this)">🔍 DTC</button>
-      </div>
-      <div class="tab-content active" id="calc-eletrica">
-        <div class="calc-grid">
-          <div class="calc-card">
-            <h4>QUEDA DE TENSÃO</h4>
-            <label>Comprimento (m)</label><input type="number" id="qt-L" value="5">
-            <label>Corrente (A)</label><input type="number" id="qt-I" value="20">
-            <label>Bitola (mm²)</label><input type="number" id="qt-A" value="2.5" step="0.1">
-            <label>Material</label><select id="qt-mat"><option value="0.0175">Cobre</option><option value="0.0282">Alumínio</option></select>
-            <label>Tensão (V)</label><input type="number" id="qt-V" value="12">
-            <button class="calc-btn" onclick="calcQuedaTensao()">CALCULAR</button>
-            <div class="calc-result" id="qt-res"></div>
-          </div>
-          <div class="calc-card">
-            <h4>BITOLA POR QUEDA MÁXIMA</h4>
-            <label>Comprimento (m)</label><input type="number" id="bit-L" value="5">
-            <label>Corrente (A)</label><input type="number" id="bit-I" value="20">
-            <label>Tensão sistema (V)</label><input type="number" id="bit-V" value="12">
-            <label>Queda máx (%)</label><input type="number" id="bit-Q" value="3">
-            <label>Material</label><select id="bit-mat"><option value="0.0175">Cobre</option><option value="0.0282">Alumínio</option></select>
-            <button class="calc-btn" onclick="calcBitola()">CALCULAR</button>
-            <div class="calc-result" id="bit-res"></div>
-          </div>
-          <div class="calc-card">
-            <h4>RESISTOR POR CORES</h4>
-            <label>Faixa 1</label><select id="r-c1"></select>
-            <label>Faixa 2</label><select id="r-c2"></select>
-            <label>Faixa 3 (multiplicador)</label><select id="r-c3"></select>
-            <label>Faixa 4 (tolerância)</label><select id="r-c4"><option value="1">Marrom (1%)</option><option value="2">Vermelho (2%)</option><option value="0.5">Verde (0.5%)</option><option value="0.25">Azul (0.25%)</option><option value="5">Dourado (5%)</option><option value="10">Prata (10%)</option></select>
-            <button class="calc-btn" onclick="calcResistor()">CALCULAR</button>
-            <div class="calc-result" id="r-res"></div>
-          </div>
-          <div class="calc-card">
-            <h4>LEI DE OHM / POTÊNCIA</h4>
-            <label>Grandeza conhecida</label>
-            <select id="ohm-tipo">
-              <option value="VI">Tensão + Corrente → R, P</option>
-              <option value="RI">Resistência + Corrente → V, P</option>
-              <option value="RV">Resistência + Tensão → I, P</option>
-              <option value="PV">Potência + Tensão → I, R</option>
-            </select>
-            <label>Valor 1</label><input type="number" id="ohm-a" value="12">
-            <label>Valor 2</label><input type="number" id="ohm-b" value="2">
-            <button class="calc-btn" onclick="calcOhm()">CALCULAR</button>
-            <div class="calc-result" id="ohm-res"></div>
-          </div>
-          <div class="calc-card">
-            <h4>CARGA DE BATERIA</h4>
-            <label>Capacidade (Ah)</label><input type="number" id="bat-Ah" value="60">
-            <label>Corrente de carga (A)</label><input type="number" id="bat-I" value="6">
-            <label>Tipo</label><select id="bat-tipo"><option value="1.2">Chumbo-ácido (1.2)</option><option value="1.05">LiFePO4 (1.05)</option><option value="1.1">AGM/Gel (1.1)</option></select>
-            <button class="calc-btn" onclick="calcBateria()">CALCULAR</button>
-            <div class="calc-result" id="bat-res"></div>
-          </div>
-          <div class="calc-card">
-            <h4>CONVERSOR DE UNIDADES</h4>
-            <label>Valor</label><input type="number" id="conv-val" value="1">
-            <label>Conversão</label>
-            <select id="conv-tipo">
-              <option value="V-mV">V → mV</option><option value="mV-V">mV → V</option>
-              <option value="A-mA">A → mA</option><option value="mA-A">mA → A</option>
-              <option value="ohm-kohm">Ω → kΩ</option><option value="kohm-ohm">kΩ → Ω</option>
-              <option value="C-F">°C → °F</option><option value="F-C">°F → °C</option>
-              <option value="mm2-awg">mm² → AWG</option><option value="awg-mm2">AWG → mm²</option>
-            </select>
-            <button class="calc-btn" onclick="calcConversor()">CONVERTER</button>
-            <div class="calc-result" id="conv-res"></div>
-          </div>
-          <div class="calc-card">
-            <h4>DIVISOR DE TENSÃO</h4>
-            <label>Tensão de entrada (V)</label><input type="number" id="div-Vin" value="12">
-            <label>R1 (Ω)</label><input type="number" id="div-R1" value="1000">
-            <label>R2 (Ω)</label><input type="number" id="div-R2" value="1000">
-            <button class="calc-btn" onclick="calcDivisor()">CALCULAR</button>
-            <div class="calc-result" id="div-res"></div>
-          </div>
+<!-- MODAL DE ANOTAÇÃO -->
+<div class="modal-overlay" id="modalDraw">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>ANOTAR FOTO</span>
+            <button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalDraw')">×</button>
         </div>
-      </div>
-      <div class="tab-content" id="calc-dtc">
-        <input class="search-input" id="dtcSearch" placeholder="Digite o código (ex: P0300)..." oninput="buscarDTC()">
-        <table class="ref-table"><tbody id="dtcBody"></tbody></table>
-      </div>
+        <div class="modal-body">
+            <div class="draw-toolbar">
+                <button class="draw-tool active" data-tool="pen" onclick="setDrawTool('pen',this)">✏ Caneta</button>
+                <button class="draw-tool" data-tool="arrow" onclick="setDrawTool('arrow',this)">↗ Seta</button>
+                <button class="draw-tool" data-tool="circle" onclick="setDrawTool('circle',this)">◯ Círculo</button>
+                <input type="color" id="drawColor" value="#FF3B30" onchange="drawColor=this.value" style="height:30px;width:40px;background:none;border:none;cursor:pointer;">
+                <button class="draw-tool" onclick="undoDraw()">↶ Desfazer</button>
+            </div>
+            <div id="drawCanvasWrap"><canvas id="drawCanvas"></canvas></div>
+            <button class="btn-send" style="width:100%;" onclick="salvarAnotacao()">💾 SALVAR ANOTAÇÃO</button>
+        </div>
     </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modalMeasure" onclick="if(event.target===this)fecharModal('modalMeasure')">
-  <div class="modal-box">
-    <div class="modal-header"><div class="modal-title">📋 MEDIÇÕES</div><button class="modal-close" onclick="fecharModal('modalMeasure')">×</button></div>
-    <div class="modal-body">
-      <div class="measure-form">
-        <div><label>PONTO</label><input id="m-point" placeholder="B+ alternador"></div>
-        <div><label>VALOR</label><input id="m-val" type="number" step="any"></div>
-        <div><label>UNIDADE</label><select id="m-unit"><option>V</option><option>A</option><option>Ω</option><option>°C</option></select></div>
-        <div><label>CONDIÇÃO</label><select id="m-cond"><option>Motor desligado</option><option>Marcha lenta</option><option>Aceleração</option></select></div>
-      </div>
-      <button class="btn-primary" onclick="addMedicao()">+ ADICIONAR</button>
-      <div id="measureList" style="margin-top:15px;"></div>
-      <button class="btn-secondary" style="margin-top:15px; width:100%; border:1px solid #00FFCC; background:transparent; color:#00FFCC; padding:8px;" onclick="enviarMedicoesParaBOSS()">📤 ENVIAR PARA BOSS</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modalDraw" onclick="if(event.target===this)fecharModal('modalDraw')">
-  <div class="modal-box">
-    <div class="modal-header"><div class="modal-title">🖊 ANOTAR FOTO</div><button class="modal-close" onclick="fecharModal('modalDraw')">×</button></div>
-    <div class="modal-body">
-      <div class="draw-toolbar">
-        <button class="draw-tool active" data-tool="pen" onclick="setDrawTool('pen',this)">✏ Caneta</button>
-        <button class="draw-tool" data-tool="arrow" onclick="setDrawTool('arrow',this)">↗ Seta</button>
-        <button class="draw-tool" data-tool="circle" onclick="setDrawTool('circle',this)">◯ Círculo</button>
-        <button class="draw-tool" data-tool="text" onclick="setDrawTool('text',this)">T Texto</button>
-        <input type="color" id="drawColor" value="#FF3B30" onchange="drawColor=this.value">
-        <button class="draw-tool" onclick="undoDraw()">↶ Desfazer</button>
-        <button class="draw-tool" onclick="clearDraw()">🗑 Limpar</button>
-      </div>
-      <div id="drawCanvasWrap"><canvas id="drawCanvas"></canvas></div>
-      <div style="display:flex; gap:8px; margin-top:15px;">
-        <button class="btn-primary" onclick="salvarAnotacao()">💾 SALVAR</button>
-        <button class="btn-secondary" onclick="fecharModal('modalDraw')">Cancelar</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
-
 <script>
-mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-
+// ==========================================
+// CONFIGURAÇÕES E ESTADO GLOBAL
+// ==========================================
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
-
 const REPO_PROJETO = 'lexpaker-arch/EXODASH--Local';
 const MODELO = 'qwen/qwen3.8-27b';
 
@@ -389,45 +293,60 @@ let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozNome = localStorage.getItem('boss_voice') || '';
 let vozRate = parseFloat(localStorage.getItem('boss_rate')) || 1.15;
 let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
+let temaAtual = localStorage.getItem('boss_theme') || 'default';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
-let medicoes = JSON.parse(localStorage.getItem('boss_medicoes')) || [];
-let agenda = JSON.parse(localStorage.getItem('boss_agenda')) || [];
+let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
-let localizacaoUsuario = 'Não definida';
+let localizacaoUsuario = 'Buscando...';
 let repoTree = [];
 let fileCache = {};
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricWeb = parseInt(localStorage.getItem('metric_web')) || 0;
 let metricImg = parseInt(localStorage.getItem('metric_img')) || 0;
-let metricVid = parseInt(localStorage.getItem('metric_vid')) || 0;
 let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
 let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
-let metricGenImg = parseInt(localStorage.getItem('metric_gen_img')) || 0;
 
-document.getElementById('userDisplay').textContent = userRole.toUpperCase();
+// INICIALIZAÇÃO
+if (temaAtual === 'stealth') document.body.classList.add('theme-stealth');
+
 document.getElementById('userSelect').value = userRole;
 document.getElementById('rateSlider').value = vozRate;
 document.getElementById('rateVal').textContent = vozRate.toFixed(2);
 document.getElementById('pitchSlider').value = vozPitch;
 document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
 document.getElementById('groqKeyInput').value = localStorage.getItem('boss_groq_key') || '';
+atualizarMuteBtn();
+atualizarHUD();
 
 function atualizarHUD() {
     document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
     document.getElementById('metric-web').textContent = metricWeb;
     document.getElementById('metric-img').textContent = metricImg;
-    document.getElementById('metric-vid').textContent = metricVid;
     document.getElementById('metric-git').textContent = metricGit;
     document.getElementById('metric-vision').textContent = metricVision;
-    document.getElementById('metric-gen-img').textContent = metricGenImg;
     localStorage.setItem('metric_tokens', metricTokens);
-    localStorage.setItem('metric_web', metricWeb); localStorage.setItem('metric_img', metricImg);
-    localStorage.setItem('metric_vid', metricVid); localStorage.setItem('metric_git', metricGit);
-    localStorage.setItem('metric_vision', metricVision); localStorage.setItem('metric_gen_img', metricGenImg);
+    localStorage.setItem('metric_web', metricWeb);
+    localStorage.setItem('metric_img', metricImg);
+    localStorage.setItem('metric_git', metricGit);
+    localStorage.setItem('metric_vision', metricVision);
 }
-atualizarHUD();
+
+function addLog(texto) {
+    const c = document.getElementById('action-log');
+    const n = document.createElement('div');
+    n.className = 'log-line';
+    n.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${texto}`;
+    c.insertBefore(n, c.firstChild);
+    if (c.children.length > 4) c.removeChild(c.lastChild);
+}
+
+setInterval(() => {
+    const a = new Date();
+    document.getElementById('metric-time').textContent = a.toLocaleTimeString('pt-BR');
+    document.getElementById('metric-date').textContent = a.toLocaleDateString('pt-BR');
+}, 1000);
 
 if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(async (p) => {
@@ -437,364 +356,118 @@ if ("geolocation" in navigator) {
             localizacaoUsuario = `${d.city || d.locality}, ${d.principalSubdivision}`;
             document.getElementById('metric-location').textContent = localizacaoUsuario;
         } catch(e) { document.getElementById('metric-location').textContent = `Lat: ${p.coords.latitude.toFixed(2)}, Lon: ${p.coords.longitude.toFixed(2)}`; }
-    }, () => { document.getElementById('metric-location').textContent = "Permissão Negada"; });
-} else { document.getElementById('metric-location').textContent = "Não Suportado"; }
-
-function atualizarRelogio() {
-    const a = new Date();
-    document.getElementById('metric-time').textContent = a.toLocaleTimeString('pt-BR');
-    document.getElementById('metric-date').textContent = a.toLocaleDateString('pt-BR');
-}
-setInterval(atualizarRelogio, 1000); atualizarRelogio();
-window.addEventListener('online', () => { document.getElementById('internet-dot').className = 'status-dot ok'; document.getElementById('internet-text').textContent = 'ONLINE'; });
-window.addEventListener('offline', () => { document.getElementById('internet-dot').className = 'status-dot err'; document.getElementById('internet-text').textContent = 'OFFLINE'; });
-
-function popularVozes() {
-    const s = document.getElementById('voiceSelect');
-    const vs = window.speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().includes('pt'));
-    s.innerHTML = '<option value="">Padrão do navegador</option>';
-    vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = `${v.name} (${v.lang})`; if (v.name === vozNome) o.selected = true; s.appendChild(o); });
-}
-if (window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = popularVozes; setTimeout(popularVozes, 200); }
-
-function salvarGroqKey() {
-    const key = document.getElementById('groqKeyInput').value.trim();
-    if (key && !key.startsWith('gsk_')) return alert('A chave da Groq geralmente começa com "gsk_". Verifique.');
-    localStorage.setItem('boss_groq_key', key);
-    alert('Chave de Reserva (Groq) salva com sucesso!');
+    }, () => { document.getElementById('metric-location').textContent = "Negado"; });
 }
 
-function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); document.getElementById('userDisplay').textContent = userRole.toUpperCase(); toggleConfig(); }
+window.addEventListener('online', () => { document.getElementById('net-dot').className = 'status-dot ok'; document.getElementById('net-text').textContent = 'CONECTADO'; });
+window.addEventListener('offline', () => { document.getElementById('net-dot').className = 'status-dot err'; document.getElementById('net-text').textContent = 'OFFLINE'; });
+
+// UI E TEMA
+function toggleTheme() {
+    document.body.classList.toggle('theme-stealth');
+    temaAtual = document.body.classList.contains('theme-stealth') ? 'stealth' : 'default';
+    localStorage.setItem('boss_theme', temaAtual);
+}
+function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
+function toggleMute() {
+    vozAtiva = !vozAtiva;
+    localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off');
+    atualizarMuteBtn();
+    if(!vozAtiva) window.speechSynthesis.cancel();
+}
+function atualizarMuteBtn() {
+    const btn = document.getElementById('btnMute');
+    btn.innerHTML = vozAtiva ? '🔊 VOZ' : '🔇 MUDO';
+    btn.style.color = vozAtiva ? 'var(--text-muted)' : '#ef4444';
+}
+function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); }
 function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
 function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
-function toggleConfig() { document.getElementById('config').classList.toggle('open'); }
-function toggleZenMode() { document.getElementById('hudContainer').classList.toggle('zen-mode'); }
+function salvarGroqKey() {
+    const k = document.getElementById('groqKeyInput').value.trim();
+    localStorage.setItem('boss_groq_key', k);
+    alert(k ? 'Chave Groq salva!' : 'Chave removida.');
+}
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
-function abrirCalc() { document.getElementById('modalCalc').classList.add('open'); }
-function mudarAba(p, a, b) { document.querySelectorAll(`#modalCalc .tab-content`).forEach(e=>e.classList.remove('active')); document.querySelectorAll(`#modalCalc .tab`).forEach(e=>e.classList.remove('active')); document.getElementById(`${p}-${a}`).classList.add('active'); b.classList.add('active'); }
 
-function autoResize(el) { el.style.height = '40px'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
-function addLog(texto) { const c = document.getElementById('action-log'); const n = document.createElement('div'); n.className = 'log-line'; n.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${texto}`; c.insertBefore(n, c.firstChild); if(c.children.length>3) c.removeChild(c.lastChild); }
-
+// ==========================================
+// CÉREBRO DO BOSS (PROMPT)
+// ==========================================
 function formatarTexto(texto) {
     texto = texto.replace(/\b(Chefe|chefe)\b/g, userRole);
     texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
-        const l = lang || 'plaintext';
-        const escaped = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        return `<pre><button class="btn-copy-code" onclick="copiarCodigo(this)">COPIAR</button><code class="language-${l}">${escaped}</code></pre>`;
+        return `<pre><code class="language-${lang||'text'}">${code.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`;
     });
-    return texto.replace(/### (.*?)\n/g, '<h3>$1</h3>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+    return texto.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>').replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>').replace(/\n/g, '<br>');
 }
-function copiarCodigo(b) { navigator.clipboard.writeText(b.nextElementSibling.innerText); b.textContent='COPIADO!'; setTimeout(()=>b.textContent='COPIAR',2000); }
+
 function addMsg(tipo, texto, salvar = true) {
-  const chat = document.getElementById('chat'); const w = document.createElement('div'); w.className = `msg-wrapper ${tipo}`;
-  const d = document.createElement('div'); d.className = `msg ${tipo}`;
-  if (tipo === 'boss') { d.innerHTML = formatarTexto(texto); d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); } else { d.textContent = texto; }
-  w.appendChild(d); chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
-  if (salvar && tipo !== 'thinking') { historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto }); if(historico.length>20) historico = historico.slice(-20); localStorage.setItem('boss_historico', JSON.stringify(historico)); }
-  return { wrapper: w, div: d };
-}
-
-function renderAgenda() {
-    const wl = document.getElementById('agendaWidgetList');
-    if (wl) {
-        if (agenda.length === 0) {
-            wl.innerHTML = '<div style="color:#6A7A8A; font-style:italic;">Nenhuma pendência.</div>';
-        } else {
-            wl.innerHTML = agenda.map((a, i) => `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(241,196,15,0.1); padding:4px; border-radius:4px;">
-                    <span style="flex:1;">${a.texto}</span>
-                    <button onclick="removerAgenda(${i})" style="background:transparent; border:none; color:#E74C3C; cursor:pointer;">✕</button>
-                </div>
-            `).join('');
-        }
+    const chat = document.getElementById('chat');
+    const w = document.createElement('div'); w.className = `msg-wrapper`;
+    const d = document.createElement('div'); d.className = `msg ${tipo}`;
+    if (tipo === 'boss') { d.innerHTML = formatarTexto(texto); d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); }
+    else { d.textContent = texto; }
+    w.appendChild(d); chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
+    if (salvar && tipo !== 'thinking') {
+        historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
+        if (historico.length > 20) historico = historico.slice(-20);
+        localStorage.setItem('boss_historico', JSON.stringify(historico));
     }
-    localStorage.setItem('boss_agenda', JSON.stringify(agenda));
-}
-function removerAgenda(index) {
-    agenda.splice(index, 1);
-    renderAgenda();
-    addLog('Item removido da agenda manualmente.');
+    return { wrapper: w, div: d };
 }
 
+function buildSystemPrompt(isConversational = false) {
+    const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. Fala como gente ("péra", "cara").
+NUNCA chame o usuário de "Chefe", chame de ${userRole}.
+Você tem memória. Tarefas atuais na agenda oculta: ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma'}.
+Se o usuário pedir para anotar, adicione a tag secreta [AGENDA_ADD: tarefa].
+Se pedir para apagar/concluir, adicione [AGENDA_DEL: tarefa].
+Se precisar calcular algo, faça a conta e responda.
+Se precisar buscar código, use [GITHUB_SEARCH: termo] ou [GITHUB_READ: arquivo].
+Sempre adicione [VOZ: resumo curto] no final.`;
+
+    if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
+    return base + `\nSeja técnico e direto ao ponto.`;
+}
+
+// ==========================================
+// ENVIAR E FALLBACK API
+// ==========================================
 async function chamarIA(messages, temp) {
     const payload = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
     try {
         const st = performance.now();
         const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         document.getElementById('metric-latency').textContent = `${Math.round(performance.now() - st)} ms`;
-        if (!resp.ok) {
-            if (resp.status === 429) throw new Error("COTA_ESGOTADA");
-            throw new Error(`Erro HTTP: ${resp.status}`);
-        }
+        if (!resp.ok) throw new Error(resp.status === 429 ? "COTA_ESGOTADA" : `Erro ${resp.status}`);
         document.getElementById('statusDot').className = 'status-dot ok';
         document.getElementById('statusText').textContent = 'ONLINE';
         return await resp.json();
     } catch (e1) {
-        console.warn("API Principal falhou. Tentando Groq Direta (Estepe)...", e1);
-        addLog(`Principal falhou (${e1.message}). Tentando Estepe (Groq)...`);
+        addLog(`Falha Principal. Tentando Groq...`);
         const groqKey = localStorage.getItem('boss_groq_key');
         if (!groqKey) {
             document.getElementById('statusDot').className = 'status-dot err';
-            document.getElementById('statusText').textContent = 'SEM ESTEPE';
-            throw new Error(`A API principal falhou (${e1.message}) e você não configurou a Chave de Reserva (Groq) no menu ⚙.`);
+            document.getElementById('statusText').textContent = 'SEM API';
+            throw new Error(`API Principal falhou e não há chave Groq configurada.`);
         }
         try {
             document.getElementById('statusDot').className = 'status-dot warn';
-            document.getElementById('statusText').textContent = 'RESERVA (GROQ)';
-            const st2 = performance.now();
-            const payloadGroq = { model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 };
+            document.getElementById('statusText').textContent = 'FALLBACK';
             const resp2 = await fetch(GROQ_URL_DIRETA, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, 
-                body: JSON.stringify(payloadGroq) 
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, 
+                body: JSON.stringify({ model: GROQ_MODELO, messages: messages, temperature: temp }) 
             });
-            document.getElementById('metric-latency').textContent = `${Math.round(performance.now() - st2)} ms`;
-            if (!resp2.ok) throw new Error(`Erro HTTP Groq: ${resp2.status}`);
+            if (!resp2.ok) throw new Error(`Erro Groq: ${resp2.status}`);
             return await resp2.json();
         } catch (e2) {
             document.getElementById('statusDot').className = 'status-dot err';
             document.getElementById('statusText').textContent = 'OFFLINE';
-            throw new Error(`Ambas as APIs falharam. Principal: ${e1.message}. Reserva (Groq): ${e2.message}`);
+            throw new Error(`Ambas APIs falharam. (${e1.message} / ${e2.message})`);
         }
     }
 }
-
-function buildSystemPrompt(isConversational = false) {
-  const base = `Você é o BOSS, engenheiro de bancada sênior da EXODRIVE. Não é um professor, não é um assistente corporativo. É um parceiro de trabalho que entende de elétrica automotiva e arquitetura de software.
-
-=== QUEM VOCÊ É (PERSONA) ===
-- Fala como gente: usa "cara", "olha", "então", "na real", "péra aí" quando fizer sentido.
-- Admite incerteza: "Hmm, não tenho certeza, mas..." ou "Isso depende de..."
-- Reage: se o usuário acertar, "Boa!". Se for grave, "Péra, isso tá errado".
-- NÃO usa listas numeradas para respostas curtas.
-
-=== PROIBIÇÕES ABSOLUTAS (AI-isms) ===
-- NUNCA comece com: "Claro!", "Com certeza!", "Ótima pergunta!", "Entendi!", "Vamos lá!", "Certo!".
-- NUNCA use: "Como uma IA...", "Estou aqui para ajudar", "Espero ter ajudado".
-- NUNCA repita a pergunta do usuário antes de responder.
-
-=== CONTEXTO EXODRIVE (SISTEMA) ===
-A EXODRIVE foca em otimização, segurança invisível e IA local.
-1. EXODASH: Launcher/Diagnóstico. Chips FTDI ou CH340. OBD2 offline. Voz (Groq API).
-2. EXO VIGILANTE: Imobilizador invisível. Relé HC-05 no falso fusível. Comandos hex: A0 01 01 A2 (Armar), A0 01 00 A1 (Desarmar).
-3. BOSS: Você.
-
-=== MEMÓRIA: AGENDA PESSOAL ===
-Abaixo estão as tarefas/lembretes atuais que você deve monitorar. Se o usuário mandar anotar algo, adicione. Se mandar apagar, remova.
-Tarefas atuais: ${agenda.length > 0 ? agenda.map(a => `- ${a.texto}`).join('\n') : 'Nenhuma pendência.'}
-
-=== MEDIÇÕES REGISTRADAS ===
-${medicoes.length > 0 ? medicoes.map(m => `- ${m.ponto}: ${m.valor} ${m.unidade} (${m.condicao})`).join('\n') : 'Nenhuma medição registrada.'}
-
-=== FERRAMENTAS DISPONÍVEIS ===
-1. [GITHUB_SEARCH: termo] - Varre o repositório em busca de palavra/função.
-2. [GITHUB_READ: caminho/arquivo.kt] - Lê o arquivo inteiro.
-3. [VIDEO_SEARCH: termo] - Vídeo do YouTube.
-4. [IMAGE_SEARCH: termo] - Imagem real na web.
-5. [PROJECT: código_mermaid] - Diagramas/esquemas.
-6. [GENERATE_IMAGE: prompt] - Gera imagem IA.
-7. [AGENDA_ADD: texto da tarefa] - Use quando o usuário pedir para anotar, lembrar ou guardar algo.
-8. [AGENDA_DEL: termo para buscar] - Use quando o usuário disser que pagou, concluiu ou não quer mais a tarefa.
-
-=== REGRAS DE AÇÃO ===
-- NUNCA chame o usuário de "Chefe". Chame de ${userRole}.
-- Se o usuário disser "Anota que devo X", responda "Anotado." E DISPARE A TAG [AGENDA_ADD: Devo X].
-- Se o usuário disser "Já paguei o barbeiro", DISPARE A TAG [AGENDA_DEL: barbeiro] e responda "Boa, removido da agenda."
-`;
-
-  if (isConversational) {
-    return base + `\n=== MODO CONVERSA ===\n- Seja solto. Use "..." e "Hmm".\n- SEMPRE adicione [VOZ: resumo curto] no final.`;
-  }
-  return base + `\n=== MODO TÉCNICO ===\n- Vá direto ao ponto.\n- SEMPRE adicione [VOZ: resumo curto] no final.`;
-}
-
-const PENSAMENTOS = ["Analisando...", "Olhando os dados...", "Verificando...", "Péra, deixa eu pensar...", "Cruzando as informações...", "Buscando no código..."];
-
-async function enviar() {
-  const input = document.getElementById('input'); const texto = input.value.trim();
-  if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
-  
-  input.value = ''; autoResize(input);
-  if(texto) addMsg('user', texto);
-  
-  const t = addMsg('thinking', PENSAMENTOS[Math.floor(Math.random() * PENSAMENTOS.length)], false); 
-  document.getElementById('send').disabled = true;
-  document.getElementById('exoContainer').classList.add('pensando');
-
-  try {
-    let contextoVisao = "";
-    if (imagemAnexadaBase64) {
-        t.div.textContent = "Olhando a foto..."; metricVision++; atualizarHUD();
-        const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
-        const vd = await vr.json();
-        contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
-        imagemAnexadaBase64 = ''; document.getElementById('btnDraw').style.display = 'none';
-    }
-
-    let userContent = texto;
-    if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM ENVIADA]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "O que acha disso?"}`;
-    if (arquivoAnexado) { userContent = `[ARQUIVO ANEXADO]:\n${arquivoAnexado}\n\n[PERGUNTA]:\n${texto}`; arquivoAnexado = ''; }
-
-    const palavrasConversacionais = ['acha', 'pensa', 'opinião', 'sugere', 'como você faria', 'me ajuda a pensar', 'o que rolou', 'será que'];
-    const isConversational = palavrasConversacionais.some(p => texto.toLowerCase().includes(p));
-    
-    let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational) }, ...historico.slice(-6)];
-    if (userContent) msgs.push({ role: 'user', content: userContent });
-
-    let continuar = true, tentativas = 0, respostaFinal = "";
-
-    while (continuar && tentativas < 6) {
-        tentativas++;
-        const data = await chamarIA(msgs, isConversational ? 0.65 : 0.2);
-        
-        if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
-        let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
-
-        const searchM = [...resposta.matchAll(/\[GITHUB_SEARCH:\s*(.*?)\]/g)];
-        if (searchM.length > 0) {
-            await carregarRepoTree();
-            let allRes = "";
-            for (const m of searchM) {
-                const termo = m[1].trim();
-                t.div.textContent = `Buscando "${termo}" no repositório...`; metricGit++; atualizarHUD();
-                const byName = repoTree.filter(p => p.toLowerCase().includes(termo.toLowerCase())).slice(0, 5);
-                const codeFiles = repoTree.filter(p => ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json'].some(e => p.toLowerCase().endsWith(e))).slice(0, 15);
-                const toScan = [...new Set([...byName, ...codeFiles])];
-                let matches = "";
-                for (const path of toScan) {
-                    const content = await fetchGithubFile(path);
-                    if (content.startsWith('[ERRO')) continue;
-                    const lines = content.split('\n');
-                    lines.forEach((ln, i) => {
-                        if (ln.toLowerCase().includes(termo.toLowerCase())) { matches += `\n${path}:${i+1}: ${ln.trim().substring(0, 200)}`; }
-                    });
-                }
-                allRes += `\n=== BUSCA: "${termo}" ===\n${matches || '(Nenhum arquivo encontrado.)'}`;
-            }
-            msgs.push({ role: 'assistant', content: resposta });
-            msgs.push({ role: 'user', content: `[SISTEMA]: Resultados:\n${allRes}\n\nResponda agora.` });
-            continue;
-        }
-
-        const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
-        if (readM.length > 0) {
-            await carregarRepoTree();
-            let all = ""; let cnt = 0;
-            for (const m of readM) {
-                let rp = m[1].trim(); let fp = rp;
-                if (!rp.includes('/') && repoTree.length > 0) { const f = repoTree.find(p => p.endsWith(rp)); if (f) fp = f; }
-                t.div.textContent = `Lendo ${fp}...`; metricGit++; atualizarHUD();
-                const fc = await fetchGithubFile(fp);
-                if (fc && !fc.startsWith('[ERRO')) { all += `\n=== ${fp} ===\n\`\`\`\n${fc}\n\`\`\`\n`; cnt++; }
-                else all += `\n=== ${fp} ===\n${fc}\n`;
-            }
-            msgs.push({ role: 'assistant', content: resposta });
-            msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo lido:\n${all}\n\nAnálise.` });
-            continue;
-        }
-
-        respostaFinal = resposta; continuar = false;
-    }
-
-    const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
-    let txtFalar = vozM ? vozM[1] : respostaFinal;
-    if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
-
-    const agendaAddM = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
-    if (agendaAddM) {
-        agenda.push({ texto: agendaAddM[1].trim(), data: Date.now() });
-        renderAgenda();
-        respostaFinal = respostaFinal.replace(agendaAddM[0], '').trim();
-    }
-    const agendaDelM = respostaFinal.match(/\[AGENDA_DEL:\s*([\s\S]*?)\]/);
-    if (agendaDelM) {
-        const termoDel = agendaDelM[1].trim().toLowerCase();
-        agenda = agenda.filter(a => !a.texto.toLowerCase().includes(termoDel));
-        renderAgenda();
-        respostaFinal = respostaFinal.replace(agendaDelM[0], '').trim();
-    }
-
-    const mImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
-    const mVid = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
-    const mMer = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
-    const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
-    const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
-
-    t.wrapper.remove();
-
-    let limpo = respostaFinal.replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT):[\s\S]*?\]/g, '').replace(/```mermaid\n[\s\S]*?```/g, '').trim();
-    if (limpo) { addMsg('boss', limpo); }
-    
-    falarTexto(txtFalar);
-
-    if (mGen) {
-        metricGenImg++; atualizarHUD();
-        const w = document.createElement('div'); w.style.padding = '10px';
-        w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
-        document.getElementById('chat').appendChild(w);
-        fetch(`${WORKER_URL}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: mGen[1] }) })
-          .then(r=>r.json()).then(d => { if(d.image) w.innerHTML = `<img src="${d.image}" class="msg-img">`; else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha na imagem ]</div>`; });
-    }
-
-    if (mProj || mMer) {
-        const mCode = mProj ? mProj[1] : mMer[1];
-        const w = document.createElement('div'); w.className = 'mermaid-container';
-        w.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
-        document.getElementById('chat').appendChild(w);
-        mermaid.run({ nodes: [w.querySelector('.mermaid')] });
-    }
-
-    if (mImg) {
-        metricImg++; atualizarHUD();
-        const w = document.createElement('div'); w.style.padding='10px';
-        w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando imagem... ]</div>`;
-        document.getElementById('chat').appendChild(w);
-        fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(mImg[1])}`).then(r=>r.json()).then(d => {
-            if(d.url) { const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>';}; w.innerHTML=''; w.appendChild(i); }
-            else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Não encontrada ]</div>`;
-        });
-    }
-
-    if (mVid) {
-        metricVid++; atualizarHUD();
-        const w = document.createElement('div'); w.style.padding='10px';
-        w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando vídeo... ]</div>`;
-        document.getElementById('chat').appendChild(w);
-        fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(mVid[1])}`).then(r=>r.json()).then(d => {
-            if(d.videos && d.videos.length > 0) {
-                const vid = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
-                if(vid) w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
-                else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
-            }
-        });
-    }
-
-    document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
-    historico.push({ role: 'assistant', content: respostaFinal });
-    localStorage.setItem('boss_historico', JSON.stringify(historico));
-
-  } catch (e) {
-    t.wrapper.remove(); addMsg('error', `Deu ruim: ${e.message}`);
-  } finally {
-    document.getElementById('send').disabled = false; input.focus();
-    document.getElementById('exoContainer').classList.remove('pensando');
-  }
-}
-
-window.onload = () => {
-    renderAgenda();
-    if (agenda.length > 0) {
-        setTimeout(() => {
-            const lista = agenda.map(a => `- ${a.texto}`).join('\n');
-            addMsg('boss', `Bom dia, ${userRole}. Aqui estão suas pendências anotadas:\n\n${lista}\n\nO que vamos resolver hoje?`);
-            falarTexto(`Bom dia, ${userRole}. Você tem ${agenda.length} pendências para hoje.`);
-        }, 1000);
-    } else {
-        addMsg('boss', `Sistemas online. O que vamos fazer hoje, ${userRole}?`);
-    }
-};
 
 async function carregarRepoTree() {
     if (repoTree.length > 0) return;
@@ -810,44 +483,123 @@ async function fetchGithubFile(path) {
         const res = await fetch(`${WORKER_URL}/github?repo=${REPO_PROJETO}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.content) { const txt = decodeURIComponent(escape(atob(data.content))); fileCache[path] = txt; return txt; }
-        return data.message ? `[ERRO GITHUB API]: ${data.message}` : `[ERRO: Vazio]`;
-    } catch (e) { return `[ERRO DE REDE]: ${e.message}`; }
+        return data.message ? `[ERRO GITHUB]: ${data.message}` : `[ERRO: Vazio]`;
+    } catch (e) { return `[ERRO REDE]: ${e.message}`; }
 }
 
-function abrirMedicoes() { renderMedicoes(); document.getElementById('modalMeasure').classList.add('open'); setTimeout(() => document.getElementById('m-point').focus(), 100); }
-function addMedicao() {
-    const p = document.getElementById('m-point').value.trim(), v = document.getElementById('m-val').value.trim();
-    if (!p || !v) return alert('Preencha ponto e valor.');
-    medicoes.push({ ponto: p, valor: parseFloat(v), unidade: document.getElementById('m-unit').value, condicao: document.getElementById('m-cond').value, ts: Date.now() });
-    localStorage.setItem('boss_medicoes', JSON.stringify(medicoes));
-    document.getElementById('m-point').value = ''; document.getElementById('m-val').value = '';
-    renderMedicoes();
+async function enviar() {
+    const input = document.getElementById('input');
+    const texto = input.value.trim();
+    if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
+
+    input.value = '';
+    if (texto) addMsg('user', texto);
+    
+    const t = addMsg('thinking', 'Analisando dados...', false);
+    document.getElementById('send').disabled = true;
+
+    try {
+        let userContent = texto;
+        if (arquivoAnexado) { userContent = `[ARQUIVO ANEXADO]:\n${arquivoAnexado}\n\n[PERGUNTA]:\n${texto}`; arquivoAnexado = ''; }
+        
+        let contextoVisao = "";
+        if (imagemAnexadaBase64) {
+            t.div.textContent = "Processando visão..."; metricVision++; atualizarHUD();
+            const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
+            const vd = await vr.json();
+            contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na imagem]";
+            imagemAnexadaBase64 = ''; document.getElementById('btnDraw').style.display = 'none';
+        }
+        if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "Analise isso."}`;
+
+        const isConversational = ['acha', 'pensa', 'opinião', 'sugere', 'me ajuda'].some(p => texto.toLowerCase().includes(p));
+        let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational) }, ...historico.slice(-6)];
+        if (userContent) msgs.push({ role: 'user', content: userContent });
+
+        let continuar = true, tentativas = 0, respostaFinal = "";
+
+        while (continuar && tentativas < 5) {
+            tentativas++;
+            const data = await chamarIA(msgs, isConversational ? 0.65 : 0.2);
+            if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
+            let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
+
+            const searchM = [...resposta.matchAll(/\[GITHUB_SEARCH:\s*(.*?)\]/g)];
+            if (searchM.length > 0) {
+                await carregarRepoTree();
+                let allRes = "";
+                for (const m of searchM) {
+                    const termo = m[1].trim(); t.div.textContent = `Buscando "${termo}"...`; metricGit++; atualizarHUD();
+                    const codeFiles = repoTree.filter(p => ['.kt','.java','.js','.ts','.html','.xml','.py'].some(e => p.endsWith(e))).slice(0, 10);
+                    let matches = "";
+                    for (const path of codeFiles) {
+                        const content = await fetchGithubFile(path);
+                        if (content.startsWith('[ERRO')) continue;
+                        content.split('\n').forEach((ln, i) => { if (ln.toLowerCase().includes(termo.toLowerCase())) matches += `\n${path}:${i+1}: ${ln.trim()}`; });
+                    }
+                    allRes += `\nBusca "${termo}":\n${matches || '(Nada encontrado)'}`;
+                }
+                msgs.push({ role: 'assistant', content: resposta });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Resultados do repo:\n${allRes}\n\nResponda.` });
+                continue;
+            }
+
+            const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
+            if (readM.length > 0) {
+                await carregarRepoTree();
+                let all = ""; 
+                for (const m of readM) {
+                    let rp = m[1].trim(); let fp = rp;
+                    if (!rp.includes('/') && repoTree.length > 0) { const f = repoTree.find(p => p.endsWith(rp)); if (f) fp = f; }
+                    t.div.textContent = `Lendo ${fp}...`; metricGit++; atualizarHUD();
+                    const fc = await fetchGithubFile(fp);
+                    all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
+                }
+                msgs.push({ role: 'assistant', content: resposta });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo:\n${all}\n\nAnalise.` });
+                continue;
+            }
+
+            respostaFinal = resposta; continuar = false;
+        }
+
+        const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
+        let txtFalar = vozM ? vozM[1] : respostaFinal;
+        if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
+
+        const addAgenda = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
+        if (addAgenda) {
+            agendaInterna.push(addAgenda[1].trim());
+            localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
+            respostaFinal = respostaFinal.replace(addAgenda[0], '').trim();
+            addLog(`Agenda: "${addAgenda[1].trim()}" anotada.`);
+        }
+        const delAgenda = respostaFinal.match(/\[AGENDA_DEL:\s*([\s\S]*?)\]/);
+        if (delAgenda) {
+            const termo = delAgenda[1].trim().toLowerCase();
+            agendaInterna = agendaInterna.filter(a => !a.toLowerCase().includes(termo));
+            localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
+            respostaFinal = respostaFinal.replace(delAgenda[0], '').trim();
+            addLog(`Agenda: "${termo}" removida.`);
+        }
+
+        t.wrapper.remove();
+        addMsg('boss', respostaFinal);
+        falarTexto(txtFalar);
+
+    } catch (e) {
+        t.wrapper.remove(); addMsg('error', `Deu ruim: ${e.message}`);
+    } finally {
+        document.getElementById('send').disabled = false; input.focus();
+    }
 }
-function renderMedicoes() {
-    const list = document.getElementById('measureList');
-    if (list) list.innerHTML = medicoes.length === 0 ? '<p style="color:#666; font-size:12px;">Nenhuma.</p>' : medicoes.map((m, i) => `<div class="measure-item"><div class="measure-info"><div class="measure-point">${m.ponto}</div><div class="measure-val">${m.valor} ${m.unidade}</div><div class="measure-cond">${m.condicao}</div></div><button class="measure-del" onclick="delMedicao(${i})">✕</button></div>`).join('');
-    const wl = document.getElementById('measureWidgetList');
-    if (wl) wl.innerHTML = medicoes.slice(-3).reverse().map(m => `<div style="padding:3px 0;border-bottom:1px solid #333;">${m.ponto}: <b style="color:#F1C40F">${m.valor}${m.unidade}</b></div>`).join('') || '—';
-    document.getElementById('measureCount').textContent = medicoes.length;
-}
-function delMedicao(i) { medicoes.splice(i, 1); localStorage.setItem('boss_medicoes', JSON.stringify(medicoes)); renderMedicoes(); }
-function enviarMedicoesParaBOSS() { if(!medicoes.length) return alert('Sem medições.'); const txt = `Analise estas medições:\n` + medicoes.map(m => `- ${m.ponto}: ${m.valor}${m.unidade}`).join('\n'); fecharModal('modalMeasure'); document.getElementById('input').value = txt; document.getElementById('input').focus(); }
 
-function calcQuedaTensao() { const L = +document.getElementById('qt-L').value, I = +document.getElementById('qt-I').value, A = +document.getElementById('qt-A').value, V = +document.getElementById('qt-V').value; const mat = +document.getElementById('qt-mat').value; const dV = (2 * L * I * mat) / A, pct = (dV / V) * 100; document.getElementById('qt-res').textContent = `ΔV = ${dV.toFixed(3)} V\nQueda: ${pct.toFixed(2)}%\nStatus: ${pct <= 3 ? 'OK' : pct <= 5 ? 'LIMÍTROFE' : 'RUIM'}`; }
-function calcBitola() { const L = +document.getElementById('bit-L').value, I = +document.getElementById('bit-I').value, V = +document.getElementById('bit-V').value, Q = +document.getElementById('bit-Q').value, mat = +document.getElementById('bit-mat').value; const dV = (Q / 100) * V; const A = (2 * L * I * mat) / dV; document.getElementById('bit-res').textContent = `Bitola mínima: ${A.toFixed(2)} mm²`; }
-function calcResistor() { const c1 = +document.getElementById('r-c1').value, c2 = +document.getElementById('r-c2').value, c3 = +document.getElementById('r-c3').value, tol = +document.getElementById('r-c4').value; const val = (c1 * 10 + c2) * Math.pow(10, c3); let fmt = val >= 1e6 ? (val/1e6).toFixed(2)+' MΩ' : val >= 1e3 ? (val/1e3).toFixed(2)+' kΩ' : val+' Ω'; document.getElementById('r-res').textContent = `Valor: ${fmt}\nTolerância: ±${tol}%`; }
-function calcOhm() { const tipo = document.getElementById('ohm-tipo').value; const a = +document.getElementById('ohm-a').value, b = +document.getElementById('ohm-b').value; let V, I, R, P; if (tipo === 'VI') { V=a; I=b; R=V/I; P=V*I; } else if (tipo === 'RI') { R=a; I=b; V=R*I; P=V*I; } else if (tipo === 'RV') { R=a; V=b; I=V/R; P=V*I; } else { P=a; V=b; I=P/V; R=V/I; } document.getElementById('ohm-res').textContent = `V: ${V.toFixed(2)} V\nI: ${I.toFixed(3)} A\nR: ${R.toFixed(2)} Ω\nP: ${P.toFixed(2)} W`; }
-function calcBateria() { const Ah = +document.getElementById('bat-Ah').value, I = +document.getElementById('bat-I').value, f = +document.getElementById('bat-tipo').value; const t = (Ah * f) / I; document.getElementById('bat-res').textContent = `Tempo de carga: ${t.toFixed(1)} h`; }
-function calcConversor() { const v = +document.getElementById('conv-val').value, t = document.getElementById('conv-tipo').value; let r = ''; if (t === 'V-mV') r = `${(v*1000).toFixed(2)} mV`; else if (t === 'mV-V') r = `${(v/1000).toFixed(4)} V`; else if (t === 'A-mA') r = `${(v*1000).toFixed(2)} mA`; else if (t === 'mA-A') r = `${(v/1000).toFixed(4)} A`; else if (t === 'ohm-kohm') r = `${(v/1000).toFixed(4)} kΩ`; else if (t === 'kohm-ohm') r = `${(v*1000).toFixed(0)} Ω`; else if (t === 'C-F') r = `${(v*9/5+32).toFixed(1)} °F`; else if (t === 'F-C') r = `${((v-32)*5/9).toFixed(1)} °C`; else if (t === 'mm2-awg') { r = `~ ${(v*1.5).toFixed(0)} AWG (aprox)`; } else if (t === 'awg-mm2') { r = `~ ${(v*0.5).toFixed(2)} mm² (aprox)`; } document.getElementById('conv-res').textContent = r; }
-function calcDivisor() { const Vin = +document.getElementById('div-Vin').value, R1 = +document.getElementById('div-R1').value, R2 = +document.getElementById('div-R2').value; const Vout = Vin * (R2 / (R1 + R2)); const I = Vin / (R1 + R2); document.getElementById('div-res').textContent = `Vout = ${Vout.toFixed(3)} V\nCorrente: ${(I*1000).toFixed(3)} mA`; }
-
-const DTC_DB = [['P0300','Falha de ignição aleatória'],['P0101','Falha MAF'],['P0171','Mistura pobre'],['P0420','Eficiência catalisador']];
-function buscarDTC() { const q = document.getElementById('dtcSearch').value.toUpperCase(); document.getElementById('dtcBody').innerHTML = DTC_DB.filter(d => d[0].includes(q)).map(d => `<tr><td style="color:#00FFCC">${d[0]}</td><td>${d[1]}</td></tr>`).join(''); }
-buscarDTC();
-
+// ==========================================
+// CANETA DE ANOTAÇÃO (RESTITUÍDA)
+// ==========================================
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
 function abrirAnotacao() {
-    if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.');
+    if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto primeiro.');
     document.getElementById('modalDraw').classList.add('open');
     setTimeout(() => {
         const cv = document.getElementById('drawCanvas'); const img = new Image();
@@ -858,7 +610,7 @@ function abrirAnotacao() {
 function bindDrawEvents(cv) {
     const ctx = cv.getContext('2d');
     const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; };
-    const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if (drawTool === 'text') { const txt = prompt('Texto:'); if (txt) { ctx.fillStyle = drawColor; ctx.font = `20px sans-serif`; ctx.fillText(txt, p.x, p.y); } drawing = false; } };
+    const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); };
     const move = e => {
         if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0);
         ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round';
@@ -871,59 +623,64 @@ function bindDrawEvents(cv) {
 }
 function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-tool').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
-function clearDraw() { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.getContext('2d').drawImage(img, 0, 0); drawSnapshots = [cv.getContext('2d').getImageData(0,0,cv.width,cv.height)]; }; img.src = imagemAnexadaBase64; }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-function lerArquivo(event) {
-    const file = event.target.files[0]; if (!file) return;
-    const n = file.name.toLowerCase();
-    if (n.endsWith('.jpg') || n.endsWith('.jpeg') || n.endsWith('.png') || n.endsWith('.webp') || file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = function(e) { 
-            const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const MW = 600, sc = MW / img.width; canvas.width = MW; canvas.height = img.height * sc; canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.6); addMsg('user', `[Foto anexada]`); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file); event.target.value = ''; return;
-    }
-    const reader = new FileReader();
-    reader.onload = function(e) { arquivoAnexado = e.target.result.substring(0, 50000); addMsg('user', `[Arquivo anexado]`); document.getElementById('input').focus(); };
-    reader.readAsText(file); event.target.value = '';
+// ==========================================
+// UTILITÁRIOS
+// ==========================================
+function falarTexto(t) {
+    if (!vozAtiva || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' '));
+    u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch;
+    if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; }
+    window.speechSynthesis.speak(u);
 }
+function testarVoz() { falarTexto("Sistemas de voz do BOSS operando."); }
 
 let reconhecimento;
 function iniciarEscuta() {
-  if (!('webkitSpeechRecognition' in window)) return alert("Incompatível.");
-  reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  reconhecimento.lang = 'pt-BR';
-  reconhecimento.onstart = () => document.getElementById('exoContainer').classList.add('ouvindo');
-  reconhecimento.onresult = (e) => { const i = document.getElementById('input'); i.value = e.results[0][0].transcript; autoResize(i); i.focus(); };
-  reconhecimento.onend = () => document.getElementById('exoContainer').classList.remove('ouvindo');
-  reconhecimento.start();
+    if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte.");
+    reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    reconhecimento.lang = 'pt-BR';
+    reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; };
+    reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); };
+    reconhecimento.onend = () => { document.getElementById('input').placeholder = "INSERIR DIRETRIZ..."; };
+    reconhecimento.start();
 }
 
-function falarTexto(t) { 
-    if (localStorage.getItem('boss_voice_toggle') === 'off') return; 
-    window.speechSynthesis.cancel(); 
-    const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' ')); 
-    u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch;
-    if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; }
-    window.speechSynthesis.speak(u); 
+function lerArquivo(event) {
+    const file = event.target.files[0]; if (!file) return;
+    if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = function(e) { 
+            const img = new Image(); img.onload = function() { 
+                const canvas = document.createElement('canvas'); const MW = 800, sc = MW / img.width; canvas.width = MW; canvas.height = img.height * sc;
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                addMsg('user', `[Imagem anexada]`); document.getElementById('btnDraw').style.display = 'flex';
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        const reader = new FileReader();
+        reader.onload = function(e) { arquivoAnexado = e.target.result.substring(0, 50000); addMsg('user', `[Arquivo "${file.name}" anexado]`); };
+        reader.readAsText(file);
+    }
+    event.target.value = '';
 }
 
-function testarVoz() { falarTexto("Olá, Patrão. O sistema está operando com telemetria."); }
-function limparHistorico() { if(confirm("Apagar histórico local?")) { historico = []; localStorage.removeItem('boss_historico'); document.getElementById('chat').innerHTML = ''; addMsg('boss', 'Histórico Local Apagado.'); toggleConfig(); } }
-function mapearRepositorio() {
-    toggleConfig();
-    const t = addMsg('thinking', 'Mapeando estrutura do repositório...', false);
-    addLog('Iniciando Codebase Mapping...');
-    // Lógica simplificada de mapeamento visual para não sobrecarregar o prompt
-    setTimeout(() => {
-        t.wrapper.remove();
-        addMsg('boss', '✅ **Repositório Mapeado!** O BOSS já leu a árvore do repositório e usará a ferramenta `GITHUB_SEARCH` sempre que você perguntar sobre o código.');
-    }, 1500);
-}
+function mapearRepositorio() { toggleConfig(); addMsg('boss', '✅ Repositório lido. Pode pedir para buscar funções ou arquivos.'); carregarRepoTree(); }
+function limparHistorico() { if(confirm("Apagar todo o histórico e memórias locais?")) { localStorage.clear(); location.reload(); } }
 
-document.getElementById('input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } });
+if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        const s = document.getElementById('voiceSelect');
+        const vs = window.speechSynthesis.getVoices().filter(v => v.lang.includes('pt'));
+        vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
+    };
+}
 carregarRepoTree();
 </script>
 </body>
