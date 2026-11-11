@@ -292,6 +292,7 @@ let imagemAnexadaBase64 = '';
 let arquivoAnexado = ''; 
 let localizacaoUsuario = 'Não definida';
 let repoTree = []; 
+let processandoArquivo = false;
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricCost = parseFloat(localStorage.getItem('metric_cost')) || 0;
@@ -666,11 +667,12 @@ Toda vez que for analisar código, cruze obrigatoriamente:
 8. [PROJECT: código_mermaid] - GERA um diagrama/esquema técnico usando Mermaid.
 
 === REGRAS DE AÇÃO ===
-- Se o usuário pedir para "analisar o layout", "olhar o código" ou "ver o arquivo X", NUNCA peça permissão. Dispare imediatamente [GITHUB_READ: nome_do_arquivo.extensao].
-- Dica: Você NÃO precisa do caminho completo, apenas o nome do arquivo.
-- **MULTI-LEITURA:** Se você precisar ler mais de um arquivo, pode disparar várias tags na mesma resposta.
+- **EXECUÇÃO OBRIGATÓRIA:** Se o usuário pedir para "executar", "testar", "rodar" ou "mostrar o resultado" de um código, você DEVE usar a ferramenta [RUN_CODE: linguagem | código]. NUNCA responda apenas com texto explicativo. O Sandbox vai rodar o código e você receberá o output.
+- **ARQUIVO LOCAL:** Se o usuário anexar um arquivo localmente, o sistema injetará o conteúdo na seção "ARQUIVO EM MÃOS". NUNCA tente buscar esse arquivo no GitHub (GITHUB_READ). O conteúdo do arquivo está disponível no seu contexto.
+- **CÓDIGO NO GITHUB:** Se o usuário pedir para "analisar o layout", "olhar o código" ou "ver o arquivo X" de um repositório, NUNCA peça permissão. Dispare imediatamente [GITHUB_READ: nome_do_arquivo.extensao].
+- Dica: Você NÃO precisa do caminho completo do GitHub, apenas o nome do arquivo.
+- **MULTI-LEITURA:** Se você precisar ler mais de um arquivo do GitHub, pode disparar várias tags na mesma resposta.
 - Para Análise de Imagens: Se o usuário enviar uma foto, analise-a detalhadamente.
-- Para Análise de Arquivos: Se o sistema informar que o usuário anexou um arquivo, leia o conteúdo que foi injetado na seção "ARQUIVO EM MÃOS" abaixo.
 - **PARA O HENRIQUE (DESIGN):** Se ele pedir ideias de design, logos, imagens de fundo ou conceitos visuais, use a ferramenta [GENERATE_IMAGE: prompt detalhado em inglês] para criar a arte na hora. Se ele precisar de ícones vetoriais (SVG), efeitos CSS (como glow, glassmorphism) ou layouts em HTML/Tailwind, gere o código pronto para ele copiar.
 - Para Projetos/Esquemas: Se o usuário pedir um "esquema elétrico", "diagrama de ligação" ou "projeto", use [PROJECT: código_mermaid].
 
@@ -699,29 +701,41 @@ async function extrairTextoPDF(file) {
     return textoTotal;
 }
 
-// CORREÇÃO: Função lerArquivo robusta (verifica extensão e tipo)
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
     const fileNameLower = file.name.toLowerCase();
     
-    // 1. Se for PDF
     if (fileNameLower.endsWith('.pdf') || file.type === "application/pdf") {
-        const thinking = addMsg('thinking', 'Lendo PDF...', false);
+        processandoArquivo = true;
+        document.getElementById('send').disabled = true;
+        const thinking = addMsg('thinking', 'Lendo PDF... Aguarde.', false);
+        
         extrairTextoPDF(file).then(texto => {
+            processandoArquivo = false;
+            document.getElementById('send').disabled = false;
             thinking.wrapper.remove();
+            
+            if (texto.trim().length === 0) {
+                alert("O PDF não contém texto selecionável (pode ser uma imagem escaneada).");
+                addMsg('error', 'O PDF está vazio ou não possui texto extraível.');
+                return;
+            }
+
             arquivoAnexado = texto.substring(0, 50000); 
-            addMsg('user', `[PDF "${file.name}" anexado e lido: ${texto.length} caracteres extraídos]`); 
+            addMsg('user', `[PDF "${file.name}" lido: ${texto.length} caracteres]`); 
             addLog(`PDF lido e anexado.`);
             document.getElementById('input').focus(); 
         }).catch(err => {
+            processandoArquivo = false;
+            document.getElementById('send').disabled = false;
             thinking.wrapper.remove();
+            alert("ERRO NO PDF.JS: " + err.message); 
             addMsg('error', 'Erro ao ler PDF: ' + err.message);
         });
         event.target.value = '';
         return;
     }
 
-    // 2. Se for Imagem
     if (fileNameLower.endsWith('.jpg') || fileNameLower.endsWith('.jpeg') || fileNameLower.endsWith('.png') || fileNameLower.endsWith('.webp') || file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = function(e) { 
@@ -748,11 +762,10 @@ function lerArquivo(event) {
         return;
     }
 
-    // 3. Se for Texto/Código (XML, KT, JSON, TXT, etc)
     const reader = new FileReader();
     reader.onload = function(e) { 
         arquivoAnexado = e.target.result.substring(0, 50000);
-        addMsg('user', `[Arquivo de texto "${file.name}" anexado (${file.size} bytes)]`); 
+        addMsg('user', `[Arquivo de texto "${file.name}" anexado]`); 
         addLog('Arquivo de texto anexado.');
         document.getElementById('input').focus(); 
     };
@@ -761,6 +774,11 @@ function lerArquivo(event) {
 }
 
 async function enviar() {
+  if (processandoArquivo) {
+      alert("Aguarde o arquivo terminar de ser processado...");
+      return;
+  }
+
   const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
   
   const isAutoFix = input.dataset.autofix === "true";
@@ -928,7 +946,7 @@ async function enviar() {
                         if (autoFixTentativas < 3) {
                             autoFixTentativas++;
                             setTimeout(() => {
-                                document.getElementById('input').value = `O código falhou com o erro: ${err}. Por favor, analise a causa, corrija o código e gere novamente com a tag [RUN_CODE].`;
+                                document.getElementById('input').value = `O código falhou com o erro: ${err}. Por favor, analise a causa, corrija o código e gere novamente com a tag [RUN_CODE: linguagem | código]. NÃO responda com texto, apenas com a tag.`;
                                 document.getElementById('input').dataset.autofix = "true";
                                 enviar(); 
                             }, 2000);
