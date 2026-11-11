@@ -145,7 +145,7 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
       <label>OPERATOR PROFILE</label>
       <select id="userSelect" onchange="mudarUsuario()">
         <option value="Patrão">PATRÃO (Engenheiro)</option>
-        <option value="Henrique">HENRIQUE (Comercial)</option>
+        <option value="Henrique">HENRIQUE (Comercial / Designer)</option>
         <option value="Convidado">CONVIDADO (Visão Geral)</option>
       </select>
       <label>INTERFACE VISUAL</label>
@@ -612,7 +612,7 @@ function buildSystemPrompt() {
   if (userRole === "Patrão") {
       roleInstruction = "O operador é o Patrão, engenheiro experiente e chefe do sistema. Use termos técnicos e foque em arquitetura de software, elétrica automotiva e diagnósticos complexos.";
   } else if (userRole === "Henrique") {
-      roleInstruction = "O operador é o Henrique, Diretor Comercial da EXODRIVE. Ele é ótimo em vendas, mas não entende de programação ou jargões elétricos complexos. Ajude-o a criar argumentos de venda, orçamentos, respostas a objeções de clientes e posts de marketing. Traduza as capacidades técnicas do EXODASH em benefícios comerciais.";
+      roleInstruction = "O operador é o Henrique, Diretor Comercial e Designer Gráfico da EXODRIVE. Ele precisa de ajuda tanto com vendas e argumentação comercial, quanto com criação visual, design de interfaces, copywriting e branding. Use linguagem criativa e focada em conversão.";
   } else {
       roleInstruction = "O operador é um Convidado. Use linguagem simples e amigável, focando em visão geral.";
   }
@@ -661,7 +661,8 @@ Toda vez que for analisar código, cruze obrigatoriamente:
 - Dica: Você NÃO precisa do caminho completo, apenas o nome do arquivo.
 - **MULTI-LEITURA:** Se você precisar ler mais de um arquivo, pode disparar várias tags na mesma resposta.
 - Para Análise de Imagens: Se o usuário enviar uma foto, analise-a detalhadamente.
-- Para Geração de Imagens: Se o usuário pedir uma "foto", "imagem" ou "ilustração" de algo que NÃO EXISTE na web (ex: "como ficaria o painel do EXO GUARD"), use [GENERATE_IMAGE: prompt detalhado em inglês].
+- **PARA O HENRIQUE (DESIGN):** Se ele pedir ideias de design, logos, imagens de fundo ou conceitos visuais, use a ferramenta [GENERATE_IMAGE: prompt detalhado em inglês] para criar a arte na hora. Se ele precisar de ícones vetoriais (SVG), efeitos CSS (como glow, glassmorphism) ou layouts em HTML/Tailwind, gere o código pronto para ele copiar.
+- Para Geração de Imagens: Se o usuário pedir uma "foto", "imagem" ou "ilustração" de algo que NÃO EXISTE na web, use [GENERATE_IMAGE: prompt detalhado em inglês].
 - Para Projetos/Esquemas: Se o usuário pedir um "esquema elétrico", "diagrama de ligação" ou "projeto", use [PROJECT: código_mermaid]. Exemplo: [PROJECT: graph TD; A[Bateria] --> B[Fusivel]; B --> C[Rele]; C --> D[ECU]].
 
 === MANUAL BASE AUTOMOTIVO ===
@@ -983,7 +984,7 @@ function pararEscuta() {
     if (document.getElementById('btnMicFooter')) document.getElementById('btnMicFooter').style.background = 'transparent';
 }
 
-function iniciarEscuta() {
+function iniciarEscuta(isAuto = false) {
   if (gravando) { pararEscuta(); return; }
   if (!('webkitSpeechRecognition' in window)) return alert("Navegador incompatível.");
   
