@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BOSS - EXODRIVE</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-<!-- NOVO: Biblioteca para ler PDFs -->
+<!-- Biblioteca para ler PDFs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -247,9 +247,10 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
     <footer>
         <div class="by-alex">BY ALEX. P</div>
         <div class="footer-inputs">
-            <input type="file" id="fileInput" accept="image/*,application/pdf" style="display:none" onchange="lerArquivo(event)">
+            <!-- CORREÇÃO 1: Input aceita imagem, pdf e texto/código -->
+            <input type="file" id="fileInput" accept="image/*,application/pdf,text/*,.xml,.kt,.json,.txt,.md" style="display:none" onchange="lerArquivo(event)">
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="lerArquivo(event)">
-            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar Imagem ou PDF">📎</button>
+            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar Imagem, PDF ou Código">📎</button>
             <button class="btn-attach" onclick="document.getElementById('cameraInput').click()" title="Tirar Foto (Celular)">📷</button>
             <button id="btnMicFooter" class="btn-attach" onclick="iniciarEscuta(false)" title="Falar (Apenas Transcreve)">🎤</button>
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
@@ -263,7 +264,6 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
-// Configuração do PDF.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
@@ -290,6 +290,7 @@ let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '', memoriaCodigo: '' }; 
 let manualBaseEletrica = ''; 
 let imagemAnexadaBase64 = '';
+let arquivoAnexado = ''; // Variável global para arquivos de texto
 let localizacaoUsuario = 'Não definida';
 let repoTree = []; 
 
@@ -301,8 +302,7 @@ let metricVid = parseInt(localStorage.getItem('metric_vid')) || 0;
 let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
 let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
 let metricGenImg = parseInt(localStorage.getItem('metric_gen_img')) || 0;
-
-let autoFixTentativas = 0; // NOVO: Contador para auto-correção
+let autoFixTentativas = 0;
 
 function atualizarHUD() {
     document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
@@ -664,16 +664,16 @@ Toda vez que for analisar código, cruze obrigatoriamente:
 5. [GITHUB_CREATE: caminho/arquivo | conteúdo] - Cria/Escreve arquivo.
 6. [GITHUB_READ: nome_do_arquivo_ou_caminho] - LÊ arquivo do repositório.
 7. [GENERATE_IMAGE: prompt] - GERA uma imagem usando IA (Cloudflare FLUX). Use para ilustrações, fotos conceituais e projetos visuais.
-8. [PROJECT: código_mermaid] - GERA um diagrama/esquema técnico usando Mermaid. Use para esquemas elétricos, diagramas de blocos, fluxogramas de diagnóstico.
+8. [PROJECT: código_mermaid] - GERA um diagrama/esquema técnico usando Mermaid.
 
 === REGRAS DE AÇÃO ===
 - Se o usuário pedir para "analisar o layout", "olhar o código" ou "ver o arquivo X", NUNCA peça permissão. Dispare imediatamente [GITHUB_READ: nome_do_arquivo.extensao].
 - Dica: Você NÃO precisa do caminho completo, apenas o nome do arquivo.
 - **MULTI-LEITURA:** Se você precisar ler mais de um arquivo, pode disparar várias tags na mesma resposta.
 - Para Análise de Imagens: Se o usuário enviar uma foto, analise-a detalhadamente.
+- Para Análise de Arquivos: Se o sistema informar que o usuário anexou um arquivo, leia o conteúdo que foi injetado na seção "ARQUIVO EM MÃOS" abaixo.
 - **PARA O HENRIQUE (DESIGN):** Se ele pedir ideias de design, logos, imagens de fundo ou conceitos visuais, use a ferramenta [GENERATE_IMAGE: prompt detalhado em inglês] para criar a arte na hora. Se ele precisar de ícones vetoriais (SVG), efeitos CSS (como glow, glassmorphism) ou layouts em HTML/Tailwind, gere o código pronto para ele copiar.
-- Para Geração de Imagens: Se o usuário pedir uma "foto", "imagem" ou "ilustração" de algo que NÃO EXISTE na web, use [GENERATE_IMAGE: prompt detalhado em inglês].
-- Para Projetos/Esquemas: Se o usuário pedir um "esquema elétrico", "diagrama de ligação" ou "projeto", use [PROJECT: código_mermaid]. Exemplo: [PROJECT: graph TD; A[Bateria] --> B[Fusivel]; B --> C[Rele]; C --> D[ECU]].
+- Para Projetos/Esquemas: Se o usuário pedir um "esquema elétrico", "diagrama de ligação" ou "projeto", use [PROJECT: código_mermaid].
 
 === MANUAL BASE AUTOMOTIVO ===
 ${manualBaseEletrica}
@@ -687,7 +687,6 @@ ${contextoCache.memoriaCodigo || '(Nenhum gerado. Vá em ⚙ e clique em MAPEAR.
 Seja direto e sempre adicione a tag [VOZ: ...] no final.`.trim();
 }
 
-// NOVO: Função para extrair texto do PDF
 async function extrairTextoPDF(file) {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -701,15 +700,16 @@ async function extrairTextoPDF(file) {
     return textoTotal;
 }
 
+// CORREÇÃO 2: Função lerArquivo agora suporta Imagem, PDF e Texto/Código
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
     
-    // Se for PDF
-    if (file.type === "application/pdf") {
+    // 1. Se for PDF
+    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
         addMsg('thinking', 'Lendo PDF...', false);
         extrairTextoPDF(file).then(texto => {
             document.querySelector('.msg.thinking').remove();
-            arquivoAnexado = texto.substring(0, 50000); // Limite seguro para não estourar tokens
+            arquivoAnexado = texto.substring(0, 50000); 
             addMsg('user', `[PDF "${file.name}" anexado e lido: ${texto.length} caracteres extraídos]`); 
             addLog(`PDF lido e anexado ao contexto.`);
             document.getElementById('input').focus(); 
@@ -721,35 +721,48 @@ function lerArquivo(event) {
         return;
     }
 
-    // Se for Imagem
+    // 2. Se for Imagem
+    if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = function(e) { 
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 600;
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                addMsg('user', `[Foto "${file.name}" otimizada e anexada]`); 
+                addLog('Imagem redimensionada e anexada.');
+                document.getElementById('input').focus(); 
+            }
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file); 
+        event.target.value = '';
+        return;
+    }
+
+    // 3. Se for Texto/Código (XML, KT, JSON, TXT, etc)
     const reader = new FileReader();
     reader.onload = function(e) { 
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 600;
-            const scaleSize = MAX_WIDTH / img.width;
-            canvas.width = MAX_WIDTH;
-            canvas.height = img.height * scaleSize;
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.6);
-            addMsg('user', `[Foto otimizada anexada para análise]`); 
-            addLog('Imagem redimensionada e anexada.');
-            document.getElementById('input').focus(); 
-        }
-        img.src = e.target.result;
+        arquivoAnexado = e.target.result.substring(0, 50000);
+        addMsg('user', `[Arquivo "${file.name}" anexado (${file.size} bytes)]`); 
+        addLog('Arquivo de texto anexado.');
+        document.getElementById('input').focus(); 
     };
-    reader.readAsDataURL(file); 
+    reader.readAsText(file); 
     event.target.value = ''; 
 }
 
 async function enviar() {
   const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
   
-  // Verifica se é um loop de auto-correção
   const isAutoFix = input.dataset.autofix === "true";
   input.dataset.autofix = "false";
 
@@ -861,7 +874,6 @@ async function enviar() {
         }
     }
 
-    // === PROCESSAMENTO DA TAG DE VOZ ===
     const matchVoz = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
     let textoParaFalar = "";
     if (matchVoz) {
@@ -893,7 +905,6 @@ async function enviar() {
         }
         falarTexto(textoParaFalar);
 
-        // === NOVO: AUTO-CORREÇÃO NO SANDBOX ===
         if (matchCode) {
             const lang = matchCode[1].trim().toLowerCase();
             const codeToRun = matchCode[2].trim();
@@ -911,27 +922,24 @@ async function enviar() {
                     const err = sandboxData.run.stderr || "";
                     
                     if (err) {
-                        // ERRO NO CÓDIGO: Mostra o erro
                         termWrapper.innerHTML = `<div class="terminal-error">💻 Erro na Execução:\n\n${err}</div>`;
                         addLog(`Erro no Sandbox. Iniciando Auto-Correção...`);
                         
-                        // Se ainda não tentou corrigir muitas vezes, tenta de novo
                         if (autoFixTentativas < 3) {
                             autoFixTentativas++;
                             setTimeout(() => {
                                 document.getElementById('input').value = `O código falhou com o erro: ${err}. Por favor, analise a causa, corrija o código e gere novamente com a tag [RUN_CODE].`;
                                 document.getElementById('input').dataset.autofix = "true";
-                                enviar(); // Chama a IA de novo
+                                enviar(); 
                             }, 2000);
                         } else {
                             termWrapper.innerHTML += `<div style="color:#E74C3C;">[ Limite de auto-correção atingido. Intervenção manual necessária. ]</div>`;
                             autoFixTentativas = 0;
                         }
                     } else {
-                        // SUCESSO
                         termWrapper.innerHTML = `<div class="terminal-output">💻 Saída do Terminal:\n\n${out || "Sem saída."}</div>`;
                         addLog(`Sandbox finalizado com sucesso.`);
-                        autoFixTentativas = 0; // Reseta o contador
+                        autoFixTentativas = 0; 
                     }
                 } else {
                     termWrapper.innerHTML = `<div style="color:#E74C3C;">[ Erro no Sandbox: ${JSON.stringify(sandboxData)} ]</div>`;
