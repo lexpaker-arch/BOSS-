@@ -247,7 +247,6 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
     <footer>
         <div class="by-alex">BY ALEX. P</div>
         <div class="footer-inputs">
-            <!-- CORREÇÃO 1: Input aceita imagem, pdf e texto/código -->
             <input type="file" id="fileInput" accept="image/*,application/pdf,text/*,.xml,.kt,.json,.txt,.md" style="display:none" onchange="lerArquivo(event)">
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="lerArquivo(event)">
             <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar Imagem, PDF ou Código">📎</button>
@@ -290,7 +289,7 @@ let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let contextoCache = { projetos: '', diretrizes: '', memoriaCodigo: '' }; 
 let manualBaseEletrica = ''; 
 let imagemAnexadaBase64 = '';
-let arquivoAnexado = ''; // Variável global para arquivos de texto
+let arquivoAnexado = ''; 
 let localizacaoUsuario = 'Não definida';
 let repoTree = []; 
 
@@ -700,21 +699,22 @@ async function extrairTextoPDF(file) {
     return textoTotal;
 }
 
-// CORREÇÃO 2: Função lerArquivo agora suporta Imagem, PDF e Texto/Código
+// CORREÇÃO: Função lerArquivo robusta (verifica extensão e tipo)
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
+    const fileNameLower = file.name.toLowerCase();
     
     // 1. Se for PDF
-    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
-        addMsg('thinking', 'Lendo PDF...', false);
+    if (fileNameLower.endsWith('.pdf') || file.type === "application/pdf") {
+        const thinking = addMsg('thinking', 'Lendo PDF...', false);
         extrairTextoPDF(file).then(texto => {
-            document.querySelector('.msg.thinking').remove();
+            thinking.wrapper.remove();
             arquivoAnexado = texto.substring(0, 50000); 
             addMsg('user', `[PDF "${file.name}" anexado e lido: ${texto.length} caracteres extraídos]`); 
-            addLog(`PDF lido e anexado ao contexto.`);
+            addLog(`PDF lido e anexado.`);
             document.getElementById('input').focus(); 
         }).catch(err => {
-            document.querySelector('.msg.thinking').remove();
+            thinking.wrapper.remove();
             addMsg('error', 'Erro ao ler PDF: ' + err.message);
         });
         event.target.value = '';
@@ -722,7 +722,7 @@ function lerArquivo(event) {
     }
 
     // 2. Se for Imagem
-    if (file.type.startsWith("image/")) {
+    if (fileNameLower.endsWith('.jpg') || fileNameLower.endsWith('.jpeg') || fileNameLower.endsWith('.png') || fileNameLower.endsWith('.webp') || file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = function(e) { 
             const img = new Image();
@@ -752,7 +752,7 @@ function lerArquivo(event) {
     const reader = new FileReader();
     reader.onload = function(e) { 
         arquivoAnexado = e.target.result.substring(0, 50000);
-        addMsg('user', `[Arquivo "${file.name}" anexado (${file.size} bytes)]`); 
+        addMsg('user', `[Arquivo de texto "${file.name}" anexado (${file.size} bytes)]`); 
         addLog('Arquivo de texto anexado.');
         document.getElementById('input').focus(); 
     };
@@ -1138,4 +1138,5 @@ carregarMemoria();
 </script>
 </body>
 </html>
+
 
