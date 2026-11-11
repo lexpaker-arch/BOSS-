@@ -25,14 +25,12 @@
     .hud-container { width: 100vw; height: 100dvh; background: var(--panel-bg); display: flex; flex-direction: column; position: relative; border: 1px solid var(--border-color); transition: 0.3s; }
     @media (min-width: 900px) { .hud-container { width: 98vw; height: 96dvh; border-radius: var(--radius); } }
 
-    /* HEADER */
     header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--bg-dark); flex-shrink: 0; z-index: 10; }
     .logo-area { display: flex; flex-direction: column; }
     .logo-title { color: var(--text-main); font-size: 14px; font-weight: 700; letter-spacing: 2px; }
     .logo-sub { color: var(--text-muted); font-size: 9px; letter-spacing: 1px; display: none; }
     @media(min-width: 768px) { .logo-sub { display: block; } }
     
-    /* INDICADOR DE PROJETO ATIVO */
     .active-project-box { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 11px; background: rgba(0,255,204,0.1); border: 1px solid var(--accent); padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; }
     .active-project-box span { color: var(--text-muted); }
     .active-project-box b { color: var(--accent); text-transform: uppercase; }
@@ -48,7 +46,6 @@
     .icon-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; transition: 0.2s; font-family: var(--font-mono); font-size: 11px; display: flex; align-items: center; gap: 5px; }
     .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
 
-    /* MAIN */
     main { flex: 1; display: flex; overflow: hidden; position: relative; }
     .sidebar-left { width: 260px; border-right: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; background: var(--panel-bg); flex-shrink: 0; }
     @media (max-width: 1024px) { .sidebar-left { display: none; } }
@@ -116,7 +113,6 @@
     <header>
         <div class="logo-area"><div class="logo-title">EXODRIVE</div><div class="logo-sub">BOSS AI</div></div>
         
-        <!-- FOCO ATUAL -->
         <div class="active-project-box">
             <span>FOCO:</span> <b id="displayActiveProject">CARREGANDO...</b>
         </div>
@@ -136,12 +132,16 @@
             </div>
             <div class="widget"><div class="widget-title">HORÁRIO LOCAL</div><div class="widget-val" id="metric-time" style="font-size:20px;">--:--:--</div><div class="widget-sub" id="metric-date">---</div></div>
             <div class="widget"><div class="widget-title">CONSUMO DE TOKENS</div><div class="widget-val" id="metric-tokens">0</div></div>
-            <div class="widget">
-                <div class="widget-title">INDEXAÇÃO GITHUB</div>
+            
+            <!-- WIDGET DE INDEXAÇÃO MELHORADO -->
+            <div class="widget" style="border-color: #F1C40F;">
+                <div class="widget-title" style="color: #F1C40F;">INDEXAÇÃO GITHUB</div>
+                <div class="widget-sub"><span>Status:</span> <span id="metric-index-status" style="color:#F1C40F;">Aguardando</span></div>
                 <div class="widget-sub"><span>Repos Encontrados:</span> <span id="metric-repos">0</span></div>
                 <div class="widget-sub"><span>Arquivos (Cache):</span> <span id="metric-files">0</span></div>
-                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px;" onclick="mapearRepositorio()">SINCRONIZAR AGORA</button>
+                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:#F1C40F; color:#F1C40F;" onclick="mapearRepositorio()">SINCRONIZAR AGORA</button>
             </div>
+            
             <div class="widget"><div class="widget-title">LATÊNCIA (API)</div><div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div></div>
             <div class="widget" style="flex:1;"><div class="widget-title">LOG DE ATIVIDADE</div><div id="action-log"><div class="log-line">[SYS] Aguardando inicialização...</div></div></div>
         </aside>
@@ -249,7 +249,6 @@ let metricLatency = localStorage.getItem('metric_latency') || '--';
 let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
 let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
 
-// UI INIT
 document.body.className = temaAtual;
 document.getElementById('themeSelect').value = temaAtual;
 document.getElementById('userSelect').value = userRole;
@@ -329,13 +328,12 @@ Você tem acesso aos repositórios do usuário '${gitUser}'.
 **O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
 
 === REGRAS DE AÇÃO ===
-1. Se o usuário pedir para mudar de projeto, disparar a tag [MUDAR_PROJETO: nome_do_repositorio] (ex: [MUDAR_PROJETO: lexpaker-arch/EXODASH--Local]).
-2. Se pedirem para buscar código NO PROJETO ATUAL, use [GITHUB_FIND: termo_palavra_chave]. O sistema fará a busca local.
+1. Se o usuário pedir para mudar de projeto, disparar a tag [MUDAR_PROJETO: nome_do_repositorio].
+2. Se pedirem para buscar código NO PROJETO ATUAL, use [GITHUB_FIND: termo]. O sistema fará a busca local.
 3. Se pedirem para ler um arquivo específico, use [GITHUB_READ: caminho/do/arquivo.ext]. O sistema lerá apenas o projeto ativo.
-4. Se você não achar algo no projeto ativo, avise que talvez esteja em outro projeto e pergunte se deve mudar.
-5. Se pedirem para anotar algo, use [AGENDA_ADD: tarefa].
-6. Se pedirem para apagar, use [AGENDA_DEL: termo].
-7. Sempre adicione [VOZ: resumo curto] no final.`;
+4. ATENÇÃO: Se o usuário confirmar que o código existe e é grande, e você não encontrar, tente ler diretamente arquivos comuns como: [GITHUB_READ: build.gradle.kts], [GITHUB_READ: settings.gradle.kts], [GITHUB_READ: app/build.gradle.kts] ou [GITHUB_READ: README.md] para provar que o sistema consegue acessar.
+5. Se pedirem para anotar algo, use [AGENDA_ADD: tarefa]. Se pedirem para apagar, use [AGENDA_DEL: termo].
+6. Sempre adicione [VOZ: resumo curto] no final.`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -371,9 +369,15 @@ async function chamarIA(messages, temp) {
     }
 }
 
+// ==========================================
+// A CORREÇÃO ESTÁ AQUI: Sincronização Sequencial e Segura
+// ==========================================
 async function mapearRepositorio() {
     toggleConfig();
-    addMsg('boss', '⚙ Sincronizando repositórios do GitHub. Isso pode levar alguns segundos...');
+    addMsg('boss', '⚙ Iniciando sincronização segura do GitHub. Aguarde enquanto indexo os arquivos...');
+    document.getElementById('metric-index-status').textContent = 'Baixando lista de repos...';
+    document.getElementById('metric-index-status').style.color = '#F1C40F';
+    
     listaRepos = []; cacheTrees = {};
     try {
         const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&sort=updated`);
@@ -382,15 +386,27 @@ async function mapearRepositorio() {
         
         for (let repo of data) {
             listaRepos.push(repo.full_name);
-            fetch(`${WORKER_URL}/github-tree?repo=${repo.full_name}`)
-                .then(r => r.json())
-                .then(treeData => {
-                    if(treeData.tree) cacheTrees[repo.full_name] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
-                }).catch(()=>{});
+            document.getElementById('metric-index-status').textContent = `Lendo ${repo.name}...`;
+            
+            // O SEGREDO: await no fetch para não estourar a API do GitHub
+            try {
+                const treeData = await fetch(`${WORKER_URL}/github-tree?repo=${repo.full_name}&_=${Date.now()}`).then(r => r.json());
+                if(treeData.tree) {
+                    cacheTrees[repo.full_name] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
+                    addLog(`Indexado: ${repo.name} (${cacheTrees[repo.full_name].length} arquivos)`);
+                }
+            } catch(e) {
+                addLog(`Falha na árvore de: ${repo.name}`);
+            }
         }
+        
+        document.getElementById('metric-index-status').textContent = 'Concluído!';
+        document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
-        setTimeout(() => addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios. Qual deles vamos usar agora? Diga "mudar para [nome do repositório]".`), 2000);
+        addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios. Agora eu tenho o mapa exato de todos os arquivos.\nDiga "mudar para [nome do repositório]" para focar em um projeto.`);
     } catch(e) {
+        document.getElementById('metric-index-status').textContent = 'Erro';
+        document.getElementById('metric-index-status').style.color = '#ef4444';
         addMsg('error', `Erro ao puxar repos: ${e.message}`);
     }
 }
@@ -409,30 +425,24 @@ async function fetchGithubFile(repo, path) {
     } catch (e) { return `[ERRO REDE]`; }
 }
 
-// A MÁGICA DA BUSCA ZERO-TOKEN (RESTRITA AO PROJETO ATIVO)
 async function buscarZeroToken(termo) {
     if (!projetoAtivo) return "(Nenhum projeto ativo selecionado. Use o comando 'mudar para [nome_do_projeto]'.)";
-    
     const tree = cacheTrees[projetoAtivo];
-    if(!tree) return `(Não foi possível ler a árvore do projeto ${projetoAtivo}. Tente sincronizar novamente.)`;
+    if(!tree) return `(A árvore do projeto ${projetoAtivo} está vazia ou falhou. Tente pedir GITHUB_READ diretamente.)`;
 
     let resultados = "";
     let arquivosLidos = 0;
     
-    // 1. Encontra arquivos cujo NOME tem o termo
     const matchesName = tree.filter(p => p.toLowerCase().includes(termo.toLowerCase()));
-    
-    // 2. Pega arquivos de código prováveis
-    const codeExts = ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json'];
+    const codeExts = ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json', '.gradle'];
     const codeFiles = tree.filter(p => codeExts.some(e => p.toLowerCase().endsWith(e)));
     
-    const toScan = [...new Set([...matchesName, ...codeFiles.slice(0, 15)])].slice(0, 10); // Limite de 10 arquivos
+    const toScan = [...new Set([...matchesName, ...codeFiles.slice(0, 15)])].slice(0, 15);
 
     for (const path of toScan) {
         const content = await fetchGithubFile(projetoAtivo, path);
         if (content.startsWith('[ERRO')) continue;
         
-        // 3. Vasculha o conteúdo no JS (Zero token)
         const lines = content.split('\n');
         let trecho = "";
         lines.forEach((ln, i) => {
@@ -489,11 +499,9 @@ async function enviar() {
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
-            // MUDAR PROJETO (HANDS-FREE)
             const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
             if (switchM) {
                 const novoProjeto = switchM[1].trim();
-                // Tenta achar o nome exato ou aproximado
                 const match = listaRepos.find(r => r.toLowerCase().includes(novoProjeto.toLowerCase()));
                 if (match) {
                     projetoAtivo = match;
@@ -501,29 +509,26 @@ async function enviar() {
                     atualizarDisplayProjeto();
                     addLog(`Foco alterado para: ${projetoAtivo}`);
                     resposta = resposta.replace(switchM[0], '').trim();
-                    // Se a resposta estava vazia, coloca um texto padrão
                     if(!resposta) resposta = `Foco alterado para o projeto **${projetoAtivo.split('/')[1]}**. O que precisamos fazer?`;
                 } else {
-                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Aviso: Não encontrei o repositório "${novoProjeto}" na sua lista. Verifique se o nome está correto.)*`;
+                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Aviso: Não encontrei o repositório "${novoProjeto}".)*`;
                 }
             }
 
-            // BUSCA GLOBAL (ZERO-TOKEN)
             const findM = [...resposta.matchAll(/\[GITHUB_FIND:\s*(.*?)\]/g)];
             if (findM.length > 0) {
                 let allRes = "";
                 for (const m of findM) {
                     const termo = m[1].trim();
-                    t.div.textContent = `Buscando "${termo}" no projeto ${projetoAtivo.split('/')[1]}...`; 
+                    t.div.textContent = `Buscando "${termo}" em ${projetoAtivo.split('/')[1]}...`; 
                     metricGit++; atualizarHUD();
                     allRes += `\n${await buscarZeroToken(termo)}`;
                 }
                 msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Busca concluída. Aqui estão os trechos exatos:\n${allRes}\n\nAgora responda.` });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Busca concluída. Aqui estão os trechos:\n${allRes}\n\nAgora responda.` });
                 continue;
             }
 
-            // LEITURA DE ARQUIVO ESPECÍFICO
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
                 if (!projetoAtivo) {
@@ -555,7 +560,6 @@ async function enviar() {
             agendaInterna.push(addAgenda[1].trim());
             localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
             respostaFinal = respostaFinal.replace(addAgenda[0], '').trim();
-            addLog(`Agenda: "${addAgenda[1].trim()}" anotada.`);
         }
         const delAgenda = respostaFinal.match(/\[AGENDA_DEL:\s*([\s\S]*?)\]/);
         if (delAgenda) {
@@ -563,7 +567,6 @@ async function enviar() {
             agendaInterna = agendaInterna.filter(a => !a.toLowerCase().includes(termo));
             localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
             respostaFinal = respostaFinal.replace(delAgenda[0], '').trim();
-            addLog(`Agenda: "${termo}" removida.`);
         }
 
         t.wrapper.remove();
@@ -577,7 +580,6 @@ async function enviar() {
     }
 }
 
-// UTILITÁRIOS (VOZ, ANOTAÇÃO, ETC)
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
 function abrirAnotacao() { if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); document.getElementById('modalDraw').classList.add('open'); setTimeout(() => { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); }; img.src = imagemAnexadaBase64; }, 150); }
 function bindDrawEvents(cv) { const ctx = cv.getContext('2d'); const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); }; const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } }; cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; }
@@ -614,6 +616,7 @@ if (window.speechSynthesis) {
         vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
     };
 }
+// Auto-sincroniza ao abrir, mas devagar e com segurança
 mapearRepositorio();
 </script>
 </body>
