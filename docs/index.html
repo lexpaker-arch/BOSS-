@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BOSS - EXODRIVE</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<!-- NOVO: Biblioteca para ler PDFs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background-color: #05070A; background-image: linear-gradient(rgba(0, 255, 204, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 204, 0.03) 1px, transparent 1px); background-size: 30px 30px; color: #E8EDF2; font-family: 'Segoe UI', Roboto, sans-serif; height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -107,12 +109,12 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 .mermaid-container { background: #0D1117; padding: 15px; border-radius: 6px; border: 1px solid #00FFCC; margin-top: 10px; text-align: center; overflow-x: auto; position: relative; }
 .terminal-output { background: #000; border: 1px solid #27AE60; border-radius: 6px; padding: 10px; font-family: 'Consolas', monospace; font-size: 12px; color: #27AE60; margin-top: 10px; white-space: pre-wrap; }
+.terminal-error { background: #000; border: 1px solid #E74C3C; border-radius: 6px; padding: 10px; font-family: 'Consolas', monospace; font-size: 12px; color: #E74C3C; margin-top: 10px; white-space: pre-wrap; }
 
 .log-line { font-size: 11px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log-line:first-child { color: #00FFCC; font-weight: bold; }
 .log-line:not(:first-child) { color: #64748B; }
 
-/* NOVO: Botão de Download */
 .btn-download { display: inline-block; background: rgba(0,255,204,0.1); border: 1px solid #00FFCC; color: #00FFCC; padding: 6px 12px; border-radius: 4px; font-family: monospace; font-size: 11px; cursor: pointer; margin-top: 10px; text-decoration: none; transition: 0.2s; }
 .btn-download:hover { background: #00FFCC; color: #000; }
 </style>
@@ -245,9 +247,9 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
     <footer>
         <div class="by-alex">BY ALEX. P</div>
         <div class="footer-inputs">
-            <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="lerArquivo(event)">
+            <input type="file" id="fileInput" accept="image/*,application/pdf" style="display:none" onchange="lerArquivo(event)">
             <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="lerArquivo(event)">
-            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar arquivo local">📎</button>
+            <button class="btn-attach" onclick="document.getElementById('fileInput').click()" title="Anexar Imagem ou PDF">📎</button>
             <button class="btn-attach" onclick="document.getElementById('cameraInput').click()" title="Tirar Foto (Celular)">📷</button>
             <button id="btnMicFooter" class="btn-attach" onclick="iniciarEscuta(false)" title="Falar (Apenas Transcreve)">🎤</button>
             <textarea id="input" rows="1" placeholder="Digite sua diretriz..." oninput="autoResize(this)"></textarea>
@@ -261,6 +263,8 @@ footer { padding: 15px 20px; border-top: 1px solid rgba(0, 255, 204, 0.1); backg
 
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+// Configuração do PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev'; 
 const REPO_CONTEXTO = 'lexpaker-arch/BOSS-'; 
@@ -297,6 +301,8 @@ let metricVid = parseInt(localStorage.getItem('metric_vid')) || 0;
 let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
 let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
 let metricGenImg = parseInt(localStorage.getItem('metric_gen_img')) || 0;
+
+let autoFixTentativas = 0; // NOVO: Contador para auto-correção
 
 function atualizarHUD() {
     document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
@@ -681,9 +687,41 @@ ${contextoCache.memoriaCodigo || '(Nenhum gerado. Vá em ⚙ e clique em MAPEAR.
 Seja direto e sempre adicione a tag [VOZ: ...] no final.`.trim();
 }
 
+// NOVO: Função para extrair texto do PDF
+async function extrairTextoPDF(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    let textoTotal = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const textoPagina = textContent.items.map(item => item.str).join(" ");
+        textoTotal += `\n--- Página ${i} ---\n${textoPagina}`;
+    }
+    return textoTotal;
+}
+
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
     
+    // Se for PDF
+    if (file.type === "application/pdf") {
+        addMsg('thinking', 'Lendo PDF...', false);
+        extrairTextoPDF(file).then(texto => {
+            document.querySelector('.msg.thinking').remove();
+            arquivoAnexado = texto.substring(0, 50000); // Limite seguro para não estourar tokens
+            addMsg('user', `[PDF "${file.name}" anexado e lido: ${texto.length} caracteres extraídos]`); 
+            addLog(`PDF lido e anexado ao contexto.`);
+            document.getElementById('input').focus(); 
+        }).catch(err => {
+            document.querySelector('.msg.thinking').remove();
+            addMsg('error', 'Erro ao ler PDF: ' + err.message);
+        });
+        event.target.value = '';
+        return;
+    }
+
+    // Se for Imagem
     const reader = new FileReader();
     reader.onload = function(e) { 
         const img = new Image();
@@ -709,10 +747,14 @@ function lerArquivo(event) {
 }
 
 async function enviar() {
-  const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto && !imagemAnexadaBase64) return;
+  const input = document.getElementById('input'); const texto = input.value.trim(); if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
   
+  // Verifica se é um loop de auto-correção
+  const isAutoFix = input.dataset.autofix === "true";
+  input.dataset.autofix = "false";
+
   input.value = ''; autoResize(input); 
-  if(texto) addMsg('user', texto);
+  if(texto && !isAutoFix) addMsg('user', texto);
   
   const thinking = addMsg('thinking', 'Processando...', false); document.getElementById('send').disabled = true;
   document.getElementById('exoContainer').classList.add('pensando');
@@ -824,9 +866,9 @@ async function enviar() {
     let textoParaFalar = "";
     if (matchVoz) {
         textoParaFalar = matchVoz[1];
-        respostaFinal = respostaFinal.replace(matchVoz[0], '').trim(); // Remove a tag da tela
+        respostaFinal = respostaFinal.replace(matchVoz[0], '').trim();
     } else {
-        textoParaFalar = respostaFinal; // Fallback se a IA esquecer a tag
+        textoParaFalar = respostaFinal;
     }
 
     const matchImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
@@ -850,6 +892,53 @@ async function enviar() {
             await efeitoDigitacao(msgObj.div, textoLimpo);
         }
         falarTexto(textoParaFalar);
+
+        // === NOVO: AUTO-CORREÇÃO NO SANDBOX ===
+        if (matchCode) {
+            const lang = matchCode[1].trim().toLowerCase();
+            const codeToRun = matchCode[2].trim();
+            const termWrapper = document.createElement('div');
+            termWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px; margin-top:10px;">[ Executando código ${lang} no Sandbox... ]</div>`;
+            document.getElementById('chat').appendChild(termWrapper);
+            addLog(`Executando código no Sandbox...`);
+            
+            fetch(`${WORKER_URL}/sandbox`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: lang, code: codeToRun })
+            }).then(r=>r.json()).then(sandboxData => {
+                if(sandboxData.run) {
+                    const out = sandboxData.run.output || "";
+                    const err = sandboxData.run.stderr || "";
+                    
+                    if (err) {
+                        // ERRO NO CÓDIGO: Mostra o erro
+                        termWrapper.innerHTML = `<div class="terminal-error">💻 Erro na Execução:\n\n${err}</div>`;
+                        addLog(`Erro no Sandbox. Iniciando Auto-Correção...`);
+                        
+                        // Se ainda não tentou corrigir muitas vezes, tenta de novo
+                        if (autoFixTentativas < 3) {
+                            autoFixTentativas++;
+                            setTimeout(() => {
+                                document.getElementById('input').value = `O código falhou com o erro: ${err}. Por favor, analise a causa, corrija o código e gere novamente com a tag [RUN_CODE].`;
+                                document.getElementById('input').dataset.autofix = "true";
+                                enviar(); // Chama a IA de novo
+                            }, 2000);
+                        } else {
+                            termWrapper.innerHTML += `<div style="color:#E74C3C;">[ Limite de auto-correção atingido. Intervenção manual necessária. ]</div>`;
+                            autoFixTentativas = 0;
+                        }
+                    } else {
+                        // SUCESSO
+                        termWrapper.innerHTML = `<div class="terminal-output">💻 Saída do Terminal:\n\n${out || "Sem saída."}</div>`;
+                        addLog(`Sandbox finalizado com sucesso.`);
+                        autoFixTentativas = 0; // Reseta o contador
+                    }
+                } else {
+                    termWrapper.innerHTML = `<div style="color:#E74C3C;">[ Erro no Sandbox: ${JSON.stringify(sandboxData)} ]</div>`;
+                    addLog(`Erro no Sandbox.`);
+                }
+            });
+        }
 
         if (matchGenImg) {
             metricGenImg++; atualizarHUD();
@@ -883,7 +972,6 @@ async function enviar() {
             document.getElementById('chat').appendChild(merWrapper);
             
             mermaid.run({ nodes: [merWrapper.querySelector('.mermaid')] }).then(() => {
-                // Adiciona botão de download após renderizar o SVG
                 const svgElement = merWrapper.querySelector('svg');
                 if (svgElement) {
                     const svgString = new XMLSerializer().serializeToString(svgElement);
@@ -899,29 +987,6 @@ async function enviar() {
                 }
             });
             addLog(`Projeto/Diagrama renderizado.`);
-        }
-
-        if (matchCode) {
-            const lang = matchCode[1].trim().toLowerCase();
-            const codeToRun = matchCode[2].trim();
-            const termWrapper = document.createElement('div');
-            termWrapper.innerHTML = `<div style="color:#F1C40F; font-family:monospace; font-size:12px; margin-top:10px;">[ Executando código ${lang} no Sandbox... ]</div>`;
-            document.getElementById('chat').appendChild(termWrapper);
-            addLog(`Executando código no Sandbox...`);
-            
-            fetch(`${WORKER_URL}/sandbox`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ language: lang, code: codeToRun })
-            }).then(r=>r.json()).then(sandboxData => {
-                if(sandboxData.run) {
-                    const out = sandboxData.run.output || sandboxData.run.stdout || "Sem saída.";
-                    termWrapper.innerHTML = `<div class="terminal-output">💻 Saída do Terminal:\n\n${out}</div>`;
-                    addLog(`Sandbox finalizado.`);
-                } else {
-                    termWrapper.innerHTML = `<div style="color:#E74C3C;">[ Erro no Sandbox: ${JSON.stringify(sandboxData)} ]</div>`;
-                    addLog(`Erro no Sandbox.`);
-                }
-            });
         }
 
         if (matchImg) {
