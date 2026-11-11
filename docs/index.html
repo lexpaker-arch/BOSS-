@@ -65,13 +65,20 @@
     @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
 
     #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; z-index: 1; scroll-behavior: smooth; }
-    .msg-wrapper { display: flex; width: 100%; }
+    .msg-wrapper { display: flex; flex-direction: column; width: 100%; }
     .msg { font-size: 13px; line-height: 1.6; max-width: 90%; padding: 10px; border-left: 2px solid transparent; border-radius: 0 var(--radius) var(--radius) 0; }
     .msg.user { border-left: none; border-right: 2px solid var(--text-muted); color: var(--text-muted); background: rgba(255,255,255,0.02); align-self: flex-end; margin-left: auto; border-radius: var(--radius) 0 0 var(--radius); text-align: right; }
-    .msg.boss { border-left-color: var(--accent); color: var(--text-main); background: rgba(255, 255, 255, 0.03); }
+    .msg.boss { border-left-color: var(--accent); color: var(--text-main); background: rgba(255, 255, 255, 0.03); align-self: flex-start; }
     .msg.boss::before { content: "SYS > "; color: var(--accent); font-weight: bold; }
     .msg.user::before { content: "USR > "; color: var(--text-muted); font-weight: bold; }
-    .msg.thinking { color: var(--accent); font-style: italic; border-left-color: var(--accent); opacity: 0.7; }
+    .msg.thinking { color: var(--accent); font-style: italic; border-left-color: var(--accent); opacity: 0.7; align-self: flex-start; }
+    
+    /* FEEDBACK BUTTONS (AVALIAÇÃO) */
+    .feedback-box { display: flex; gap: 5px; margin-top: 5px; margin-left: 10px; opacity: 0.3; transition: 0.2s; }
+    .msg-wrapper:hover .feedback-box { opacity: 1; }
+    .btn-feedback { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; transition: 0.2s; }
+    .btn-feedback:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-feedback.bad:hover { border-color: #ef4444; color: #ef4444; }
 
     footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: center; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
     .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; }
@@ -100,11 +107,6 @@
     .draw-tool { background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
     .draw-tool.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
     #drawCanvas { max-width: 100%; border: 1px solid var(--border-color); cursor: crosshair; touch-action: none; }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -112,11 +114,7 @@
 <div class="hud-container">
     <header>
         <div class="logo-area"><div class="logo-title">EXODRIVE</div><div class="logo-sub">BOSS AI</div></div>
-        
-        <div class="active-project-box">
-            <span>FOCO:</span> <b id="displayActiveProject">CARREGANDO...</b>
-        </div>
-
+        <div class="active-project-box"><span>FOCO:</span> <b id="displayActiveProject">CARREGANDO...</b></div>
         <div class="header-status">
             <div class="status-box"><div id="statusDot" class="status-dot ok"></div><span id="statusText">ONLINE</span></div>
             <button class="icon-btn" onclick="toggleMute()" id="btnMute" title="Voz">🔊</button>
@@ -133,15 +131,20 @@
             <div class="widget"><div class="widget-title">HORÁRIO LOCAL</div><div class="widget-val" id="metric-time" style="font-size:20px;">--:--:--</div><div class="widget-sub" id="metric-date">---</div></div>
             <div class="widget"><div class="widget-title">CONSUMO DE TOKENS</div><div class="widget-val" id="metric-tokens">0</div></div>
             
-            <!-- WIDGET DE INDEXAÇÃO MELHORADO -->
             <div class="widget" style="border-color: #F1C40F;">
                 <div class="widget-title" style="color: #F1C40F;">INDEXAÇÃO GITHUB</div>
                 <div class="widget-sub"><span>Status:</span> <span id="metric-index-status" style="color:#F1C40F;">Aguardando</span></div>
-                <div class="widget-sub"><span>Repos Encontrados:</span> <span id="metric-repos">0</span></div>
-                <div class="widget-sub"><span>Arquivos (Cache):</span> <span id="metric-files">0</span></div>
-                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:#F1C40F; color:#F1C40F;" onclick="mapearRepositorio()">SINCRONIZAR AGORA</button>
+                <div class="widget-sub"><span>Repos:</span> <span id="metric-repos">0</span></div>
+                <div class="widget-sub"><span>Arquivos:</span> <span id="metric-files">0</span></div>
+                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:#F1C40F; color:#F1C40F;" onclick="mapearRepositorio()">SINCRONIZAR</button>
             </div>
             
+            <div class="widget" style="flex:1; border-color: var(--accent);">
+                <div class="widget-title" style="color: var(--accent);">MEMÓRIA DE DECISÕES</div>
+                <div class="widget-sub"><span>Fatos Salvos:</span> <span id="metric-memoria">0</span></div>
+                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:var(--accent); color:var(--accent);" onclick="mostrarMemoria()">VER MEMÓRIA</button>
+            </div>
+
             <div class="widget"><div class="widget-title">LATÊNCIA (API)</div><div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div></div>
             <div class="widget" style="flex:1;"><div class="widget-title">LOG DE ATIVIDADE</div><div id="action-log"><div class="log-line">[SYS] Aguardando inicialização...</div></div></div>
         </aside>
@@ -175,12 +178,12 @@
                 <option value="Henrique">HENRIQUE (Comercial)</option>
             </select>
 
-            <label class="config-label">VOZ DO BOSS (SOTAQUES)</label>
+            <label class="config-label">VOZ DO BOSS</label>
             <select id="voiceSelect" class="config-select" onchange="mudarVoz()"><option value="">Padrão do navegador</option></select>
 
-            <label class="config-label">VELOCIDADE DA VOZ: <span id="rateVal" style="color:var(--accent)">1.15</span>x</label>
+            <label class="config-label">VELOCIDADE: <span id="rateVal" style="color:var(--accent)">1.15</span>x</label>
             <input type="range" id="rateSlider" min="0.7" max="1.6" step="0.05" value="1.15" onchange="mudarRate(this.value)" style="width:100%;">
-            <label class="config-label">TOM DA VOZ: <span id="pitchVal" style="color:var(--accent)">1.05</span></label>
+            <label class="config-label">TOM: <span id="pitchVal" style="color:var(--accent)">1.05</span></label>
             <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)" style="width:100%;">
             <button class="btn-config-action" onclick="testarVoz()">🔊 TESTAR VOZ</button>
 
@@ -189,7 +192,7 @@
             <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE</button>
 
             <label class="config-label" style="color:#ef4444; margin-top: 20px;">ZONA DE PERIGO</label>
-            <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR HISTÓRICO</button>
+            <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR TUDO</button>
         </aside>
     </main>
 
@@ -201,6 +204,15 @@
         <input type="text" id="input" placeholder="DIRETRIZ..." onkeydown="if(event.key==='Enter')enviar()">
         <button class="btn-send" id="send" onclick="enviar()">EXEC</button>
     </footer>
+</div>
+
+<div class="modal-overlay" id="modalMemoria">
+    <div class="modal-box">
+        <div class="modal-header"><span>MEMÓRIA DE DECISÕES</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
+        <div class="modal-body">
+            <div id="memoriaList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:var(--text-main); line-height:1.8;"></div>
+        </div>
+    </div>
 </div>
 
 <div class="modal-overlay" id="modalDraw">
@@ -237,6 +249,8 @@ let gitUser = localStorage.getItem('boss_git_user') || 'lexpaker-arch';
 let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
 let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
+let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
+let logErros = JSON.parse(localStorage.getItem('boss_erros')) || [];
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
 
@@ -246,8 +260,6 @@ let fileCache = {};
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricLatency = localStorage.getItem('metric_latency') || '--';
-let metricGit = parseInt(localStorage.getItem('metric_git')) || 0;
-let metricVision = parseInt(localStorage.getItem('metric_vision')) || 0;
 
 document.body.className = temaAtual;
 document.getElementById('themeSelect').value = temaAtual;
@@ -267,6 +279,7 @@ function atualizarHUD() {
     document.getElementById('metric-tokens').textContent = metricTokens.toLocaleString('pt-BR');
     document.getElementById('metric-repos').textContent = listaRepos.length;
     document.getElementById('metric-files').textContent = Object.keys(fileCache).length;
+    document.getElementById('metric-memoria').textContent = memoriaDecisoes.length;
     document.getElementById('metric-latency').textContent = metricLatency + ' ms';
     localStorage.setItem('metric_tokens', metricTokens);
     localStorage.setItem('metric_latency', metricLatency);
@@ -301,6 +314,28 @@ function salvarGroqKey() { const k = document.getElementById('groqKeyInput').val
 function salvarGitUser() { gitUser = document.getElementById('gitUserInput').value.trim(); localStorage.setItem('boss_git_user', gitUser); alert('Usuário do GitHub salvo. Sincronizando...'); mapearRepositorio(); }
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
+function mostrarMemoria() {
+    const list = document.getElementById('memoriaList');
+    if (memoriaDecisoes.length === 0) {
+        list.innerHTML = "Nenhuma decisão ou fato salvo ainda.";
+    } else {
+        list.innerHTML = memoriaDecisoes.map((m, i) => `
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;">
+                <span>${m}</span>
+                <button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button>
+            </div>
+        `).join('');
+    }
+    document.getElementById('modalMemoria').classList.add('open');
+}
+
+function apagarMemoria(index) {
+    memoriaDecisoes.splice(index, 1);
+    localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
+    mostrarMemoria();
+    atualizarHUD();
+}
+
 function formatarTexto(texto) {
     texto = texto.replace(/\b(Chefe|chefe)\b/g, userRole);
     texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => `<pre><code class="language-${lang||'text'}">${code.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`);
@@ -313,7 +348,18 @@ function addMsg(tipo, texto, salvar = true) {
     const d = document.createElement('div'); d.className = `msg ${tipo}`;
     if (tipo === 'boss') { d.innerHTML = formatarTexto(texto); d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); }
     else { d.textContent = texto; }
-    w.appendChild(d); chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
+    w.appendChild(d); 
+    
+    // SE FOR O BOSS, ADICIONA O FEEDBACK (AVALIAÇÃO)
+    if (tipo === 'boss') {
+        const feedback = document.createElement('div');
+        feedback.className = 'feedback-box';
+        feedback.innerHTML = `<button class="btn-feedback" onclick="avaliar(this, '${texto.replace(/'/g, "\\'")}', true)">👍 Resolveu</button>
+                              <button class="btn-feedback bad" onclick="avaliar(this, '${texto.replace(/'/g, "\\'")}', false)">👎 Errou</button>`;
+        w.appendChild(feedback);
+    }
+
+    chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
     if (salvar && tipo !== 'thinking') {
         historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
         if (historico.length > 20) historico = historico.slice(-20);
@@ -322,18 +368,48 @@ function addMsg(tipo, texto, salvar = true) {
     return { wrapper: w, div: d };
 }
 
+// AVALIAÇÃO DE RESPOSTA (PONTO 3)
+function avaliar(btn, resposta, isBom) {
+    const parent = btn.parentElement;
+    if (isBom) {
+        parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado como correto.</span>';
+    } else {
+        parent.innerHTML = '<span style="color:#ef4444; font-size:10px;">❌ Erro registrado no log.</span>';
+        logErros.push({ erro: resposta, data: Date.now() });
+        localStorage.setItem('boss_erros', JSON.stringify(logErros));
+        addLog("Erro registrado para melhoria contínua.");
+    }
+}
+
+// ==========================================
+// PROMPT DO SISTEMA (COM MEMÓRIA E SEGURANÇA)
+// ==========================================
 function buildSystemPrompt(isConversational = false) {
     const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. NUNCA chame o usuário de "Chefe", chame de ${userRole}.
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
 **O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
 
-=== REGRAS DE AÇÃO ===
-1. Se o usuário pedir para mudar de projeto, disparar a tag [MUDAR_PROJETO: nome_do_repositorio].
-2. Se pedirem para buscar código NO PROJETO ATUAL, use [GITHUB_FIND: termo]. O sistema fará a busca local.
-3. Se pedirem para ler um arquivo específico, use [GITHUB_READ: caminho/do/arquivo.ext]. O sistema lerá apenas o projeto ativo.
-4. ATENÇÃO: Se o usuário confirmar que o código existe e é grande, e você não encontrar, tente ler diretamente arquivos comuns como: [GITHUB_READ: build.gradle.kts], [GITHUB_READ: settings.gradle.kts], [GITHUB_READ: app/build.gradle.kts] ou [GITHUB_READ: README.md] para provar que o sistema consegue acessar.
-5. Se pedirem para anotar algo, use [AGENDA_ADD: tarefa]. Se pedirem para apagar, use [AGENDA_DEL: termo].
-6. Sempre adicione [VOZ: resumo curto] no final.`;
+=== MEMÓRIA DE DECISÕES (LONGO PRAZO - FATOS IMUTÁVEIS) ===
+${memoriaDecisoes.length > 0 ? memoriaDecisoes.map(m => `- ${m}`).join('\n') : 'Nenhum fato salvo ainda.'}
+
+=== AGENDA (TAREFAS DE CURTO PRAZO) ===
+${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
+
+=== REGRAS DE SEGURANÇA (O QUE VOCÊ NÃO PODE FAZER) ===
+1. NUNCA apague arquivos ou repositórios no GitHub sem confirmação dupla.
+2. NUNCA gere comandos destrutivos no terminal (rm -rf).
+3. NUNCA invente informações. Se não souber, use as ferramentas.
+4. NUNCA pule etapas de diagnóstico (se falta medição, peça).
+
+=== REGRAS DE AÇÃO (TOOLS E FALLBACK) ===
+1. [MUDAR_PROJETO: repo] - Muda o foco.
+2. [GITHUB_FIND: termo] - Busca no projeto.
+3. [GITHUB_READ: arquivo.ext] - Lê um arquivo.
+   *REGRA DE FALLBACK:* Se o GITHUB_FIND falhar, tente o GITHUB_READ em 'README.md' ou 'build.gradle.kts' para testar o acesso antes de dar erro.
+4. [MEMORIA_ADD: fato] - Salva um fato técnico (ex: "O pino 16 é B+").
+5. [MEMORIA_DEL: termo] - Apaga um fato errado.
+6. [AGENDA_ADD: tarefa] / [AGENDA_DEL: termo] - Gereciamento de tarefas.
+7. Sempre adicione [VOZ: resumo curto] no final.`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -369,9 +445,6 @@ async function chamarIA(messages, temp) {
     }
 }
 
-// ==========================================
-// A CORREÇÃO ESTÁ AQUI: Sincronização Sequencial e Segura
-// ==========================================
 async function mapearRepositorio() {
     toggleConfig();
     addMsg('boss', '⚙ Iniciando sincronização segura do GitHub. Aguarde enquanto indexo os arquivos...');
@@ -388,7 +461,6 @@ async function mapearRepositorio() {
             listaRepos.push(repo.full_name);
             document.getElementById('metric-index-status').textContent = `Lendo ${repo.name}...`;
             
-            // O SEGREDO: await no fetch para não estourar a API do GitHub
             try {
                 const treeData = await fetch(`${WORKER_URL}/github-tree?repo=${repo.full_name}&_=${Date.now()}`).then(r => r.json());
                 if(treeData.tree) {
@@ -403,7 +475,7 @@ async function mapearRepositorio() {
         document.getElementById('metric-index-status').textContent = 'Concluído!';
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
-        addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios. Agora eu tenho o mapa exato de todos os arquivos.\nDiga "mudar para [nome do repositório]" para focar em um projeto.`);
+        addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios. Agora eu tenho o mapa exato de todos os arquivos.`);
     } catch(e) {
         document.getElementById('metric-index-status').textContent = 'Erro';
         document.getElementById('metric-index-status').style.color = '#ef4444';
@@ -421,14 +493,14 @@ async function fetchGithubFile(repo, path) {
             const txt = decodeURIComponent(escape(atob(data.content))); 
             fileCache[key] = txt; atualizarHUD(); return txt; 
         }
-        return `[ERRO GITHUB]`;
-    } catch (e) { return `[ERRO REDE]`; }
+        return `[ERRO GITHUB: Arquivo não encontrado]`;
+    } catch (e) { return `[ERRO REDE: ${e.message}]`; }
 }
 
 async function buscarZeroToken(termo) {
-    if (!projetoAtivo) return "(Nenhum projeto ativo selecionado. Use o comando 'mudar para [nome_do_projeto]'.)";
+    if (!projetoAtivo) return "(Nenhum projeto ativo selecionado.)";
     const tree = cacheTrees[projetoAtivo];
-    if(!tree) return `(A árvore do projeto ${projetoAtivo} está vazia ou falhou. Tente pedir GITHUB_READ diretamente.)`;
+    if(!tree) return `(A árvore do projeto falhou.)`;
 
     let resultados = "";
     let arquivosLidos = 0;
@@ -479,7 +551,7 @@ async function enviar() {
         
         let contextoVisao = "";
         if (imagemAnexadaBase64) {
-            t.div.textContent = "Processando visão..."; metricVision++; atualizarHUD();
+            t.div.textContent = "Processando visão...";
             const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
             const vd = await vr.json();
             contextoVisao = vd.choices?.[0]?.message?.content || "[Falha]";
@@ -499,6 +571,7 @@ async function enviar() {
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
+            // MUDAR PROJETO
             const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
             if (switchM) {
                 const novoProjeto = switchM[1].trim();
@@ -507,21 +580,20 @@ async function enviar() {
                     projetoAtivo = match;
                     localStorage.setItem('boss_active_repo', projetoAtivo);
                     atualizarDisplayProjeto();
-                    addLog(`Foco alterado para: ${projetoAtivo}`);
                     resposta = resposta.replace(switchM[0], '').trim();
-                    if(!resposta) resposta = `Foco alterado para o projeto **${projetoAtivo.split('/')[1]}**. O que precisamos fazer?`;
+                    if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**.`;
                 } else {
-                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Aviso: Não encontrei o repositório "${novoProjeto}".)*`;
+                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Não encontrei o repositório "${novoProjeto}".)*`;
                 }
             }
 
+            // BUSCA GITHUB
             const findM = [...resposta.matchAll(/\[GITHUB_FIND:\s*(.*?)\]/g)];
             if (findM.length > 0) {
                 let allRes = "";
                 for (const m of findM) {
                     const termo = m[1].trim();
-                    t.div.textContent = `Buscando "${termo}" em ${projetoAtivo.split('/')[1]}...`; 
-                    metricGit++; atualizarHUD();
+                    t.div.textContent = `Buscando "${termo}"...`;
                     allRes += `\n${await buscarZeroToken(termo)}`;
                 }
                 msgs.push({ role: 'assistant', content: resposta });
@@ -529,16 +601,16 @@ async function enviar() {
                 continue;
             }
 
+            // LEITURA GITHUB
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
                 if (!projetoAtivo) {
-                    resposta = "Não posso ler arquivos sem um projeto ativo. Diga 'mudar para [nome]' primeiro.";
-                    resposta = resposta.replace(readM[0], '').trim();
+                    resposta = "Não posso ler arquivos sem um projeto ativo.";
                 } else {
                     let all = ""; 
                     for (const m of readM) {
                         let fp = m[1].trim().replace(projetoAtivo + '/', ''); 
-                        t.div.textContent = `Lendo ${fp}...`; metricGit++; atualizarHUD();
+                        t.div.textContent = `Lendo ${fp}...`;
                         const fc = await fetchGithubFile(projetoAtivo, fp);
                         all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
                     }
@@ -555,6 +627,26 @@ async function enviar() {
         let txtFalar = vozM ? vozM[1] : respostaFinal;
         if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
 
+        // TAGS DE MEMÓRIA (NOVO)
+        const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
+        if (memAdd) {
+            memoriaDecisoes.push(memAdd[1].trim());
+            localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
+            respostaFinal = respostaFinal.replace(memAdd[0], '').trim();
+            atualizarHUD();
+            addLog(`Memória: "${memAdd[1].trim()}" salva.`);
+        }
+        const memDel = respostaFinal.match(/\[MEMORIA_DEL:\s*([\s\S]*?)\]/);
+        if (memDel) {
+            const termo = memDel[1].trim().toLowerCase();
+            memoriaDecisoes = memoriaDecisoes.filter(a => !a.toLowerCase().includes(termo));
+            localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
+            respostaFinal = respostaFinal.replace(memDel[0], '').trim();
+            atualizarHUD();
+            addLog(`Memória: "${termo}" apagada.`);
+        }
+
+        // TAGS DE AGENDA
         const addAgenda = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
         if (addAgenda) {
             agendaInterna.push(addAgenda[1].trim());
@@ -580,6 +672,7 @@ async function enviar() {
     }
 }
 
+// UTILITÁRIOS
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
 function abrirAnotacao() { if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); document.getElementById('modalDraw').classList.add('open'); setTimeout(() => { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); }; img.src = imagemAnexadaBase64; }, 150); }
 function bindDrawEvents(cv) { const ctx = cv.getContext('2d'); const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); }; const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } }; cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; }
@@ -607,7 +700,7 @@ function lerArquivo(event) {
     event.target.value = '';
 }
 
-function limparHistorico() { if(confirm("Apagar todo o histórico e memórias locais?")) { localStorage.clear(); location.reload(); } }
+function limparHistorico() { if(confirm("Apagar TODO o histórico, memórias e agenda locais?")) { localStorage.clear(); location.reload(); } }
 
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
@@ -616,7 +709,6 @@ if (window.speechSynthesis) {
         vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
     };
 }
-// Auto-sincroniza ao abrir, mas devagar e com segurança
 mapearRepositorio();
 </script>
 </body>
