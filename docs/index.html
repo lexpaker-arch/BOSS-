@@ -255,6 +255,7 @@
         <div class="modal-header"><span>CONFIRMAR ALTERAÇÃO NO GITHUB</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="cancelarCommit()">×</button></div>
         <div class="modal-body">
             <div style="font-family:var(--font-mono); font-size:12px; color:#F1C40F; margin-bottom:10px; width:100%; text-align:left;">
+                Repositório: <span id="diffRepo" style="color:var(--accent);"></span><br>
                 Arquivo: <span id="diffPath" style="color:var(--accent);"></span>
             </div>
             <div class="diff-view" id="diffView"></div>
@@ -295,7 +296,7 @@ const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
 const GROQ_VISION_MODELO = 'llama-3.2-11b-vision-preview';
-const MODELO = 'qwen/qwen3.8-27b';
+const MODELO = 'qwen/qwen-2.5-72b-instruct'; // MODELO OFICIAL CORRIGIDO
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
@@ -692,25 +693,29 @@ async function carregarArvoreProjeto() {
 // ==========================================
 async function fetchGithubFile(repo, path) {
     const pathLower = path.toLowerCase();
-    // 1. Blacklist de arquivos sensíveis
     const blacklist = ['.env', 'secrets.properties', '.keystore', '.jks', 'id_rsa', 'id_dsa'];
     if (blacklist.some(b => pathLower.includes(b))) {
         return `[ERRO DE SEGURANÇA: O arquivo '${path}' é sensível e foi bloqueado pela política de segurança.]`;
     }
 
     const key = `${repo}/${path}`;
-    if (fileCache[key]) return fileCache[key];
+    if (fileCache[key]) {
+        // Se já tem cache, retorna o mascarado para a IA
+        return fileCache[key].masked;
+    }
     try {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.content) { 
             let txt = decodeURIComponent(escape(atob(data.content))); 
             
-            // 2. Máscara de senhas
-            txt = txt.replace(/(storePassword|keyPassword|password|senha)\s*=\s*["']([^"']+)["']/gi, '$1 = "***"');
-            txt = txt.replace(/(password|senha)\s*:\s*["']([^"']+)["']/gi, '$1: "***"');
+            // Guarda o original e gera o mascarado
+            let masked = txt.replace(/(storePassword|keyPassword|password|senha)\s*=\s*["']([^"']+)["']/gi, '$1 = "***"');
+            masked = masked.replace(/(password|senha)\s*:\s*["']([^"']+)["']/gi, '$1: "***"');
             
-            fileCache[key] = txt; atualizarHUD(); return txt; 
+            fileCache[key] = { original: txt, masked: masked };
+            atualizarHUD(); 
+            return masked; 
         }
         return `[ERRO GITHUB: Arquivo não encontrado]`;
     } catch (e) { return `[ERRO REDE: ${e.message}]`; }
@@ -778,6 +783,7 @@ function diffLines(a, b) {
 
 function mostrarDiff(path, oldText, newText) {
     document.getElementById('diffPath').textContent = path;
+    document.getElementById('diffRepo').textContent = pendingCommit.repo; // Mostra o repo travado
     const d = diffLines(oldText, newText);
     let html = '';
     d.slice(0, 500).forEach(x => {
@@ -791,14 +797,18 @@ function mostrarDiff(path, oldText, newText) {
 async function confirmarCommit() {
     if (!pendingCommit) return;
     document.getElementById('modalDiff').classList.remove('open');
-    const { path, content } = pendingCommit;
+    let { repo, path, content } = pendingCommit;
     pendingCommit = null;
-    addLog(`Commitando ${path}...`);
+    
+    // CORREÇÃO DO ERRO 422: Remove barras do início do path
+    path = path.replace(/^\/+/, '');
+
+    addLog(`Commitando ${path} em ${repo}...`);
     try {
-        const r = await fetch(`${WORKER_URL}/github-write`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: projetoAtivo, path, content, message: 'Atualização via BOSS AI' }) });
+        const r = await fetch(`${WORKER_URL}/github-write`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: repo, path, content, message: 'Atualização via BOSS AI' }) });
         const d = await r.json();
         addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
-        if (d.success) { delete fileCache[`${projetoAtivo}/${path}`]; }
+        if (d.success) { delete fileCache[`${repo}/${path}`]; }
     } catch(e) { addMsg('error', 'Erro no commit: ' + e.message); }
 }
 function cancelarCommit() { pendingCommit = null; document.getElementById('modalDiff').classList.remove('open'); addMsg('boss', 'Commit cancelado.'); }
@@ -1015,12 +1025,22 @@ async function enviar() {
         }
 
         if (mGit) {
-            const path = mGit[1].trim(); const content = mGit[2].trim();
+            let path = mGit[1].trim().replace(/^\/+/, ''); // Remove barras
+            const content = mGit[2].trim();
+            
+            // P2-c: Verifica se a IA está tentando salvar "***" 
+            if (content.includes('***') && content.includes('Password')) {
+                addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***). O arquivo original no GitHub seria corrompido. Altere a senha manualmente ou peça ao BOSS para não alterar essa linha.`);
+                return;
+            }
+
             addLog(`Preparando commit de ${path}...`);
-            const existing = await fetchGithubFile(projetoAtivo, path);
-            const oldText = existing.startsWith('[ERRO') ? '' : existing;
-            pendingCommit = { path, content, oldText };
-            mostrarDiff(path, oldText, content);
+            const existingMasked = await fetchGithubFile(projetoAtivo, path);
+            const oldTextMasked = existingMasked.startsWith('[ERRO') ? '' : existingMasked;
+            
+            // Guarda o repositório atual no pendingCommit
+            pendingCommit = { repo: projetoAtivo, path, content, oldTextMasked };
+            mostrarDiff(path, oldTextMasked, content);
         }
 
         document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
