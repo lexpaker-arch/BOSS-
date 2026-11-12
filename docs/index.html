@@ -217,7 +217,6 @@
     </footer>
 </div>
 
-<!-- MODAIS OCULTOS AQUI (Memoria, Draw, Diff) -->
 <div class="modal-overlay" id="modalMemoria">
     <div class="modal-box">
         <div class="modal-header"><span>MEMÓRIA DE LONGO PRAZO (FIREBASE)</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
@@ -270,7 +269,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
 
-<!-- INTEGRAÇÃO FIREBASE (CDN) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
@@ -287,11 +285,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Expondo funções do Firebase para o escopo global (para o script principal usar)
-  window.db = db;
-  window.doc = doc;
-  window.setDoc = setDoc;
-  window.getDoc = getDoc;
+  window.db = db; window.doc = doc; window.setDoc = setDoc; window.getDoc = getDoc;
 </script>
 
 <script>
@@ -316,8 +310,7 @@ let historicoCompleto = JSON.parse(localStorage.getItem('boss_historico_full')) 
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let logErros = JSON.parse(localStorage.getItem('boss_erros')) || [];
-
-let dbMemory = null; // Memória carregada do Firebase
+let dbMemory = null;
 
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
@@ -395,15 +388,12 @@ function mostrarMemoria() {
     else {
         listD.innerHTML = memoriaDecisoes.map((m, i) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${m}</span><button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('');
     }
-    
-    // Mostra o diário de bordo do Firebase
     const listH = document.getElementById('memoriaHistoricoList');
     if (dbMemory && dbMemory.diario_bordo) {
         listH.innerHTML = `<div style="white-space:pre-wrap;">${dbMemory.diario_bordo}</div>`;
     } else {
         listH.innerHTML = "Nenhum Diário de Bordo salvo no Firebase para este projeto.";
     }
-    
     document.getElementById('modalMemoria').classList.add('open');
 }
 
@@ -475,7 +465,7 @@ function buscarMemoriaAntiga(termo) {
 }
 
 // ==========================================
-// FIREBASE: CARREGAR E SALVAR MEMÓRIA
+// FIREBASE: MEMÓRIA
 // ==========================================
 async function carregarMemoriaFirebase() {
     if (!projetoAtivo || !window.db) return;
@@ -506,7 +496,6 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
         addLog(`Salvando memória no Firebase...`);
         const docRef = window.doc(window.db, "projetos", projetoAtivo);
         
-        // Pega a memória antiga para não sobrescrever fatos antigos (merge)
         const docSnap = await window.getDoc(docRef);
         let fatosAntigos = {};
         if(docSnap.exists() && docSnap.data().fatos_tecnicos) {
@@ -530,19 +519,18 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
 }
 
 async function forcarSalvarMemoria() {
-    if (!projetoAtivo) return alert("Selecione um projeto primeiro.");
-    if (historicoCompleto.length < 2) return alert("Não há conversas suficientes para resumir.");
-    
-    const t = addMsg('thinking', 'Gerando resumo da sessão para salvar no Firebase...', false);
+    if (!projetoAtivo) return; // Silencioso se não tiver projeto ativo
+    if (historicoCompleto.length < 2) return; // Nada para salvar
     
     try {
+        addLog("Resumindo sessão em background...");
         const prompt = `Resuma a conversa que tivemos hoje em um parágrafo curto e direto. Em seguida, extraia os FATOS TÉCNICOS discutidos (como senhas, configurações, nomes de arquivos) em um objeto JSON estrito. Formato da resposta exata:
 RESUMO: [seu resumo aqui]
 JSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
         const msgs = [
             { role: 'system', content: "Você é um sistema que resume conversas e extrai JSON." },
-            ...historicoCompleto.slice(-15), // Pega as últimas 15 para resumir
+            ...historicoCompleto.slice(-15),
             { role: 'user', content: prompt }
         ];
         
@@ -555,31 +543,24 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
         const resumo = resumoMatch ? resumoMatch[1].trim() : "Sessão de trabalho.";
         let fatos = {};
         if (jsonMatch) {
-            try { fatos = JSON.parse(jsonMatch[1]); } catch(e) { console.error("Erro ao fazer parse do JSON", e); }
+            try { fatos = JSON.parse(jsonMatch[1]); } catch(e) { console.error("Erro no JSON", e); }
         }
         
         await salvarMemoriaFirebase(resumo, fatos);
-        t.wrapper.remove();
-        addMsg('boss', `✅ **Memória salva no Firebase!**\n\n**Resumo:**\n${resumo}`);
-        
     } catch(e) {
-        t.wrapper.remove();
-        addMsg('error', `Falha ao salvar memória: ${e.message}`);
+        console.error("Falha ao salvar memória: ", e);
     }
 }
 
-// Fecha a sessão e salva automaticamente
-window.addEventListener('beforeunload', (e) => {
-    if (projetoAtivo && historicoCompleto.length > 2) {
-        // Não podemos fazer chamadas assíncronas longas no beforeunload, 
-        // então disparamos o fetch sem await.
+// AUTOMAÇÃO: Salva quando o usuário troca de aba ou minimiza o navegador
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === 'hidden') {
         forcarSalvarMemoria(); 
     }
 });
 
 
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
-    // Injeta a memória do Firebase no prompt
     let memFirebaseStr = "";
     if (dbMemory) {
         if (dbMemory.diario_bordo) memFirebaseStr += `- Diário de Bordo Anterior: ${dbMemory.diario_bordo}\n`;
@@ -605,7 +586,8 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 3. [WEB_SEARCH: termo] - Pesquisa na internet.
 4. [GENERATE_IMAGE] / [IMAGE_SEARCH] / [VIDEO_SEARCH] / [PROJECT] - Ferramentas de mídia.
 5. [GITHUB_CREATE: caminho | conteúdo] - Edita código.
-6. Sempre adicione [VOZ: resumo curto] no final.`;
+6. Se a busca [GITHUB_FIND] falhar, tente ler um arquivo direto como [GITHUB_READ: README.md] ou [GITHUB_READ: build.gradle.kts].
+7. Sempre adicione [VOZ: resumo curto] no final.`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -641,10 +623,13 @@ async function chamarIA(messages, temp) {
     }
 }
 
+// ==========================================
+// CORREÇÃO: LAZY LOADING DA ÁRVORE DO GITHUB
+// ==========================================
 async function mapearRepositorio() {
     toggleConfig();
-    addMsg('boss', '⚙ Iniciando sincronização segura do GitHub...');
-    document.getElementById('metric-index-status').textContent = 'Baixando lista de repos...';
+    addMsg('boss', '⚙ Sincronizando lista de repositórios. Aguarde...');
+    document.getElementById('metric-index-status').textContent = 'Baixando repos...';
     document.getElementById('metric-index-status').style.color = '#F1C40F';
     
     listaRepos = []; cacheTrees = {}; fileCache = {};
@@ -655,27 +640,38 @@ async function mapearRepositorio() {
         
         for (let repo of data) {
             listaRepos.push(repo.full_name);
-            document.getElementById('metric-index-status').textContent = `Lendo ${repo.name}...`;
-            try {
-                const treeData = await fetch(`${WORKER_URL}/github-tree?repo=${repo.full_name}&_=${Date.now()}`).then(r => r.json());
-                if(treeData.tree) {
-                    cacheTrees[repo.full_name] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
-                }
-            } catch(e) {}
         }
         
-        document.getElementById('metric-index-status').textContent = 'Concluído!';
+        document.getElementById('metric-index-status').textContent = 'Pronto.';
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
-        addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios.`);
+        addMsg('boss', `✅ **Repositórios Encontrados:** ${listaRepos.length}.\nDiga "mudar para [nome do repositório]" para focar em um projeto. O BOSS vai ler a árvore de arquivos apenas do projeto que você escolher (economia de API).`);
         
-        // Após sincronizar, se tiver um projeto ativo, carrega a memória do Firebase
         if (projetoAtivo) carregarMemoriaFirebase();
         
     } catch(e) {
         document.getElementById('metric-index-status').textContent = 'Erro';
         document.getElementById('metric-index-status').style.color = '#ef4444';
         addMsg('error', `Erro ao puxar repos: ${e.message}`);
+    }
+}
+
+async function carregarArvoreProjeto() {
+    if (!projetoAtivo) return;
+    if (cacheTrees[projetoAtivo]) return; // Já tem no cache
+
+    try {
+        addLog(`Baixando árvore de arquivos de ${projetoAtivo}...`);
+        const treeData = await fetch(`${WORKER_URL}/github-tree?repo=${projetoAtivo}&_=${Date.now()}`).then(r => r.json());
+        if(treeData.tree) {
+            cacheTrees[projetoAtivo] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
+            addLog(`Árvore carregada: ${cacheTrees[projetoAtivo].length} arquivos.`);
+            atualizarHUD();
+        } else {
+            addLog(`Falha ao ler árvore de ${projetoAtivo}.`);
+        }
+    } catch(e) {
+        addLog(`Erro de rede ao ler árvore de ${projetoAtivo}.`);
     }
 }
 
@@ -695,8 +691,12 @@ async function fetchGithubFile(repo, path) {
 
 async function buscarZeroToken(termo) {
     if (!projetoAtivo) return "(Nenhum projeto ativo selecionado.)";
+    
+    // GARANTE QUE A ÁRVORE ESTÁ BAIXADA ANTES DE BUSCAR
+    await carregarArvoreProjeto();
+    
     const tree = cacheTrees[projetoAtivo];
-    if(!tree) return `(A árvore do projeto falhou.)`;
+    if(!tree) return `(A árvore do projeto falhou. O GitHub bloqueou o acesso ou demorou muito. Tente pedir um arquivo específico com GITHUB_READ).`;
 
     let resultados = "";
     let arquivosLidos = 0;
@@ -847,9 +847,9 @@ async function enviar() {
                     localStorage.setItem('boss_active_repo', projetoAtivo);
                     atualizarDisplayProjeto();
                     resposta = resposta.replace(switchM[0], '').trim();
-                    if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**.`;
+                    if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**. Baixando árvore de arquivos...`;
                     
-                    // Busca a memória do Firebase para o novo projeto
+                    await carregarArvoreProjeto();
                     carregarMemoriaFirebase();
                 } else {
                     resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Repositório "${novoProjeto}" não encontrado.)*`;
