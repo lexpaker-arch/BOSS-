@@ -73,12 +73,17 @@
     .msg.user::before { content: "USR > "; color: var(--text-muted); font-weight: bold; }
     .msg.thinking { color: var(--accent); font-style: italic; border-left-color: var(--accent); opacity: 0.7; align-self: flex-start; }
     
-    /* FEEDBACK BUTTONS (AVALIAÇÃO) */
     .feedback-box { display: flex; gap: 5px; margin-top: 5px; margin-left: 10px; opacity: 0.3; transition: 0.2s; }
     .msg-wrapper:hover .feedback-box { opacity: 1; }
     .btn-feedback { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; transition: 0.2s; }
     .btn-feedback:hover { border-color: var(--accent); color: var(--accent); }
     .btn-feedback.bad:hover { border-color: #ef4444; color: #ef4444; }
+
+    /* RESTAURADO: ESTILOS DE MÍDIA */
+    .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; display: block; }
+    .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+    .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .mermaid-container { background: var(--bg-dark); padding: 15px; border-radius: 6px; border: 1px solid var(--accent); margin-top: 10px; text-align: center; overflow-x: auto; }
 
     footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: center; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
     .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; }
@@ -140,9 +145,10 @@
             </div>
             
             <div class="widget" style="flex:1; border-color: var(--accent);">
-                <div class="widget-title" style="color: var(--accent);">MEMÓRIA DE DECISÕES</div>
-                <div class="widget-sub"><span>Fatos Salvos:</span> <span id="metric-memoria">0</span></div>
-                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:var(--accent); color:var(--accent);" onclick="mostrarMemoria()">VER MEMÓRIA</button>
+                <div class="widget-title" style="color: var(--accent);">MEMÓRIA (LONGO PRAZO)</div>
+                <div class="widget-sub"><span>Fatos Fixos:</span> <span id="metric-memoria">0</span></div>
+                <div class="widget-sub"><span>Mensagens (RAG):</span> <span id="metric-history">0</span></div>
+                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:var(--accent); color:var(--accent);" onclick="mostrarMemoria()">AUDITAR MEMÓRIA</button>
             </div>
 
             <div class="widget"><div class="widget-title">LATÊNCIA (API)</div><div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div></div>
@@ -208,9 +214,16 @@
 
 <div class="modal-overlay" id="modalMemoria">
     <div class="modal-box">
-        <div class="modal-header"><span>MEMÓRIA DE DECISÕES</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
+        <div class="modal-header"><span>MEMÓRIA DE LONGO PRAZO</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
         <div class="modal-body">
-            <div id="memoriaList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:var(--text-main); line-height:1.8;"></div>
+            <div style="width:100%; margin-bottom:15px;">
+                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">FATOS TÉCNICOS (MEMORIA_ADD)</h4>
+                <div id="memoriaDecisoesList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:var(--text-main); line-height:1.8;"></div>
+            </div>
+            <div style="width:100%; border-top: 1px solid #333; padding-top:15px;">
+                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">RESUMO DO HISTÓRICO RECENTE</h4>
+                <div id="memoriaHistoricoList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:#888; line-height:1.8; max-height:200px; overflow-y:auto;"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -232,8 +245,13 @@
     </div>
 </div>
 
+<!-- RESTAURADO: BIBLIOTECA MERMAID -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+
 <script>
+mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
@@ -247,10 +265,12 @@ let vozPitch = parseFloat(localStorage.getItem('boss_pitch')) || 1.05;
 let temaAtual = localStorage.getItem('boss_theme') || 'theme-cyan';
 let gitUser = localStorage.getItem('boss_git_user') || 'lexpaker-arch';
 let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
-let historico = JSON.parse(localStorage.getItem('boss_historico')) || [];
-let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
+
+let historicoCompleto = JSON.parse(localStorage.getItem('boss_historico_full')) || []; 
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
+let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let logErros = JSON.parse(localStorage.getItem('boss_erros')) || [];
+
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
 
@@ -280,6 +300,7 @@ function atualizarHUD() {
     document.getElementById('metric-repos').textContent = listaRepos.length;
     document.getElementById('metric-files').textContent = Object.keys(fileCache).length;
     document.getElementById('metric-memoria').textContent = memoriaDecisoes.length;
+    document.getElementById('metric-history').textContent = historicoCompleto.length;
     document.getElementById('metric-latency').textContent = metricLatency + ' ms';
     localStorage.setItem('metric_tokens', metricTokens);
     localStorage.setItem('metric_latency', metricLatency);
@@ -315,17 +336,16 @@ function salvarGitUser() { gitUser = document.getElementById('gitUserInput').val
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
 function mostrarMemoria() {
-    const list = document.getElementById('memoriaList');
-    if (memoriaDecisoes.length === 0) {
-        list.innerHTML = "Nenhuma decisão ou fato salvo ainda.";
-    } else {
-        list.innerHTML = memoriaDecisoes.map((m, i) => `
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;">
-                <span>${m}</span>
-                <button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button>
-            </div>
-        `).join('');
+    const listD = document.getElementById('memoriaDecisoesList');
+    if (memoriaDecisoes.length === 0) { listD.innerHTML = "Nenhum fato salvo."; }
+    else {
+        listD.innerHTML = memoriaDecisoes.map((m, i) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${m}</span><button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('');
     }
+    
+    const listH = document.getElementById('memoriaHistoricoList');
+    const recent = historicoCompleto.slice(-10); 
+    listH.innerHTML = recent.map(m => `<div><b>${m.role === 'user' ? 'VOCÊ' : 'BOSS'}:</b> ${m.content.substring(0,80)}...</div>`).join('');
+    
     document.getElementById('modalMemoria').classList.add('open');
 }
 
@@ -350,7 +370,6 @@ function addMsg(tipo, texto, salvar = true) {
     else { d.textContent = texto; }
     w.appendChild(d); 
     
-    // SE FOR O BOSS, ADICIONA O FEEDBACK (AVALIAÇÃO)
     if (tipo === 'boss') {
         const feedback = document.createElement('div');
         feedback.className = 'feedback-box';
@@ -360,56 +379,77 @@ function addMsg(tipo, texto, salvar = true) {
     }
 
     chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
+    
     if (salvar && tipo !== 'thinking') {
-        historico.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto });
-        if (historico.length > 20) historico = historico.slice(-20);
-        localStorage.setItem('boss_historico', JSON.stringify(historico));
+        historicoCompleto.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
+        if (historicoCompleto.length > 2000) historicoCompleto = historicoCompleto.slice(-2000);
+        localStorage.setItem('boss_historico_full', JSON.stringify(historicoCompleto));
+        atualizarHUD();
     }
     return { wrapper: w, div: d };
 }
 
-// AVALIAÇÃO DE RESPOSTA (PONTO 3)
 function avaliar(btn, resposta, isBom) {
     const parent = btn.parentElement;
     if (isBom) {
-        parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado como correto.</span>';
+        parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>';
     } else {
-        parent.innerHTML = '<span style="color:#ef4444; font-size:10px;">❌ Erro registrado no log.</span>';
+        parent.innerHTML = '<span style="color:#ef4444; font-size:10px;">❌ Erro logado.</span>';
         logErros.push({ erro: resposta, data: Date.now() });
         localStorage.setItem('boss_erros', JSON.stringify(logErros));
-        addLog("Erro registrado para melhoria contínua.");
+        addLog("Erro registrado.");
     }
 }
 
-// ==========================================
-// PROMPT DO SISTEMA (COM MEMÓRIA E SEGURANÇA)
-// ==========================================
-function buildSystemPrompt(isConversational = false) {
+function buscarMemoriaAntiga(termo) {
+    if (historicoCompleto.length < 5) return "";
+    
+    const passado = historicoCompleto.slice(0, -10);
+    const palavras = termo.toLowerCase().split(' ').filter(p => p.length > 3); 
+    if (palavras.length === 0) return "";
+
+    let resultados = [];
+    passado.forEach(msg => {
+        const txt = msg.content.toLowerCase();
+        if (palavras.some(p => txt.includes(p))) {
+            resultados.push(`[${msg.role === 'user' ? 'VOCÊ' : 'BOSS'} DISSE]: ${msg.content.substring(0, 200)}...`);
+        }
+    });
+
+    if (resultados.length === 0) return "";
+    return resultados.slice(-3).join('\n---\n');
+}
+
+function buildSystemPrompt(isConversational = false, memoriaRag = "") {
+    // RESTAURADO: FERRAMENTAS DE MÍDIA E PROJETO
     const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. NUNCA chame o usuário de "Chefe", chame de ${userRole}.
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
 **O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
 
-=== MEMÓRIA DE DECISÕES (LONGO PRAZO - FATOS IMUTÁVEIS) ===
-${memoriaDecisoes.length > 0 ? memoriaDecisoes.map(m => `- ${m}`).join('\n') : 'Nenhum fato salvo ainda.'}
+=== MEMÓRIA DE DECISÕES (FATOS IMUTÁVEIS) ===
+${memoriaDecisoes.length > 0 ? memoriaDecisoes.map(m => `- ${m}`).join('\n') : 'Nenhum fato salvo.'}
 
-=== AGENDA (TAREFAS DE CURTO PRAZO) ===
+=== MEMÓRIA DE CONVERSAS PASSADAS (RAG) ===
+${memoriaRag ? `Eu encontrei estas conversas antigas que podem ser relevantes:\n${memoriaRag}` : 'Nenhuma conversa relevante encontrada.'}
+
+=== AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
-=== REGRAS DE SEGURANÇA (O QUE VOCÊ NÃO PODE FAZER) ===
-1. NUNCA apague arquivos ou repositórios no GitHub sem confirmação dupla.
-2. NUNCA gere comandos destrutivos no terminal (rm -rf).
-3. NUNCA invente informações. Se não souber, use as ferramentas.
-4. NUNCA pule etapas de diagnóstico (se falta medição, peça).
+=== REGRAS DE SEGURANÇA ===
+1. NUNCA apague arquivos no GitHub.
+2. NUNCA invente informações.
+3. NUNCA pule etapas de diagnóstico.
 
-=== REGRAS DE AÇÃO (TOOLS E FALLBACK) ===
+=== FERRAMENTAS DISPONÍVEIS ===
 1. [MUDAR_PROJETO: repo] - Muda o foco.
-2. [GITHUB_FIND: termo] - Busca no projeto.
-3. [GITHUB_READ: arquivo.ext] - Lê um arquivo.
-   *REGRA DE FALLBACK:* Se o GITHUB_FIND falhar, tente o GITHUB_READ em 'README.md' ou 'build.gradle.kts' para testar o acesso antes de dar erro.
-4. [MEMORIA_ADD: fato] - Salva um fato técnico (ex: "O pino 16 é B+").
-5. [MEMORIA_DEL: termo] - Apaga um fato errado.
-6. [AGENDA_ADD: tarefa] / [AGENDA_DEL: termo] - Gereciamento de tarefas.
-7. Sempre adicione [VOZ: resumo curto] no final.`;
+2. [GITHUB_FIND: termo] / [GITHUB_READ: arquivo] - Acesso ao código.
+3. [MEMORIA_ADD: fato] / [MEMORIA_DEL: termo] - Salva/apaga fato.
+4. [AGENDA_ADD: tarefa] / [AGENDA_DEL: termo] - Tarefas.
+5. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
+6. [IMAGE_SEARCH: termo] - Busca imagem na web.
+7. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
+8. [PROJECT: código_mermaid] - Cria diagramas técnicos e esquemas elétricos.
+9. Sempre adicione [VOZ: resumo curto] no final.`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -447,35 +487,31 @@ async function chamarIA(messages, temp) {
 
 async function mapearRepositorio() {
     toggleConfig();
-    addMsg('boss', '⚙ Iniciando sincronização segura do GitHub. Aguarde enquanto indexo os arquivos...');
+    addMsg('boss', '⚙ Iniciando sincronização segura do GitHub...');
     document.getElementById('metric-index-status').textContent = 'Baixando lista de repos...';
     document.getElementById('metric-index-status').style.color = '#F1C40F';
     
     listaRepos = []; cacheTrees = {};
     try {
         const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&sort=updated`);
-        if(!res.ok) throw new Error("Usuário não encontrado ou limite de API atingido.");
+        if(!res.ok) throw new Error("Usuário não encontrado.");
         const data = await res.json();
         
         for (let repo of data) {
             listaRepos.push(repo.full_name);
             document.getElementById('metric-index-status').textContent = `Lendo ${repo.name}...`;
-            
             try {
                 const treeData = await fetch(`${WORKER_URL}/github-tree?repo=${repo.full_name}&_=${Date.now()}`).then(r => r.json());
                 if(treeData.tree) {
                     cacheTrees[repo.full_name] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
-                    addLog(`Indexado: ${repo.name} (${cacheTrees[repo.full_name].length} arquivos)`);
                 }
-            } catch(e) {
-                addLog(`Falha na árvore de: ${repo.name}`);
-            }
+            } catch(e) {}
         }
         
         document.getElementById('metric-index-status').textContent = 'Concluído!';
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
-        addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios. Agora eu tenho o mapa exato de todos os arquivos.`);
+        addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios.`);
     } catch(e) {
         document.getElementById('metric-index-status').textContent = 'Erro';
         document.getElementById('metric-index-status').style.color = '#ef4444';
@@ -559,8 +595,11 @@ async function enviar() {
         }
         if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "Analise."}`;
 
+        const memoriaRag = buscarMemoriaAntiga(texto);
+        if (memoriaRag) addLog("Memória antiga recuperada (RAG).");
+
         const isConversational = ['acha', 'pensa', 'opinião'].some(p => texto.toLowerCase().includes(p));
-        let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational) }, ...historico.slice(-6)];
+        let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational, memoriaRag) }, ...historicoCompleto.slice(-6)];
         if (userContent) msgs.push({ role: 'user', content: userContent });
 
         let continuar = true, tentativas = 0, respostaFinal = "";
@@ -571,7 +610,6 @@ async function enviar() {
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
-            // MUDAR PROJETO
             const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
             if (switchM) {
                 const novoProjeto = switchM[1].trim();
@@ -583,11 +621,10 @@ async function enviar() {
                     resposta = resposta.replace(switchM[0], '').trim();
                     if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**.`;
                 } else {
-                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Não encontrei o repositório "${novoProjeto}".)*`;
+                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Repositório "${novoProjeto}" não encontrado.)*`;
                 }
             }
 
-            // BUSCA GITHUB
             const findM = [...resposta.matchAll(/\[GITHUB_FIND:\s*(.*?)\]/g)];
             if (findM.length > 0) {
                 let allRes = "";
@@ -597,15 +634,14 @@ async function enviar() {
                     allRes += `\n${await buscarZeroToken(termo)}`;
                 }
                 msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Busca concluída. Aqui estão os trechos:\n${allRes}\n\nAgora responda.` });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Trechos:\n${allRes}\n\nResponda.` });
                 continue;
             }
 
-            // LEITURA GITHUB
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
                 if (!projetoAtivo) {
-                    resposta = "Não posso ler arquivos sem um projeto ativo.";
+                    resposta = "Nenhum projeto ativo.";
                 } else {
                     let all = ""; 
                     for (const m of readM) {
@@ -627,14 +663,19 @@ async function enviar() {
         let txtFalar = vozM ? vozM[1] : respostaFinal;
         if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
 
-        // TAGS DE MEMÓRIA (NOVO)
+        // RESTAURADO: EXTRAÇÃO DE TAGS DE MÍDIA
+        const mImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
+        const mVid = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
+        const mMer = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
+        const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
+        const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
+
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
             memoriaDecisoes.push(memAdd[1].trim());
             localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
             respostaFinal = respostaFinal.replace(memAdd[0], '').trim();
             atualizarHUD();
-            addLog(`Memória: "${memAdd[1].trim()}" salva.`);
         }
         const memDel = respostaFinal.match(/\[MEMORIA_DEL:\s*([\s\S]*?)\]/);
         if (memDel) {
@@ -643,10 +684,8 @@ async function enviar() {
             localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
             respostaFinal = respostaFinal.replace(memDel[0], '').trim();
             atualizarHUD();
-            addLog(`Memória: "${termo}" apagada.`);
         }
 
-        // TAGS DE AGENDA
         const addAgenda = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
         if (addAgenda) {
             agendaInterna.push(addAgenda[1].trim());
@@ -662,8 +701,55 @@ async function enviar() {
         }
 
         t.wrapper.remove();
-        addMsg('boss', respostaFinal);
+
+        // RESTAURADO: TEXTO E RENDERIZAÇÃO
+        let limpo = respostaFinal
+            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT):[\s\S]*?\]/g, '')
+            .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
+        if (limpo) { addMsg('boss', limpo); }
+        
         falarTexto(txtFalar);
+
+        if (mGen) {
+            const w = document.createElement('div'); w.style.padding = '10px';
+            w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
+            document.getElementById('chat').appendChild(w);
+            fetch(`${WORKER_URL}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: mGen[1] }) })
+              .then(r=>r.json()).then(d => { if(d.image) w.innerHTML = `<img src="${d.image}" class="msg-img">`; else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha na imagem ]</div>`; });
+        }
+
+        if (mProj || mMer) {
+            const mCode = mProj ? mProj[1] : mMer[1];
+            const w = document.createElement('div'); w.className = 'mermaid-container';
+            w.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
+            document.getElementById('chat').appendChild(w);
+            mermaid.run({ nodes: [w.querySelector('.mermaid')] });
+        }
+
+        if (mImg) {
+            const w = document.createElement('div'); w.style.padding='10px';
+            w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando imagem... ]</div>`;
+            document.getElementById('chat').appendChild(w);
+            fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(mImg[1])}`).then(r=>r.json()).then(d => {
+                if(d.url) { const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>';}; w.innerHTML=''; w.appendChild(i); }
+                else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Não encontrada ]</div>`;
+            });
+        }
+
+        if (mVid) {
+            const w = document.createElement('div'); w.style.padding='10px';
+            w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando vídeo... ]</div>`;
+            document.getElementById('chat').appendChild(w);
+            fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(mVid[1])}`).then(r=>r.json()).then(d => {
+                if(d.videos && d.videos.length > 0) {
+                    const vid = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
+                    if(vid) w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
+                    else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
+                }
+            });
+        }
+
+        document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
 
     } catch (e) {
         t.wrapper.remove(); addMsg('error', `Deu ruim: ${e.message}`);
@@ -672,7 +758,7 @@ async function enviar() {
     }
 }
 
-// UTILITÁRIOS
+// UTILITÁRIOS (VOZ, CANETA, ETC)
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
 function abrirAnotacao() { if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); document.getElementById('modalDraw').classList.add('open'); setTimeout(() => { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); }; img.src = imagemAnexadaBase64; }, 150); }
 function bindDrawEvents(cv) { const ctx = cv.getContext('2d'); const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); }; const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } }; cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; }
@@ -681,7 +767,7 @@ function undoDraw() { const cv = document.getElementById('drawCanvas'); if (draw
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
 function falarTexto(t) { if (!vozAtiva || !('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' ')); u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch; if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } window.speechSynthesis.speak(u); }
-function testarVoz() { falarTexto("Sistemas de voz do BOSS operando."); }
+function testarVoz() { falarTexto("Sistemas de voz operando."); }
 
 let reconhecimento;
 function iniciarEscuta() { if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte."); reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); reconhecimento.lang = 'pt-BR'; reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; }; reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); }; reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; }; reconhecimento.start(); }
@@ -700,7 +786,7 @@ function lerArquivo(event) {
     event.target.value = '';
 }
 
-function limparHistorico() { if(confirm("Apagar TODO o histórico, memórias e agenda locais?")) { localStorage.clear(); location.reload(); } }
+function limparHistorico() { if(confirm("Apagar TODO o histórico e memórias locais?")) { localStorage.clear(); location.reload(); } }
 
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
@@ -713,5 +799,4 @@ mapearRepositorio();
 </script>
 </body>
 </html>
-
 
