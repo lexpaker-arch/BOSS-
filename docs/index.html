@@ -307,7 +307,6 @@ let temaAtual = localStorage.getItem('boss_theme') || 'theme-cyan';
 let gitUser = localStorage.getItem('boss_git_user') || 'lexpaker-arch';
 let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
 
-// HISTÓRICO SEPARADO POR PROJETO (CORREÇÃO PONTO 2)
 let todosOsHistoricos = JSON.parse(localStorage.getItem('boss_historico_full')) || {};
 let historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
 
@@ -414,9 +413,8 @@ function formatarTexto(texto) {
     return texto.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>').replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>').replace(/\n/g, '<br>');
 }
 
-// EFEITO DE DIGITAÇÃO RESTAURADO
 async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
-    const isTypewriterOn = true; // Podemos adicionar um toggle no menu se quiser
+    const isTypewriterOn = true;
     if (!isTypewriterOn) {
         elemento.innerHTML = formatarTexto(textoFinal);
         elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
@@ -621,10 +619,10 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ==========================================
-// PROMPT BLINDADO (v6.0 - Auditoria Sênior)
+// PROMPT BLINDADO (v6.1 - Auditoria Sênior)
 // ==========================================
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
-    const PROMPT_VERSION = "v6.0 - Auditoria Sênior";
+    const PROMPT_VERSION = "v6.1 - Auditoria Sênior";
     
     let memFirebaseStr = "";
     if (dbMemory) {
@@ -653,20 +651,24 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
 === REGRAS DE AÇÃO E FALLBACK ===
 1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir explicitamente.
-2. [GITHUB_FIND: termo] - Busca. Se falhar ou vier vazio, tente [GITHUB_READ: README.md]. Se falhar de novo, PARE e peça ajuda.
-3. [GITHUB_READ: arquivo] - Lê arquivo.
-4. [GITHUB_CREATE: caminho | conteúdo] - Cria/edita arquivo.
-5. [MEMORIA_ADD: chave | valor] - Salva um fato técnico (ex: [MEMORIA_ADD: senha_hc05 | 1234]).
-6. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
-7. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
-8. [IMAGE_SEARCH: termo] - Busca imagem real na web.
-9. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
-10. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
+2. [GITHUB_FIND: termo] - Busca. 
+   - SE falhar ou vier vazio: tente [GITHUB_READ: README.md]. 
+   - SE o README não existir: use [GITHUB_TREE] para listar os arquivos disponíveis e tentar achar o alvo.
+3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo para você se orientar.
+4. [GITHUB_READ: arquivo] - Lê arquivo.
+5. [GITHUB_CREATE: caminho | conteúdo] - Cria/edita arquivo. O sistema mostrará o Diff antes.
+6. [MEMORIA_ADD: chave | valor] - Salva um fato técnico.
+7. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
+8. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
+9. [IMAGE_SEARCH: termo] - Busca imagem real.
+10. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
+11. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
 
 === REGRAS DE VOZ ===
-- Você DEVE sempre terminar a resposta com [VOZ: resumo curto em até 120 caracteres].
-- Se você não usar a tag, o sistema lerá a resposta inteira e ficará longo demais.
+- Você DEVE terminar a resposta com [VOZ: resumo curto em até 180 caracteres].
 
+=== ONBOARDING ===
+- Se a memória do Firebase e o histórico recente estiverem vazios (ou seja, a primeira vez que você fala com o Patrão neste projeto), dê as boas-vindas, avise que a memória está em branco e pergunte qual é o contexto inicial ou qual código ele quer que você analise.
 `;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
@@ -752,7 +754,6 @@ async function carregarArvoreProjeto() {
     }
 }
 
-// CORREÇÃO DE SEGURANÇA (Blacklist e Máscara)
 async function fetchGithubFile(repo, path) {
     const pathLower = path.toLowerCase();
     const blacklist = ['.env', 'secrets.properties', '.keystore', '.jks', 'id_rsa', 'id_dsa'];
@@ -762,7 +763,7 @@ async function fetchGithubFile(repo, path) {
 
     const key = `${repo}/${path}`;
     if (fileCache[key]) {
-        return fileCache[key].masked; // Retorna o mascarado para a IA
+        return fileCache[key].masked; 
     }
     try {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
@@ -860,7 +861,7 @@ async function confirmarCommit() {
     let { repo, path, content } = pendingCommit;
     pendingCommit = null;
     
-    path = path.replace(/^\/+/, ''); // Remove barras do path
+    path = path.replace(/^\/+/, ''); 
 
     addLog(`Commitando ${path} em ${repo}...`);
     try {
@@ -944,7 +945,6 @@ async function enviar() {
                     resposta = resposta.replace(switchM[0], '').trim();
                     if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**. Baixando árvore de arquivos...`;
                     
-                    // CARREGA O HISTÓRICO DO NOVO PROJETO
                     historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
                     
                     await carregarArvoreProjeto();
@@ -974,6 +974,18 @@ async function enviar() {
                 }
                 msgs.push({ role: 'assistant', content: resposta });
                 msgs.push({ role: 'user', content: `[SISTEMA]: Trechos:\n${allRes}\n\nResponda.` });
+                continue;
+            }
+
+            // TRATAMENTO DA ÁRVORE
+            const treeM = resposta.match(/\[GITHUB_TREE\]/);
+            if (treeM) {
+                t.div.textContent = "Lendo estrutura de arquivos...";
+                await carregarArvoreProjeto();
+                const treeList = cacheTrees[projetoAtivo] || [];
+                const resumoTree = treeList.slice(0, 30).join('\n');
+                msgs.push({ role: 'assistant', content: resposta });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Estrutura de arquivos (primeiros 30):\n${resumoTree}\n\nAgora escolha um arquivo e peça GITHUB_READ.` });
                 continue;
             }
 
@@ -1041,7 +1053,7 @@ async function enviar() {
         t.wrapper.remove();
 
         let limpo = respostaFinal
-            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE):[\s\S]*?\]/g, '')
+            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE|GITHUB_TREE):[\s\S]*?\]/g, '')
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
             
         if (limpo) { 
@@ -1091,10 +1103,9 @@ async function enviar() {
         }
 
         if (mGit) {
-            let path = mGit[1].trim().replace(/^\/+/, ''); // Remove barras
+            let path = mGit[1].trim().replace(/^\/+/, ''); 
             const content = mGit[2].trim();
             
-            // Verifica se a IA está tentando salvar "***" 
             if (content.includes('***') && content.includes('Password')) {
                 addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***). O arquivo original no GitHub seria corrompido. Altere a senha manualmente ou peça ao BOSS para não alterar essa linha.`);
                 return;
@@ -1104,7 +1115,6 @@ async function enviar() {
             const existingMasked = await fetchGithubFile(projetoAtivo, path);
             const oldTextMasked = existingMasked.startsWith('[ERRO') ? '' : existingMasked;
             
-            // Guarda o repositório atual no pendingCommit
             pendingCommit = { repo: projetoAtivo, path, content, oldTextMasked };
             mostrarDiff(path, oldTextMasked, content);
         }
@@ -1154,8 +1164,25 @@ if (window.speechSynthesis) {
         vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
     };
 }
-mapearRepositorio();
+
+// INICIALIZAÇÃO E ONBOARDING (v6.1)
+window.onload = async () => {
+    mapearRepositorio();
+    if (projetoAtivo) {
+        await carregarMemoriaFirebase();
+    }
+    
+    setTimeout(() => {
+        if (historicoCompleto.length === 0 && !dbMemory) {
+            const msg = `Bom dia, Patrão. Sincronização concluída. 
+Não encontrei nenhuma memória no Firebase para o projeto **${projetoAtivo.split('/')[1] || 'Atual'}**. 
+
+Como este é o nosso primeiro contato neste projeto, qual é o contexto inicial? O que vamos fazer hoje?`;
+            addMsg('boss', msg);
+            falarTexto("Sistemas online. Memória vazia para este projeto. Qual o contexto inicial?");
+        }
+    }, 2000);
+};
 </script>
 </body>
 </html>
-
