@@ -292,7 +292,7 @@
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
-// ✅ CORREÇÃO 1 e 2: MODELOS ATUALIZADOS
+const PROMPT_VERSION = "v6.3 - Blindagem Total";
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
@@ -314,6 +314,7 @@ let historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let logErros = JSON.parse(localStorage.getItem('boss_erros')) || [];
+let logAcertos = JSON.parse(localStorage.getItem('boss_acertos')) || [];
 let dbMemory = null;
 
 let imagemAnexadaBase64 = '';
@@ -387,15 +388,19 @@ function salvarGroqKey() { const k = document.getElementById('groqKeyInput').val
 function salvarGitUser() { gitUser = document.getElementById('gitUserInput').value.trim(); localStorage.setItem('boss_git_user', gitUser); alert('Usuário do GitHub salvo. Sincronizando...'); mapearRepositorio(); }
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
+function escapeHTML(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function mostrarMemoria() {
     const listD = document.getElementById('memoriaDecisoesList');
     if (memoriaDecisoes.length === 0) { listD.innerHTML = "Nenhum fato salvo."; }
     else {
-        listD.innerHTML = memoriaDecisoes.map((m, i) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${m}</span><button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('');
+        listD.innerHTML = memoriaDecisoes.map((m, i) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${escapeHTML(m)}</span><button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('');
     }
     const listH = document.getElementById('memoriaHistoricoList');
     if (dbMemory && dbMemory.diario_bordo) {
-        listH.innerHTML = `<div style="white-space:pre-wrap;">${dbMemory.diario_bordo}</div>`;
+        listH.innerHTML = `<div style="white-space:pre-wrap;">${escapeHTML(dbMemory.diario_bordo)}</div>`;
     } else {
         listH.innerHTML = "Nenhum Diário de Bordo salvo no Firebase para este projeto.";
     }
@@ -409,15 +414,25 @@ function apagarMemoria(index) {
     atualizarHUD();
 }
 
+// CORREÇÃO XSS: Escape antes de formatar
 function formatarTexto(texto) {
-    texto = texto.replace(/\b(Chefe|chefe)\b/g, userRole);
-    texto = texto.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => `<pre><code class="language-${lang||'text'}">${code.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>`);
-    return texto.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>').replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>').replace(/\n/g, '<br>');
+    let t = escapeHTML(texto); 
+    t = t.replace(/\b(Chefe|chefe)\b/g, userRole);
+    
+    t = t.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
+        return `<pre><code class="language-${lang||'text'}">${code}</code></pre>`;
+    });
+    
+    return t.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>')
+            .replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>')
+            .replace(/\n/g, '<br>');
 }
 
 async function efeitoDigitacao(elemento, textoFinal) {
-    // ✅ CORREÇÃO 11: Velocidade dinâmica para não demorar 30s em textos longos
-    const velocidade = Math.max(2, 3000 / textoFinal.length);
+    // Correção Divisão por Zero
+    const len = textoFinal.length;
+    if (len === 0) return;
+    const velocidade = Math.max(2, 3000 / len);
     
     elemento.innerHTML = formatarTexto(textoFinal);
     const chat = document.getElementById('chat');
@@ -474,7 +489,6 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
     
     w.appendChild(d); 
     
-    // ✅ CORREÇÃO 7: Fim do XSS no onclick. Uso de event listeners.
     if (tipo === 'boss') {
         const feedback = document.createElement('div');
         feedback.className = 'feedback-box';
@@ -508,7 +522,11 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
 
 function avaliar(btn, resposta, isBom) {
     const parent = btn.parentElement;
-    if (isBom) { parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>'; }
+    if (isBom) { 
+        parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>'; 
+        logAcertos.push({ acerto: resposta, data: Date.now() });
+        localStorage.setItem('boss_acertos', JSON.stringify(logAcertos));
+    }
     else {
         parent.innerHTML = '<span style="color:#ef4444; font-size:10px;">❌ Erro logado.</span>';
         logErros.push({ erro: resposta, data: Date.now() });
@@ -519,7 +537,10 @@ function avaliar(btn, resposta, isBom) {
 
 function buscarMemoriaAntiga(termo) {
     if (historicoCompleto.length < 5) return "";
-    const passado = historicoCompleto.slice(0, -10);
+    // Correção do slice(0,-10) em listas curtas
+    const limit = Math.max(0, historicoCompleto.length - 10);
+    const passado = historicoCompleto.slice(0, limit);
+    
     const palavras = termo.toLowerCase().split(' ').filter(p => p.length > 3); 
     if (palavras.length === 0) return "";
     let resultados = [];
@@ -620,7 +641,6 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'hidden') {
-        // ✅ CORREÇÃO 8: Debounce de 30s
         if (Date.now() - lastSaveTime > 30000) {
             forcarSalvarMemoria(); 
             lastSaveTime = Date.now();
@@ -629,15 +649,12 @@ document.addEventListener("visibilitychange", () => {
 });
 
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
-    const PROMPT_VERSION = "v6.2 - Auditoria Sênior";
-    
     let memFirebaseStr = "";
     if (dbMemory) {
         if (dbMemory.diario_bordo) memFirebaseStr += `- Diário de Bordo Anterior: ${dbMemory.diario_bordo}\n`;
         if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
     }
 
-    // ✅ CORREÇÃO 9: Ferramentas adicionadas ao Prompt
     const base = `Você é o BOSS, a inteligência de engenharia da EXODRIVE. O sistema tem 3 partes: o index.html (seu corpo/execução), o Prompt (seu cérebro/raciocínio) e o repo 'BOSS-' (sua memória). O usuário é o Patrão. NUNCA o chame de "Chefe".
 [VERSÃO DO PROMPT: ${PROMPT_VERSION}]
 
@@ -715,7 +732,6 @@ async function chamarIA(messages, temp) {
 }
 
 async function mapearRepositorio() {
-    // ✅ CORREÇÃO 5: Não abre o painel de config no boot
     addMsg('boss', '⚙ Sincronizando lista de repositórios. Aguarde...');
     document.getElementById('metric-index-status').textContent = 'Baixando repos...';
     document.getElementById('metric-index-status').style.color = '#F1C40F';
@@ -765,9 +781,10 @@ async function carregarArvoreProjeto() {
 
 async function fetchGithubFile(repo, path) {
     const pathLower = path.toLowerCase();
-    const blacklist = ['.env', 'secrets.properties', '.keystore', '.jks', 'id_rsa', 'id_dsa'];
-    if (blacklist.some(b => pathLower.includes(b))) {
-        return `[ERRO DE SEGURANÇA: O arquivo '${path}' é sensível e foi bloqueado pela política de segurança.]`;
+    const blacklistRegex = /(^|\/)(\.env|secrets\.properties|\.keystore|\.jks|id_rsa|id_dsa|credentials\.json|serviceAccount\.json|\.npmrc)$/i;
+    
+    if (blacklistRegex.test(pathLower)) {
+        return `[ERRO DE SEGURANÇA: O arquivo '${path}' é sensível e foi bloqueado.]`;
     }
 
     const key = `${repo}/${path}`;
@@ -778,10 +795,12 @@ async function fetchGithubFile(repo, path) {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.content) { 
-            let txt = decodeURIComponent(escape(atob(data.content))); 
+            // Correção do deprecated escape()
+            const bytes = Uint8Array.from(atob(data.content), c => c.charCodeAt(0));
+            let txt = new TextDecoder('utf-8').decode(bytes); 
             
-            let masked = txt.replace(/(storePassword|keyPassword|password|senha)\s*=\s*["']([^"']+)["']/gi, '$1 = "***"');
-            masked = masked.replace(/(password|senha)\s*:\s*["']([^"']+)["']/gi, '$1: "***"');
+            // Máscara mais robusta
+            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|apiKey)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
             
             fileCache[key] = { original: txt, masked: masked };
             atualizarHUD(); 
@@ -797,7 +816,7 @@ async function buscarZeroToken(termo) {
     await carregarArvoreProjeto();
     
     const tree = cacheTrees[projetoAtivo];
-    if(!tree) return `(A árvore do projeto falhou. O GitHub bloqueou o acesso. Tente pedir um arquivo específico com GITHUB_READ).`;
+    if(!tree) return `(A árvore do projeto falhou. Tente pedir um arquivo específico com GITHUB_READ).`;
 
     let resultados = "";
     let arquivosLidos = 0;
@@ -857,7 +876,7 @@ function mostrarDiff(path, oldText, newText) {
     const d = diffLines(oldText, newText);
     let html = '';
     d.slice(0, 500).forEach(x => {
-        html += `<div class="diff-line ${x.t}">${(x.l||' ').replace(/</g,'&lt;').replace(/>/g,'&gt;').substring(0, 300)}</div>`;
+        html += `<div class="diff-line ${x.t}">${escapeHTML(x.l||' ').substring(0, 300)}</div>`;
     });
     if (d.length > 500) html += `<div style="color:#6A7A8A; padding:5px;">... (${d.length-500} linhas omitidas)</div>`;
     document.getElementById('diffView').innerHTML = html;
@@ -956,6 +975,7 @@ async function enviar() {
                     if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**. Baixando árvore de arquivos...`;
                     
                     historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
+                    fileCache = {}; // Limpa cache de arquivos ao trocar de projeto
                     
                     await carregarArvoreProjeto();
                     carregarMemoriaFirebase();
@@ -1019,11 +1039,11 @@ async function enviar() {
             respostaFinal = resposta; continuar = false;
         }
         
-        // ✅ CORREÇÃO 3: Loop vazio tratado
         if (!respostaFinal) {
             respostaFinal = "⚠️ Limite de iterações atingido sem resposta final.";
         }
 
+        // Correção da extração de voz e GitHub Create com regex robusta
         const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
         let txtFalar = vozM ? vozM[1] : respostaFinal;
         if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
@@ -1034,8 +1054,8 @@ async function enviar() {
         const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
         
-        // ✅ CORREÇÃO 4: Regex do GitHub Create robusto
-        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*)\]$/);
+        // Regex captura tudo até o final do bloco, mesmo que tenha ]
+        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)(?:\]\s*$|$)/);
 
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
@@ -1104,9 +1124,11 @@ async function enviar() {
             w.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
             document.getElementById('chat').appendChild(w);
             
-            // ✅ CORREÇÃO 12: Try/catch no Mermaid
             try {
-                mermaid.run({ nodes: [w.querySelector('.mermaid')] });
+                // Correção: usar .catch() pois mermaid.run retorna Promise
+                mermaid.run({ nodes: [w.querySelector('.mermaid')] }).catch(e => {
+                    w.innerHTML += `<div style="color:#E74C3C; font-size:12px;">[ Erro no diagrama Mermaid ]</div>`;
+                });
                 setTimeout(() => addMsg('boss', `📊 **[SISTEMA]:** Diagrama renderizado com sucesso.`), 100);
             } catch(e) {
                 w.innerHTML += `<div style="color:#E74C3C; font-size:12px;">[ Erro no diagrama Mermaid ]</div>`;
@@ -1146,7 +1168,7 @@ async function enviar() {
             let path = mGit[1].trim().replace(/^\/+/, ''); 
             const content = mGit[2].trim();
             
-            if (content.includes('***') && content.includes('Password')) {
+            if (content.toLowerCase().includes('***') && content.toLowerCase().includes('password')) {
                 addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***). O arquivo original no GitHub seria corrompido. Altere a senha manualmente ou peça ao BOSS para não alterar essa linha.`);
                 return;
             }
@@ -1169,13 +1191,31 @@ async function enviar() {
 }
 
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
-function abrirAnotacao() { if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); document.getElementById('modalDraw').classList.add('open'); setTimeout(() => { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); }; img.src = imagemAnexadaBase64; }, 150); }
-function bindDrawEvents(cv) { const ctx = cv.getContext('2d'); const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); }; const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } }; cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; }
+function abrirAnotacao() { 
+    if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); 
+    document.getElementById('modalDraw').classList.add('open'); 
+    const cv = document.getElementById('drawCanvas'); 
+    const img = new Image(); 
+    img.onload = () => { 
+        cv.width = img.width; cv.height = img.height; 
+        const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); 
+        drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; 
+        bindDrawEvents(cv); 
+    }; 
+    img.src = imagemAnexadaBase64; 
+}
+function bindDrawEvents(cv) { 
+    const ctx = cv.getContext('2d'); 
+    const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; 
+    const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if(drawSnapshots.length > 20) drawSnapshots.shift(); }; 
+    const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; 
+    const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if(drawSnapshots.length > 20) drawSnapshots.shift(); } }; 
+    cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; 
+}
 function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-tool').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-// ✅ CORREÇÃO 10: Filtro de voz
 function falarTexto(t) { 
     if (!vozAtiva || !('speechSynthesis' in window)) return; 
     window.speechSynthesis.cancel(); 
@@ -1191,10 +1231,29 @@ function falarTexto(t) {
 function testarVoz() { falarTexto("Sistemas de voz operando."); }
 
 let reconhecimento;
-function iniciarEscuta() { if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte."); reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); reconhecimento.lang = 'pt-BR'; reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; }; reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; enviar(); }; reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; }; reconhecimento.start(); }
+function iniciarEscuta() { 
+    if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte."); 
+    reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); 
+    reconhecimento.lang = 'pt-BR'; 
+    reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; }; 
+    reconhecimento.onresult = (e) => { 
+        document.getElementById('input').value = e.results[0][0].transcript; 
+        reconhecimento.stop(); // Força a parada para não duplicar
+        enviar(); 
+    }; 
+    reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; }; 
+    reconhecimento.start(); 
+}
 
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
+    // Correção: Bloquear SVG por segurança
+    if (file.type === "image/svg+xml") {
+        alert("Arquivos SVG não são permitidos por questões de segurança.");
+        event.target.value = '';
+        return;
+    }
+
     if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const MW = 800, sc = MW / img.width; canvas.width = MW; canvas.height = img.height * sc; canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.8); addMsg('user', `[Imagem anexada]`); document.getElementById('btnDraw').style.display = 'flex'; }; img.src = e.target.result; };
@@ -1211,13 +1270,13 @@ function lerArquivo(event) {
     event.target.value = '';
 }
 
-// ✅ CORREÇÃO 6: clear() específico
 function limparHistorico() { 
     if(confirm("Apagar histórico de conversas, memórias e agenda locais?")) { 
         localStorage.removeItem('boss_historico_full');
         localStorage.removeItem('boss_memoria_decisoes');
         localStorage.removeItem('boss_agenda_interna');
         localStorage.removeItem('boss_erros');
+        localStorage.removeItem('boss_acertos');
         location.reload(); 
     } 
 }
@@ -1225,12 +1284,13 @@ function limparHistorico() {
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
         const s = document.getElementById('voiceSelect');
+        s.innerHTML = '<option value="">Padrão do navegador</option>'; // Limpa antes de adicionar
         const vs = window.speechSynthesis.getVoices().filter(v => v.lang.includes('pt'));
         vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
     };
 }
 
-window.onload = async () => {
+document.addEventListener('DOMContentLoaded', async () => {
     mapearRepositorio();
     if (projetoAtivo) {
         await carregarMemoriaFirebase();
@@ -1246,7 +1306,7 @@ Como este é o nosso primeiro contato neste projeto, qual é o contexto inicial?
             falarTexto("Sistemas online. Memória vazia para este projeto. Qual o contexto inicial?");
         }
     }, 2000);
-};
+});
 </script>
 </body>
 </html>
