@@ -79,13 +79,11 @@
     .btn-feedback:hover { border-color: var(--accent); color: var(--accent); }
     .btn-feedback.bad:hover { border-color: #ef4444; color: #ef4444; }
 
-    /* MÍDIA */
     .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; display: block; }
     .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .mermaid-container { background: var(--bg-dark); padding: 15px; border-radius: 6px; border: 1px solid var(--accent); margin-top: 10px; text-align: center; overflow-x: auto; }
 
-    /* DIFF MODAL */
     .diff-view { font-family: var(--font-mono); font-size: 12px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; max-height: 300px; overflow-y: auto; padding: 10px; width: 100%; text-align: left;}
     .diff-line { white-space: pre-wrap; padding: 2px 4px; border-radius: 2px; }
     .diff-line.add { background: rgba(39,174,96,0.15); color: #27AE60; }
@@ -151,11 +149,11 @@
                 <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:#F1C40F; color:#F1C40F;" onclick="mapearRepositorio()">SINCRONIZAR</button>
             </div>
             
-            <div class="widget" style="flex:1; border-color: var(--accent);">
-                <div class="widget-title" style="color: var(--accent);">MEMÓRIA (LONGO PRAZO)</div>
+            <div class="widget" style="flex:1; border-color: #ef4444;">
+                <div class="widget-title" style="color: #ef4444;">MEMÓRIA (FIREBASE)</div>
                 <div class="widget-sub"><span>Fatos Fixos:</span> <span id="metric-memoria">0</span></div>
                 <div class="widget-sub"><span>Mensagens (RAG):</span> <span id="metric-history">0</span></div>
-                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:var(--accent); color:var(--accent);" onclick="mostrarMemoria()">AUDITAR MEMÓRIA</button>
+                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:#ef4444; color:#ef4444;" onclick="forcarSalvarMemoria()">SALVAR SESSÃO AGORA</button>
             </div>
 
             <div class="widget"><div class="widget-title">LATÊNCIA (API)</div><div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div></div>
@@ -219,9 +217,10 @@
     </footer>
 </div>
 
+<!-- MODAIS OCULTOS AQUI (Memoria, Draw, Diff) -->
 <div class="modal-overlay" id="modalMemoria">
     <div class="modal-box">
-        <div class="modal-header"><span>MEMÓRIA DE LONGO PRAZO</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
+        <div class="modal-header"><span>MEMÓRIA DE LONGO PRAZO (FIREBASE)</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
         <div class="modal-body">
             <div style="width:100%; margin-bottom:15px;">
                 <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">FATOS TÉCNICOS (MEMORIA_ADD)</h4>
@@ -271,13 +270,37 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
 
+<!-- INTEGRAÇÃO FIREBASE (CDN) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyChk1LKknneIvOvgQiCzEi_0exl8241y2Y",
+    authDomain: "boss-exodrive.firebaseapp.com",
+    projectId: "boss-exodrive",
+    storageBucket: "boss-exodrive.firebasestorage.app",
+    messagingSenderId: "249019326416",
+    appId: "1:249019326416:web:12619cb25f9d80d18523d5"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Expondo funções do Firebase para o escopo global (para o script principal usar)
+  window.db = db;
+  window.doc = doc;
+  window.setDoc = setDoc;
+  window.getDoc = getDoc;
+</script>
+
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
-const GROQ_VISION_MODELO = 'llama-3.2-11b-vision-preview'; // MODELO DE VISÃO DA GROQ
+const GROQ_VISION_MODELO = 'llama-3.2-11b-vision-preview';
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
@@ -293,6 +316,8 @@ let historicoCompleto = JSON.parse(localStorage.getItem('boss_historico_full')) 
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let logErros = JSON.parse(localStorage.getItem('boss_erros')) || [];
+
+let dbMemory = null; // Memória carregada do Firebase
 
 let imagemAnexadaBase64 = '';
 let arquivoAnexado = '';
@@ -370,9 +395,15 @@ function mostrarMemoria() {
     else {
         listD.innerHTML = memoriaDecisoes.map((m, i) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${m}</span><button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('');
     }
+    
+    // Mostra o diário de bordo do Firebase
     const listH = document.getElementById('memoriaHistoricoList');
-    const recent = historicoCompleto.slice(-10); 
-    listH.innerHTML = recent.map(m => `<div><b>${m.role === 'user' ? 'VOCÊ' : 'BOSS'}:</b> ${m.content.substring(0,80)}...</div>`).join('');
+    if (dbMemory && dbMemory.diario_bordo) {
+        listH.innerHTML = `<div style="white-space:pre-wrap;">${dbMemory.diario_bordo}</div>`;
+    } else {
+        listH.innerHTML = "Nenhum Diário de Bordo salvo no Firebase para este projeto.";
+    }
+    
     document.getElementById('modalMemoria').classList.add('open');
 }
 
@@ -443,37 +474,138 @@ function buscarMemoriaAntiga(termo) {
     return resultados.slice(-3).join('\n---\n');
 }
 
+// ==========================================
+// FIREBASE: CARREGAR E SALVAR MEMÓRIA
+// ==========================================
+async function carregarMemoriaFirebase() {
+    if (!projetoAtivo || !window.db) return;
+    try {
+        addLog(`Buscando memória no Firebase...`);
+        const docRef = window.doc(window.db, "projetos", projetoAtivo);
+        const docSnap = await window.getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            dbMemory = docSnap.data();
+            addLog(`Memória carregada do Firebase com sucesso!`);
+            if (dbMemory.diario_bordo) {
+                setTimeout(() => addMsg('boss', `🧠 **Memória recuperada do Firebase**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
+            }
+        } else {
+            dbMemory = null;
+            addLog(`Nenhuma memória anterior encontrada.`);
+        }
+    } catch (e) {
+        console.error("Erro Firebase: ", e);
+        addLog("Erro ao ler Firebase. Verifique as regras de acesso.");
+    }
+}
+
+async function salvarMemoriaFirebase(resumo, fatosJson) {
+    if (!projetoAtivo || !window.db) return;
+    try {
+        addLog(`Salvando memória no Firebase...`);
+        const docRef = window.doc(window.db, "projetos", projetoAtivo);
+        
+        // Pega a memória antiga para não sobrescrever fatos antigos (merge)
+        const docSnap = await window.getDoc(docRef);
+        let fatosAntigos = {};
+        if(docSnap.exists() && docSnap.data().fatos_tecnicos) {
+            fatosAntigos = docSnap.data().fatos_tecnicos;
+        }
+        
+        const novosFatos = { ...fatosAntigos, ...fatosJson };
+
+        await window.setDoc(docRef, {
+            diario_bordo: resumo,
+            fatos_tecnicos: novosFatos,
+            ultima_atualizacao: new Date().toISOString()
+        }, { merge: true });
+        
+        addLog(`Memória salva no Firebase!`);
+        dbMemory = { diario_bordo: resumo, fatos_tecnicos: novosFatos };
+    } catch (e) {
+        console.error("Erro ao salvar Firebase: ", e);
+        addLog("Erro ao salvar memória no Firebase.");
+    }
+}
+
+async function forcarSalvarMemoria() {
+    if (!projetoAtivo) return alert("Selecione um projeto primeiro.");
+    if (historicoCompleto.length < 2) return alert("Não há conversas suficientes para resumir.");
+    
+    const t = addMsg('thinking', 'Gerando resumo da sessão para salvar no Firebase...', false);
+    
+    try {
+        const prompt = `Resuma a conversa que tivemos hoje em um parágrafo curto e direto. Em seguida, extraia os FATOS TÉCNICOS discutidos (como senhas, configurações, nomes de arquivos) em um objeto JSON estrito. Formato da resposta exata:
+RESUMO: [seu resumo aqui]
+JSON: {"fato1": "valor1", "fato2": "valor2"}`;
+
+        const msgs = [
+            { role: 'system', content: "Você é um sistema que resume conversas e extrai JSON." },
+            ...historicoCompleto.slice(-15), // Pega as últimas 15 para resumir
+            { role: 'user', content: prompt }
+        ];
+        
+        const data = await chamarIA(msgs, 0.1);
+        const resposta = data.choices?.[0]?.message?.content || "";
+        
+        const resumoMatch = resposta.match(/RESUMO:\s*([\s\S]*?)(?=JSON:|$)/);
+        const jsonMatch = resposta.match(/JSON:\s*(\{[\s\S]*\})/);
+        
+        const resumo = resumoMatch ? resumoMatch[1].trim() : "Sessão de trabalho.";
+        let fatos = {};
+        if (jsonMatch) {
+            try { fatos = JSON.parse(jsonMatch[1]); } catch(e) { console.error("Erro ao fazer parse do JSON", e); }
+        }
+        
+        await salvarMemoriaFirebase(resumo, fatos);
+        t.wrapper.remove();
+        addMsg('boss', `✅ **Memória salva no Firebase!**\n\n**Resumo:**\n${resumo}`);
+        
+    } catch(e) {
+        t.wrapper.remove();
+        addMsg('error', `Falha ao salvar memória: ${e.message}`);
+    }
+}
+
+// Fecha a sessão e salva automaticamente
+window.addEventListener('beforeunload', (e) => {
+    if (projetoAtivo && historicoCompleto.length > 2) {
+        // Não podemos fazer chamadas assíncronas longas no beforeunload, 
+        // então disparamos o fetch sem await.
+        forcarSalvarMemoria(); 
+    }
+});
+
+
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
+    // Injeta a memória do Firebase no prompt
+    let memFirebaseStr = "";
+    if (dbMemory) {
+        if (dbMemory.diario_bordo) memFirebaseStr += `- Diário de Bordo Anterior: ${dbMemory.diario_bordo}\n`;
+        if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos Conhecidos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
+    }
+
     const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. NUNCA chame o usuário de "Chefe", chame de ${userRole}.
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
 **O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
 
-=== MEMÓRIA DE DECISÕES (FATOS IMUTÁVEIS) ===
-${memoriaDecisoes.length > 0 ? memoriaDecisoes.map(m => `- ${m}`).join('\n') : 'Nenhum fato salvo.'}
+=== MEMÓRIA DE LONGO PRAZO (FIREBASE) ===
+${memFirebaseStr || 'Nenhuma memória anterior encontrada para este projeto.'}
 
-=== MEMÓRIA DE CONVERSAS PASSADAS (RAG) ===
-${memoriaRag ? `Eu encontrei estas conversas antigas que podem ser relevantes:\n${memoriaRag}` : 'Nenhuma conversa relevante encontrada.'}
+=== MEMÓRIA DE CONVERSAS RECENTES (RAG) ===
+${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 
 === AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
-=== REGRAS DE SEGURANÇA ===
-1. NUNCA apague arquivos no GitHub.
-2. NUNCA invente informações.
-3. NUNCA pule etapas de diagnóstico.
-
-=== FERRAMENTAS DISPONÍVEIS ===
+=== REGRAS DE AÇÃO ===
 1. [MUDAR_PROJETO: repo] - Muda o foco.
 2. [GITHUB_FIND: termo] / [GITHUB_READ: arquivo] - Acesso ao código.
-3. [MEMORIA_ADD: fato] / [MEMORIA_DEL: termo] - Salva/apaga fato.
-4. [AGENDA_ADD: tarefa] / [AGENDA_DEL: termo] - Tarefas.
-5. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
-6. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
-7. [IMAGE_SEARCH: termo] - Busca imagem na web.
-8. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
-9. [PROJECT: código_mermaid] - Cria diagramas técnicos e esquemas.
-10. [GITHUB_CREATE: caminho/arquivo | conteúdo] - Cria ou edita um arquivo no projeto ativo. O sistema vai mostrar o Diff e pedir permissão antes de commitar.
-11. Sempre adicione [VOZ: resumo curto] no final.`;
+3. [WEB_SEARCH: termo] - Pesquisa na internet.
+4. [GENERATE_IMAGE] / [IMAGE_SEARCH] / [VIDEO_SEARCH] / [PROJECT] - Ferramentas de mídia.
+5. [GITHUB_CREATE: caminho | conteúdo] - Edita código.
+6. Sempre adicione [VOZ: resumo curto] no final.`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -536,6 +668,10 @@ async function mapearRepositorio() {
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
         addMsg('boss', `✅ **Sincronização Concluída!**\nEncontrei ${listaRepos.length} repositórios.`);
+        
+        // Após sincronizar, se tiver um projeto ativo, carrega a memória do Firebase
+        if (projetoAtivo) carregarMemoriaFirebase();
+        
     } catch(e) {
         document.getElementById('metric-index-status').textContent = 'Erro';
         document.getElementById('metric-index-status').style.color = '#ef4444';
@@ -595,9 +731,6 @@ async function buscarZeroToken(termo) {
     return resultados || "(Nenhum trecho encontrado no projeto ativo.)";
 }
 
-// ==========================================
-// DIFF E COMMIT
-// ==========================================
 function diffLines(a, b) {
     const A = a.split('\n'), B = b.split('\n');
     const m = A.length, n = B.length;
@@ -644,9 +777,6 @@ async function confirmarCommit() {
 }
 function cancelarCommit() { pendingCommit = null; document.getElementById('modalDiff').classList.remove('open'); addMsg('boss', 'Commit cancelado.'); }
 
-// ==========================================
-// LOOP PRINCIPAL (ENVIAR)
-// ==========================================
 async function enviar() {
     const input = document.getElementById('input');
     const texto = input.value.trim();
@@ -661,14 +791,10 @@ async function enviar() {
         let userContent = texto;
         if (arquivoAnexado) { userContent = `[ARQUIVO ANEXADO]:\n${arquivoAnexado}\n\n[PERGUNTA]:\n${texto}`; arquivoAnexado = ''; }
         
-        // ==========================================
-        // CORREÇÃO: VISÃO COM FALLBACK PARA GROQ
-        // ==========================================
         let contextoVisao = "";
         if (imagemAnexadaBase64) {
             t.div.textContent = "Processando visão...";
             try {
-                // 1. Tenta o Worker principal
                 const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
                 if (!vr.ok) throw new Error("Falha no Worker principal");
                 const vd = await vr.json();
@@ -678,28 +804,19 @@ async function enviar() {
                 const groqKey = localStorage.getItem('boss_groq_key');
                 if (groqKey) {
                     try {
-                        // 2. Fallback direto na Groq Vision
                         const vr2 = await fetch(GROQ_URL_DIRETA, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
                             body: JSON.stringify({
                                 model: GROQ_VISION_MODELO,
-                                messages: [{
-                                    role: "user",
-                                    content: [
-                                        { type: "text", text: "Analise esta imagem tecnicamente e me diga o que vê." },
-                                        { type: "image_url", image_url: { url: imagemAnexadaBase64 } }
-                                    ]
-                                }],
+                                messages: [{ role: "user", content: [{ type: "text", text: "Analise esta imagem." }, { type: "image_url", image_url: { url: imagemAnexadaBase64 } }] }],
                                 temperature: 0.2
                             })
                         });
                         const vd2 = await vr2.json();
                         contextoVisao = vd2.choices?.[0]?.message?.content || "[Falha na análise via Groq]";
                     } catch(e2) { contextoVisao = "[Erro em ambas as visões]"; }
-                } else {
-                    contextoVisao = "[Erro na visão e sem chave Groq configurada]";
-                }
+                } else { contextoVisao = "[Erro na visão e sem chave Groq]"; }
             }
             imagemAnexadaBase64 = ''; document.getElementById('btnDraw').style.display = 'none';
         }
@@ -731,6 +848,9 @@ async function enviar() {
                     atualizarDisplayProjeto();
                     resposta = resposta.replace(switchM[0], '').trim();
                     if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**.`;
+                    
+                    // Busca a memória do Firebase para o novo projeto
+                    carregarMemoriaFirebase();
                 } else {
                     resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Repositório "${novoProjeto}" não encontrado.)*`;
                 }
@@ -913,7 +1033,7 @@ function lerArquivo(event) {
     event.target.value = '';
 }
 
-function limparHistorico() { if(confirm("Apagar TODO o histórico e memórias locais?")) { localStorage.clear(); location.reload(); } }
+function limparHistorico() { if(confirm("Apagar TODO o histórico, memórias locais e forçar recarregamento?")) { localStorage.clear(); location.reload(); } }
 
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
