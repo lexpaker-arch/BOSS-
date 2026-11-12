@@ -465,7 +465,7 @@ function buscarMemoriaAntiga(termo) {
 }
 
 // ==========================================
-// FIREBASE: MEMÓRIA
+// FIREBASE E MEMÓRIA
 // ==========================================
 async function carregarMemoriaFirebase() {
     if (!projetoAtivo || !window.db) return;
@@ -519,8 +519,8 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
 }
 
 async function forcarSalvarMemoria() {
-    if (!projetoAtivo) return; // Silencioso se não tiver projeto ativo
-    if (historicoCompleto.length < 2) return; // Nada para salvar
+    if (!projetoAtivo) return; 
+    if (historicoCompleto.length < 2) return; 
     
     try {
         addLog("Resumindo sessão em background...");
@@ -552,22 +552,27 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
     }
 }
 
-// AUTOMAÇÃO: Salva quando o usuário troca de aba ou minimiza o navegador
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'hidden') {
         forcarSalvarMemoria(); 
     }
 });
 
-
+// ==========================================
+// PROMPT BLINDADO (v5.0 - Auditoria Sênior)
+// ==========================================
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
+    const PROMPT_VERSION = "v5.0 - Auditoria Sênior";
+    
     let memFirebaseStr = "";
     if (dbMemory) {
         if (dbMemory.diario_bordo) memFirebaseStr += `- Diário de Bordo Anterior: ${dbMemory.diario_bordo}\n`;
         if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos Conhecidos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
     }
 
-    const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. NUNCA chame o usuário de "Chefe", chame de ${userRole}.
+    const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. O usuário é o Patrão. NUNCA o chame de "Chefe".
+[VERSÃO DO PROMPT: ${PROMPT_VERSION}]
+
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
 **O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
 
@@ -580,14 +585,24 @@ ${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 === AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
-=== REGRAS DE AÇÃO ===
-1. [MUDAR_PROJETO: repo] - Muda o foco.
-2. [GITHUB_FIND: termo] / [GITHUB_READ: arquivo] - Acesso ao código.
-3. [WEB_SEARCH: termo] - Pesquisa na internet.
-4. [GENERATE_IMAGE] / [IMAGE_SEARCH] / [VIDEO_SEARCH] / [PROJECT] - Ferramentas de mídia.
-5. [GITHUB_CREATE: caminho | conteúdo] - Edita código.
-6. Se a busca [GITHUB_FIND] falhar, tente ler um arquivo direto como [GITHUB_READ: README.md] ou [GITHUB_READ: build.gradle.kts].
-7. Sempre adicione [VOZ: resumo curto] no final.`;
+=== REGRAS DE SEGURANÇA CRÍTICAS ===
+1. NUNCA tente ler arquivos com extensões perigosas ou nomes como '.env', '.keystore', 'secrets'. O sistema irá bloqueá-lo.
+2. O sistema já mascara senhas automaticamente, mas se você ver '***', não tente adivinhar.
+3. NUNCA diga que um commit foi "concluído" ou "salvo" antes de receber a confirmação do sistema. Use [GITHUB_CREATE: caminho | conteúdo] e espere o usuário aprovar o Diff.
+
+=== REGRAS DE AÇÃO E FALLBACK ===
+1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir explicitamente para mudar de projeto.
+2. [GITHUB_FIND: termo] - Busca por palavra-chave. Se falhar ou retornar vazio, tente [GITHUB_READ: README.md] ou outro arquivo óbvio.
+3. [GITHUB_READ: arquivo] - Lê arquivo. Se o sistema retornar [ERRO GITHUB], avise o usuário e pare de insistir no mesmo arquivo.
+4. [GITHUB_CREATE: caminho | conteúdo] - Edita/cria arquivo. O sistema abrirá um Diff para o usuário aprovar.
+5. [MEMORIA_ADD: chave | valor] - Salva um fato imutável (ex: [MEMORIA_ADD: senha_hc05 | 1234]).
+6. [AGENDA_ADD: tarefa] - Adiciona tarefa.
+7. Ferramentas de mídia ([GENERATE_IMAGE], [VIDEO_SEARCH]) devem ser usadas com moderação e apenas se solicitadas.
+
+=== REGRAS DE VOZ ===
+- O resumo dentro de [VOZ: ...] deve ter NO MÁXIMO 120 caracteres. Seja ultra direto.
+
+`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -623,9 +638,6 @@ async function chamarIA(messages, temp) {
     }
 }
 
-// ==========================================
-// CORREÇÃO: LAZY LOADING DA ÁRVORE DO GITHUB
-// ==========================================
 async function mapearRepositorio() {
     toggleConfig();
     addMsg('boss', '⚙ Sincronizando lista de repositórios. Aguarde...');
@@ -645,7 +657,7 @@ async function mapearRepositorio() {
         document.getElementById('metric-index-status').textContent = 'Pronto.';
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
-        addMsg('boss', `✅ **Repositórios Encontrados:** ${listaRepos.length}.\nDiga "mudar para [nome do repositório]" para focar em um projeto. O BOSS vai ler a árvore de arquivos apenas do projeto que você escolher (economia de API).`);
+        addMsg('boss', `✅ **Repositórios Encontrados:** ${listaRepos.length}.\nDiga "mudar para [nome do repositório]" para focar em um projeto.`);
         
         if (projetoAtivo) carregarMemoriaFirebase();
         
@@ -658,7 +670,7 @@ async function mapearRepositorio() {
 
 async function carregarArvoreProjeto() {
     if (!projetoAtivo) return;
-    if (cacheTrees[projetoAtivo]) return; // Já tem no cache
+    if (cacheTrees[projetoAtivo]) return; 
 
     try {
         addLog(`Baixando árvore de arquivos de ${projetoAtivo}...`);
@@ -675,14 +687,29 @@ async function carregarArvoreProjeto() {
     }
 }
 
+// ==========================================
+// CORREÇÃO DE SEGURANÇA (Blacklist e Máscara)
+// ==========================================
 async function fetchGithubFile(repo, path) {
+    const pathLower = path.toLowerCase();
+    // 1. Blacklist de arquivos sensíveis
+    const blacklist = ['.env', 'secrets.properties', '.keystore', '.jks', 'id_rsa', 'id_dsa'];
+    if (blacklist.some(b => pathLower.includes(b))) {
+        return `[ERRO DE SEGURANÇA: O arquivo '${path}' é sensível e foi bloqueado pela política de segurança.]`;
+    }
+
     const key = `${repo}/${path}`;
     if (fileCache[key]) return fileCache[key];
     try {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.content) { 
-            const txt = decodeURIComponent(escape(atob(data.content))); 
+            let txt = decodeURIComponent(escape(atob(data.content))); 
+            
+            // 2. Máscara de senhas
+            txt = txt.replace(/(storePassword|keyPassword|password|senha)\s*=\s*["']([^"']+)["']/gi, '$1 = "***"');
+            txt = txt.replace(/(password|senha)\s*:\s*["']([^"']+)["']/gi, '$1: "***"');
+            
             fileCache[key] = txt; atualizarHUD(); return txt; 
         }
         return `[ERRO GITHUB: Arquivo não encontrado]`;
@@ -692,11 +719,10 @@ async function fetchGithubFile(repo, path) {
 async function buscarZeroToken(termo) {
     if (!projetoAtivo) return "(Nenhum projeto ativo selecionado.)";
     
-    // GARANTE QUE A ÁRVORE ESTÁ BAIXADA ANTES DE BUSCAR
     await carregarArvoreProjeto();
     
     const tree = cacheTrees[projetoAtivo];
-    if(!tree) return `(A árvore do projeto falhou. O GitHub bloqueou o acesso ou demorou muito. Tente pedir um arquivo específico com GITHUB_READ).`;
+    if(!tree) return `(A árvore do projeto falhou. O GitHub bloqueou o acesso. Tente pedir um arquivo específico com GITHUB_READ).`;
 
     let resultados = "";
     let arquivosLidos = 0;
