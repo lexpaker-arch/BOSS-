@@ -524,9 +524,6 @@ function buscarMemoriaAntiga(termo) {
     return resultados.slice(-3).join('\n---\n');
 }
 
-// ==========================================
-// FIREBASE E MEMÓRIA
-// ==========================================
 async function carregarMemoriaFirebase() {
     if (!projetoAtivo || !window.db) return;
     try {
@@ -618,9 +615,6 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
-// ==========================================
-// PROMPT BLINDADO (v6.1 - Auditoria Sênior)
-// ==========================================
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
     const PROMPT_VERSION = "v6.1 - Auditoria Sênior";
     
@@ -657,8 +651,8 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo para você se orientar.
 4. [GITHUB_READ: arquivo] - Lê arquivo.
 5. [GITHUB_CREATE: caminho | conteúdo] - Cria/edita arquivo. O sistema mostrará o Diff antes.
-6. [MEMORIA_ADD: chave | valor] - Salva um fato técnico.
-7. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
+6. [MEMORIA_ADD: chave | valor] - Salva um fato técnico. O sistema vai retornar um ECO de confirmação.
+7. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda. O sistema vai retornar um ECO.
 8. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
 9. [IMAGE_SEARCH: termo] - Busca imagem real.
 10. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
@@ -977,7 +971,6 @@ async function enviar() {
                 continue;
             }
 
-            // TRATAMENTO DA ÁRVORE
             const treeM = resposta.match(/\[GITHUB_TREE\]/);
             if (treeM) {
                 t.div.textContent = "Lendo estrutura de arquivos...";
@@ -1021,12 +1014,14 @@ async function enviar() {
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
         const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
 
+        // ECHO DE MEMÓRIA E AGENDA (CORREÇÃO DO SILÊNCIO)
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
             memoriaDecisoes.push(memAdd[1].trim());
             localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
             respostaFinal = respostaFinal.replace(memAdd[0], '').trim();
             atualizarHUD();
+            setTimeout(() => addMsg('boss', `✅ **[SISTEMA]:** Fato salvo na memória: "${memAdd[1].trim()}"`), 100);
         }
         const memDel = respostaFinal.match(/\[MEMORIA_DEL:\s*([\s\S]*?)\]/);
         if (memDel) {
@@ -1035,12 +1030,14 @@ async function enviar() {
             localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
             respostaFinal = respostaFinal.replace(memDel[0], '').trim();
             atualizarHUD();
+            setTimeout(() => addMsg('boss', `🗑️ **[SISTEMA]:** Fato removido da memória: "${termo}"`), 100);
         }
         const addAgenda = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
         if (addAgenda) {
             agendaInterna.push(addAgenda[1].trim());
             localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
             respostaFinal = respostaFinal.replace(addAgenda[0], '').trim();
+            setTimeout(() => addMsg('boss', `📌 **[SISTEMA]:** Tarefa adicionada à agenda: "${addAgenda[1].trim()}"`), 100);
         }
         const delAgenda = respostaFinal.match(/\[AGENDA_DEL:\s*([\s\S]*?)\]/);
         if (delAgenda) {
@@ -1048,6 +1045,7 @@ async function enviar() {
             agendaInterna = agendaInterna.filter(a => !a.toLowerCase().includes(termo));
             localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
             respostaFinal = respostaFinal.replace(delAgenda[0], '').trim();
+            setTimeout(() => addMsg('boss', `✅ **[SISTEMA]:** Tarefa concluída/removida da agenda.`), 100);
         }
 
         t.wrapper.remove();
@@ -1068,7 +1066,14 @@ async function enviar() {
             w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
             document.getElementById('chat').appendChild(w);
             fetch(`${WORKER_URL}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: mGen[1] }) })
-              .then(r=>r.json()).then(d => { if(d.image) w.innerHTML = `<img src="${d.image}" class="msg-img">`; else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha na imagem ]</div>`; });
+              .then(r=>r.json()).then(d => { 
+                  if(d.image) {
+                      w.innerHTML = `<img src="${d.image}" class="msg-img">`; 
+                      addMsg('boss', `🖼️ **[SISTEMA]:** Imagem gerada com sucesso.`);
+                  } else {
+                      w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha na imagem ]</div>`;
+                  }
+              });
         }
 
         if (mProj || mMer) {
@@ -1077,6 +1082,7 @@ async function enviar() {
             w.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
             document.getElementById('chat').appendChild(w);
             mermaid.run({ nodes: [w.querySelector('.mermaid')] });
+            setTimeout(() => addMsg('boss', `📊 **[SISTEMA]:** Diagrama renderizado com sucesso.`), 100);
         }
 
         if (mImg) {
@@ -1084,7 +1090,10 @@ async function enviar() {
             w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando imagem... ]</div>`;
             document.getElementById('chat').appendChild(w);
             fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(mImg[1])}`).then(r=>r.json()).then(d => {
-                if(d.url) { const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>';}; w.innerHTML=''; w.appendChild(i); }
+                if(d.url) { 
+                    const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>';}; w.innerHTML=''; w.appendChild(i); 
+                    addMsg('boss', `🖼️ **[SISTEMA]:** Imagem encontrada na web.`);
+                }
                 else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Não encontrada ]</div>`;
             });
         }
@@ -1096,7 +1105,10 @@ async function enviar() {
             fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(mVid[1])}`).then(r=>r.json()).then(d => {
                 if(d.videos && d.videos.length > 0) {
                     const vid = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
-                    if(vid) w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
+                    if(vid) {
+                        w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
+                        addMsg('boss', `🎬 **[SISTEMA]:** Vídeo carregado.`);
+                    }
                     else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
                 }
             });
@@ -1165,7 +1177,6 @@ if (window.speechSynthesis) {
     };
 }
 
-// INICIALIZAÇÃO E ONBOARDING (v6.1)
 window.onload = async () => {
     mapearRepositorio();
     if (projetoAtivo) {
