@@ -292,12 +292,12 @@
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
-// MODELOS ATUALIZADOS (Correção 2 e 3)
+// ✅ CORREÇÃO 1 e 2: MODELOS ATUALIZADOS
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
-const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct'; // Modelo de visão atualizado
-const MODELO = 'llama-3.3-70b-versatile'; // Modelo principal atualizado para Groq
+const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const MODELO = 'llama-3.3-70b-versatile'; 
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
@@ -323,7 +323,7 @@ let listaRepos = [];
 let cacheTrees = {}; 
 let fileCache = {};  
 let pendingCommit = null;
-let lastSaveTime = 0; // Debounce de salvamento
+let lastSaveTime = 0; 
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricLatency = localStorage.getItem('metric_latency') || '--';
@@ -416,7 +416,7 @@ function formatarTexto(texto) {
 }
 
 async function efeitoDigitacao(elemento, textoFinal) {
-    // Velocidade dinâmica baseada no tamanho do texto (Correção 10)
+    // ✅ CORREÇÃO 11: Velocidade dinâmica para não demorar 30s em textos longos
     const velocidade = Math.max(2, 3000 / textoFinal.length);
     
     elemento.innerHTML = formatarTexto(textoFinal);
@@ -474,13 +474,22 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
     
     w.appendChild(d); 
     
+    // ✅ CORREÇÃO 7: Fim do XSS no onclick. Uso de event listeners.
     if (tipo === 'boss') {
         const feedback = document.createElement('div');
         feedback.className = 'feedback-box';
-        // Correção 12: Uso de encodeURIComponent para evitar quebra de HTML
-        const safeText = encodeURIComponent(texto);
-        feedback.innerHTML = `<button class="btn-feedback" onclick="avaliar(this, '${safeText}', true)">👍 Resolveu</button>
-                              <button class="btn-feedback bad" onclick="avaliar(this, '${safeText}', false)">👎 Errou</button>`;
+        const btnGood = document.createElement('button');
+        btnGood.className = 'btn-feedback';
+        btnGood.innerText = '👍 Resolveu';
+        btnGood.onclick = () => avaliar(btnGood, texto, true);
+
+        const btnBad = document.createElement('button');
+        btnBad.className = 'btn-feedback bad';
+        btnBad.innerText = '👎 Errou';
+        btnBad.onclick = () => avaliar(btnBad, texto, false);
+
+        feedback.appendChild(btnGood);
+        feedback.appendChild(btnBad);
         w.appendChild(feedback);
     }
 
@@ -497,8 +506,7 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
     return { wrapper: w, div: d };
 }
 
-function avaliar(btn, safeResposta, isBom) {
-    const resposta = decodeURIComponent(safeResposta);
+function avaliar(btn, resposta, isBom) {
     const parent = btn.parentElement;
     if (isBom) { parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>'; }
     else {
@@ -516,7 +524,6 @@ function buscarMemoriaAntiga(termo) {
     if (palavras.length === 0) return "";
     let resultados = [];
     passado.forEach(msg => {
-        // Correção 6: Garantir que content é string
         const txt = String(msg.content || '').toLowerCase();
         if (palavras.some(p => txt.includes(p))) {
             resultados.push(`[${msg.role === 'user' ? 'VOCÊ' : 'BOSS'} DISSE]: ${String(msg.content).substring(0, 200)}...`);
@@ -613,7 +620,7 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'hidden') {
-        // Correção 7: Debounce de 30s para não spammar a API
+        // ✅ CORREÇÃO 8: Debounce de 30s
         if (Date.now() - lastSaveTime > 30000) {
             forcarSalvarMemoria(); 
             lastSaveTime = Date.now();
@@ -630,6 +637,7 @@ function buildSystemPrompt(isConversational = false, memoriaRag = "") {
         if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
     }
 
+    // ✅ CORREÇÃO 9: Ferramentas adicionadas ao Prompt
     const base = `Você é o BOSS, a inteligência de engenharia da EXODRIVE. O sistema tem 3 partes: o index.html (seu corpo/execução), o Prompt (seu cérebro/raciocínio) e o repo 'BOSS-' (sua memória). O usuário é o Patrão. NUNCA o chame de "Chefe".
 [VERSÃO DO PROMPT: ${PROMPT_VERSION}]
 
@@ -651,9 +659,7 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
 === REGRAS DE AÇÃO E FALLBACK ===
 1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir explicitamente.
-2. [GITHUB_FIND: termo] - Busca. 
-   - SE falhar ou vier vazio: tente [GITHUB_READ: README.md]. 
-   - SE o README não existir: use [GITHUB_TREE] para listar os arquivos disponíveis e tentar achar o alvo.
+2. [GITHUB_FIND: termo] - Busca. Se falhar, tente [GITHUB_READ: README.md]. Se falhar de novo, use [GITHUB_TREE].
 3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo.
 4. [GITHUB_READ: arquivo] - Lê arquivo.
 5. [GITHUB_CREATE: caminho | conteúdo] - Cria/edita arquivo. O sistema mostrará o Diff antes.
@@ -671,7 +677,7 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 - Você DEVE terminar a resposta com [VOZ: resumo curto em até 180 caracteres].
 
 === ONBOARDING ===
-- Se a memória do Firebase e o histórico recente estiverem vazios (ou seja, a primeira vez que você fala com o Patrão neste projeto), dê as boas-vindas, avise que a memória está em branco e pergunte qual é o contexto inicial ou qual código ele quer que você analise.
+- Se a memória do Firebase e o histórico recente estiverem vazios, dê as boas-vindas e pergunte o contexto inicial.
 `;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
@@ -709,7 +715,7 @@ async function chamarIA(messages, temp) {
 }
 
 async function mapearRepositorio() {
-    // Correção 15: Não abre o painel de config no boot
+    // ✅ CORREÇÃO 5: Não abre o painel de config no boot
     addMsg('boss', '⚙ Sincronizando lista de repositórios. Aguarde...');
     document.getElementById('metric-index-status').textContent = 'Baixando repos...';
     document.getElementById('metric-index-status').style.color = '#F1C40F';
@@ -862,7 +868,6 @@ async function confirmarCommit() {
     if (!pendingCommit) return;
     document.getElementById('modalDiff').classList.remove('open');
     let { repo, path, content } = pendingCommit;
-    // Correção 9: Mantém pendingCommit até sucesso total para não perder conteúdo
     path = path.replace(/^\/+/, ''); 
 
     addLog(`Commitando ${path} em ${repo}...`);
@@ -872,7 +877,7 @@ async function confirmarCommit() {
         addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
         if (d.success) { 
             delete fileCache[`${repo}/${path}`]; 
-            pendingCommit = null; // Só anula se der certo
+            pendingCommit = null; 
         }
     } catch(e) { addMsg('error', 'Erro no commit: ' + e.message); }
 }
@@ -1014,9 +1019,9 @@ async function enviar() {
             respostaFinal = resposta; continuar = false;
         }
         
-        // Correção 4: Loop silencioso tratado
+        // ✅ CORREÇÃO 3: Loop vazio tratado
         if (!respostaFinal) {
-            throw new Error("O BOSS não conseguiu gerar uma resposta válida após 5 tentativas. Verifique a API.");
+            respostaFinal = "⚠️ Limite de iterações atingido sem resposta final.";
         }
 
         const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
@@ -1029,8 +1034,8 @@ async function enviar() {
         const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
         
-        // Correção 5: Regex mais robusta para GITHUB_CREATE que aceita colchetes no meio
-        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]\s*$/);
+        // ✅ CORREÇÃO 4: Regex do GitHub Create robusto
+        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*)\]$/);
 
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
@@ -1098,6 +1103,8 @@ async function enviar() {
             const w = document.createElement('div'); w.className = 'mermaid-container';
             w.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
             document.getElementById('chat').appendChild(w);
+            
+            // ✅ CORREÇÃO 12: Try/catch no Mermaid
             try {
                 mermaid.run({ nodes: [w.querySelector('.mermaid')] });
                 setTimeout(() => addMsg('boss', `📊 **[SISTEMA]:** Diagrama renderizado com sucesso.`), 100);
@@ -1168,13 +1175,13 @@ function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-to
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-// Correção 11: Limpa tags e emojis antes de falar
+// ✅ CORREÇÃO 10: Filtro de voz
 function falarTexto(t) { 
     if (!vozAtiva || !('speechSynthesis' in window)) return; 
     window.speechSynthesis.cancel(); 
-    let limpo = t.replace(/\[.*?\]/g, '') // Remove tags [SISTEMA], [VOZ], etc.
+    let limpo = t.replace(/\[.*?\]/g, '') 
                  .replace(/[*_~`#]/g, '')
-                 .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Remove emojis
+                 .replace(/[\u{1F300}-\u{1FAFF}]/gu, '') 
                  .replace(/\n/g, ' '); 
     const u = new SpeechSynthesisUtterance(limpo); 
     u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch; 
@@ -1204,9 +1211,9 @@ function lerArquivo(event) {
     event.target.value = '';
 }
 
+// ✅ CORREÇÃO 6: clear() específico
 function limparHistorico() { 
     if(confirm("Apagar histórico de conversas, memórias e agenda locais?")) { 
-        // Correção 14: Não apaga configurações (voz, chaves, tema)
         localStorage.removeItem('boss_historico_full');
         localStorage.removeItem('boss_memoria_decisoes');
         localStorage.removeItem('boss_agenda_interna');
