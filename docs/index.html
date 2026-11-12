@@ -252,7 +252,6 @@
     </div>
 </div>
 
-<!-- RESTAURADO: MODAL DE DIFF (GITHUB CREATE) -->
 <div class="modal-overlay" id="modalDiff">
     <div class="modal-box">
         <div class="modal-header"><span>CONFIRMAR ALTERAÇÃO NO GITHUB</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="cancelarCommit()">×</button></div>
@@ -278,6 +277,7 @@ mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
+const GROQ_VISION_MODELO = 'llama-3.2-11b-vision-preview'; // MODELO DE VISÃO DA GROQ
 const MODELO = 'qwen/qwen3.8-27b';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
@@ -443,9 +443,6 @@ function buscarMemoriaAntiga(termo) {
     return resultados.slice(-3).join('\n---\n');
 }
 
-// ==========================================
-// PROMPT DO SISTEMA (COMPLETO E RESTAURADO)
-// ==========================================
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
     const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. NUNCA chame o usuário de "Chefe", chame de ${userRole}.
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
@@ -470,7 +467,7 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 2. [GITHUB_FIND: termo] / [GITHUB_READ: arquivo] - Acesso ao código.
 3. [MEMORIA_ADD: fato] / [MEMORIA_DEL: termo] - Salva/apaga fato.
 4. [AGENDA_ADD: tarefa] / [AGENDA_DEL: termo] - Tarefas.
-5. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet (preços, notícias, tutoriais).
+5. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
 6. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
 7. [IMAGE_SEARCH: termo] - Busca imagem na web.
 8. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
@@ -599,7 +596,7 @@ async function buscarZeroToken(termo) {
 }
 
 // ==========================================
-// DIFF E COMMIT (RESTAURADO)
+// DIFF E COMMIT
 // ==========================================
 function diffLines(a, b) {
     const A = a.split('\n'), B = b.split('\n');
@@ -664,14 +661,49 @@ async function enviar() {
         let userContent = texto;
         if (arquivoAnexado) { userContent = `[ARQUIVO ANEXADO]:\n${arquivoAnexado}\n\n[PERGUNTA]:\n${texto}`; arquivoAnexado = ''; }
         
+        // ==========================================
+        // CORREÇÃO: VISÃO COM FALLBACK PARA GROQ
+        // ==========================================
         let contextoVisao = "";
         if (imagemAnexadaBase64) {
             t.div.textContent = "Processando visão...";
-            const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
-            const vd = await vr.json();
-            contextoVisao = vd.choices?.[0]?.message?.content || "[Falha]";
+            try {
+                // 1. Tenta o Worker principal
+                const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
+                if (!vr.ok) throw new Error("Falha no Worker principal");
+                const vd = await vr.json();
+                contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
+            } catch (eVisao) {
+                addLog("Falha na visão principal. Tentando Groq Vision...");
+                const groqKey = localStorage.getItem('boss_groq_key');
+                if (groqKey) {
+                    try {
+                        // 2. Fallback direto na Groq Vision
+                        const vr2 = await fetch(GROQ_URL_DIRETA, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+                            body: JSON.stringify({
+                                model: GROQ_VISION_MODELO,
+                                messages: [{
+                                    role: "user",
+                                    content: [
+                                        { type: "text", text: "Analise esta imagem tecnicamente e me diga o que vê." },
+                                        { type: "image_url", image_url: { url: imagemAnexadaBase64 } }
+                                    ]
+                                }],
+                                temperature: 0.2
+                            })
+                        });
+                        const vd2 = await vr2.json();
+                        contextoVisao = vd2.choices?.[0]?.message?.content || "[Falha na análise via Groq]";
+                    } catch(e2) { contextoVisao = "[Erro em ambas as visões]"; }
+                } else {
+                    contextoVisao = "[Erro na visão e sem chave Groq configurada]";
+                }
+            }
             imagemAnexadaBase64 = ''; document.getElementById('btnDraw').style.display = 'none';
         }
+        
         if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "Analise."}`;
 
         const memoriaRag = buscarMemoriaAntiga(texto);
@@ -689,7 +721,6 @@ async function enviar() {
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
-            // MUDAR PROJETO
             const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
             if (switchM) {
                 const novoProjeto = switchM[1].trim();
@@ -705,11 +736,9 @@ async function enviar() {
                 }
             }
 
-            // BUSCA WEB (RESTAURADA)
             const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
             if (webM && tentativas === 1) {
                 t.div.textContent = `Pesquisando na web: "${webM[1]}"...`;
-                addLog(`Web Search: ${webM[1]}`);
                 const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(webM[1])}`);
                 const sd = await sr.json();
                 msgs.push({ role: 'assistant', content: resposta });
@@ -717,7 +746,6 @@ async function enviar() {
                 continue;
             }
 
-            // GITHUB FIND
             const findM = [...resposta.matchAll(/\[GITHUB_FIND:\s*(.*?)\]/g)];
             if (findM.length > 0) {
                 let allRes = "";
@@ -731,7 +759,6 @@ async function enviar() {
                 continue;
             }
 
-            // GITHUB READ
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
                 if (!projetoAtivo) {
@@ -757,7 +784,6 @@ async function enviar() {
         let txtFalar = vozM ? vozM[1] : respostaFinal;
         if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
 
-        // EXTRAÇÃO DE MÍDIA E OUTRAS TAGS
         const mImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
         const mVid = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
         const mMer = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
@@ -765,7 +791,6 @@ async function enviar() {
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
         const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
 
-        // MEMÓRIA / AGENDA
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
             memoriaDecisoes.push(memAdd[1].trim());
@@ -804,7 +829,6 @@ async function enviar() {
         
         falarTexto(txtFalar);
 
-        // RENDERIZAÇÃO DE MÍDIA
         if (mGen) {
             const w = document.createElement('div'); w.style.padding = '10px';
             w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
@@ -844,7 +868,6 @@ async function enviar() {
             });
         }
 
-        // GITHUB CREATE (DIFF RESTAURADO)
         if (mGit) {
             const path = mGit[1].trim(); const content = mGit[2].trim();
             addLog(`Preparando commit de ${path}...`);
@@ -863,7 +886,6 @@ async function enviar() {
     }
 }
 
-// UTILITÁRIOS (VOZ, CANETA, ETC)
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
 function abrirAnotacao() { if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); document.getElementById('modalDraw').classList.add('open'); setTimeout(() => { const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); }; img.src = imagemAnexadaBase64; }, 150); }
 function bindDrawEvents(cv) { const ctx = cv.getContext('2d'); const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); }; const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); } }; cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; }
