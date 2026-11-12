@@ -79,11 +79,18 @@
     .btn-feedback:hover { border-color: var(--accent); color: var(--accent); }
     .btn-feedback.bad:hover { border-color: #ef4444; color: #ef4444; }
 
-    /* RESTAURADO: ESTILOS DE MÍDIA */
+    /* MÍDIA */
     .msg-img { max-width: 100%; border-radius: 6px; border: 1px solid var(--border-color); margin-top: 10px; display: block; }
     .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .mermaid-container { background: var(--bg-dark); padding: 15px; border-radius: 6px; border: 1px solid var(--accent); margin-top: 10px; text-align: center; overflow-x: auto; }
+
+    /* DIFF MODAL */
+    .diff-view { font-family: var(--font-mono); font-size: 12px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; max-height: 300px; overflow-y: auto; padding: 10px; width: 100%; text-align: left;}
+    .diff-line { white-space: pre-wrap; padding: 2px 4px; border-radius: 2px; }
+    .diff-line.add { background: rgba(39,174,96,0.15); color: #27AE60; }
+    .diff-line.del { background: rgba(231,76,60,0.15); color: #E74C3C; }
+    .diff-line.same { color: #8A9AAA; }
 
     footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: center; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
     .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; }
@@ -245,7 +252,23 @@
     </div>
 </div>
 
-<!-- RESTAURADO: BIBLIOTECA MERMAID -->
+<!-- RESTAURADO: MODAL DE DIFF (GITHUB CREATE) -->
+<div class="modal-overlay" id="modalDiff">
+    <div class="modal-box">
+        <div class="modal-header"><span>CONFIRMAR ALTERAÇÃO NO GITHUB</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="cancelarCommit()">×</button></div>
+        <div class="modal-body">
+            <div style="font-family:var(--font-mono); font-size:12px; color:#F1C40F; margin-bottom:10px; width:100%; text-align:left;">
+                Arquivo: <span id="diffPath" style="color:var(--accent);"></span>
+            </div>
+            <div class="diff-view" id="diffView"></div>
+            <div style="display:flex; gap:10px; width:100%; margin-top:15px;">
+                <button class="btn-send" style="width:100%;" onclick="confirmarCommit()">✅ COMMITAR</button>
+                <button class="btn-config-action btn-danger" style="width:100%;" onclick="cancelarCommit()">❌ CANCELAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
 
@@ -277,6 +300,7 @@ let arquivoAnexado = '';
 let listaRepos = []; 
 let cacheTrees = {}; 
 let fileCache = {};  
+let pendingCommit = null;
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricLatency = localStorage.getItem('metric_latency') || '--';
@@ -325,7 +349,12 @@ window.addEventListener('offline', () => { document.getElementById('net-dot').cl
 
 function mudarTema(tema) { document.body.className = tema; localStorage.setItem('boss_theme', tema); temaAtual = tema; }
 function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
-function toggleMute() { vozAtiva = !vozAtiva; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); atualizarMuteBtn(); if(!vozAtiva) window.speechSynthesis.cancel(); }
+function toggleMute() { 
+    vozAtiva = !vozAtiva; 
+    localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); 
+    atualizarMuteBtn(); 
+    if(!vozAtiva) window.speechSynthesis.cancel(); 
+}
 function atualizarMuteBtn() { const btn = document.getElementById('btnMute'); btn.innerHTML = vozAtiva ? '🔊' : '🔇'; btn.style.color = vozAtiva ? 'var(--text-muted)' : '#ef4444'; }
 function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); }
 function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
@@ -341,11 +370,9 @@ function mostrarMemoria() {
     else {
         listD.innerHTML = memoriaDecisoes.map((m, i) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${m}</span><button onclick="apagarMemoria(${i})" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('');
     }
-    
     const listH = document.getElementById('memoriaHistoricoList');
     const recent = historicoCompleto.slice(-10); 
     listH.innerHTML = recent.map(m => `<div><b>${m.role === 'user' ? 'VOCÊ' : 'BOSS'}:</b> ${m.content.substring(0,80)}...</div>`).join('');
-    
     document.getElementById('modalMemoria').classList.add('open');
 }
 
@@ -391,9 +418,8 @@ function addMsg(tipo, texto, salvar = true) {
 
 function avaliar(btn, resposta, isBom) {
     const parent = btn.parentElement;
-    if (isBom) {
-        parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>';
-    } else {
+    if (isBom) { parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>'; }
+    else {
         parent.innerHTML = '<span style="color:#ef4444; font-size:10px;">❌ Erro logado.</span>';
         logErros.push({ erro: resposta, data: Date.now() });
         localStorage.setItem('boss_erros', JSON.stringify(logErros));
@@ -403,11 +429,9 @@ function avaliar(btn, resposta, isBom) {
 
 function buscarMemoriaAntiga(termo) {
     if (historicoCompleto.length < 5) return "";
-    
     const passado = historicoCompleto.slice(0, -10);
     const palavras = termo.toLowerCase().split(' ').filter(p => p.length > 3); 
     if (palavras.length === 0) return "";
-
     let resultados = [];
     passado.forEach(msg => {
         const txt = msg.content.toLowerCase();
@@ -415,13 +439,14 @@ function buscarMemoriaAntiga(termo) {
             resultados.push(`[${msg.role === 'user' ? 'VOCÊ' : 'BOSS'} DISSE]: ${msg.content.substring(0, 200)}...`);
         }
     });
-
     if (resultados.length === 0) return "";
     return resultados.slice(-3).join('\n---\n');
 }
 
+// ==========================================
+// PROMPT DO SISTEMA (COMPLETO E RESTAURADO)
+// ==========================================
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
-    // RESTAURADO: FERRAMENTAS DE MÍDIA E PROJETO
     const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. NUNCA chame o usuário de "Chefe", chame de ${userRole}.
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
 **O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
@@ -445,11 +470,13 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 2. [GITHUB_FIND: termo] / [GITHUB_READ: arquivo] - Acesso ao código.
 3. [MEMORIA_ADD: fato] / [MEMORIA_DEL: termo] - Salva/apaga fato.
 4. [AGENDA_ADD: tarefa] / [AGENDA_DEL: termo] - Tarefas.
-5. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
-6. [IMAGE_SEARCH: termo] - Busca imagem na web.
-7. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
-8. [PROJECT: código_mermaid] - Cria diagramas técnicos e esquemas elétricos.
-9. Sempre adicione [VOZ: resumo curto] no final.`;
+5. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet (preços, notícias, tutoriais).
+6. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
+7. [IMAGE_SEARCH: termo] - Busca imagem na web.
+8. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
+9. [PROJECT: código_mermaid] - Cria diagramas técnicos e esquemas.
+10. [GITHUB_CREATE: caminho/arquivo | conteúdo] - Cria ou edita um arquivo no projeto ativo. O sistema vai mostrar o Diff e pedir permissão antes de commitar.
+11. Sempre adicione [VOZ: resumo curto] no final.`;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
@@ -491,7 +518,7 @@ async function mapearRepositorio() {
     document.getElementById('metric-index-status').textContent = 'Baixando lista de repos...';
     document.getElementById('metric-index-status').style.color = '#F1C40F';
     
-    listaRepos = []; cacheTrees = {};
+    listaRepos = []; cacheTrees = {}; fileCache = {};
     try {
         const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&sort=updated`);
         if(!res.ok) throw new Error("Usuário não encontrado.");
@@ -571,6 +598,58 @@ async function buscarZeroToken(termo) {
     return resultados || "(Nenhum trecho encontrado no projeto ativo.)";
 }
 
+// ==========================================
+// DIFF E COMMIT (RESTAURADO)
+// ==========================================
+function diffLines(a, b) {
+    const A = a.split('\n'), B = b.split('\n');
+    const m = A.length, n = B.length;
+    const dp = Array(m+1).fill().map(() => Array(n+1).fill(0));
+    for (let i=1;i<=m;i++) for (let j=1;j<=n;j++) {
+        if (A[i-1] === B[j-1]) dp[i][j] = dp[i-1][j-1]+1;
+        else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+    }
+    const r = []; let i=m, j=n;
+    while (i>0 && j>0) {
+        if (A[i-1] === B[j-1]) { r.unshift({t:'same', l:A[i-1]}); i--; j--; }
+        else if (dp[i-1][j] >= dp[i][j-1]) { r.unshift({t:'del', l:A[i-1]}); i--; }
+        else { r.unshift({t:'add', l:B[j-1]}); j--; }
+    }
+    while (i>0) { r.unshift({t:'del', l:A[i-1]}); i--; }
+    while (j>0) { r.unshift({t:'add', l:B[j-1]}); j--; }
+    return r;
+}
+
+function mostrarDiff(path, oldText, newText) {
+    document.getElementById('diffPath').textContent = path;
+    const d = diffLines(oldText, newText);
+    let html = '';
+    d.slice(0, 500).forEach(x => {
+        html += `<div class="diff-line ${x.t}">${(x.l||' ').replace(/</g,'&lt;').replace(/>/g,'&gt;').substring(0, 300)}</div>`;
+    });
+    if (d.length > 500) html += `<div style="color:#6A7A8A; padding:5px;">... (${d.length-500} linhas omitidas)</div>`;
+    document.getElementById('diffView').innerHTML = html;
+    document.getElementById('modalDiff').classList.add('open');
+}
+
+async function confirmarCommit() {
+    if (!pendingCommit) return;
+    document.getElementById('modalDiff').classList.remove('open');
+    const { path, content } = pendingCommit;
+    pendingCommit = null;
+    addLog(`Commitando ${path}...`);
+    try {
+        const r = await fetch(`${WORKER_URL}/github-write`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: projetoAtivo, path, content, message: 'Atualização via BOSS AI' }) });
+        const d = await r.json();
+        addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
+        if (d.success) { delete fileCache[`${projetoAtivo}/${path}`]; }
+    } catch(e) { addMsg('error', 'Erro no commit: ' + e.message); }
+}
+function cancelarCommit() { pendingCommit = null; document.getElementById('modalDiff').classList.remove('open'); addMsg('boss', 'Commit cancelado.'); }
+
+// ==========================================
+// LOOP PRINCIPAL (ENVIAR)
+// ==========================================
 async function enviar() {
     const input = document.getElementById('input');
     const texto = input.value.trim();
@@ -610,6 +689,7 @@ async function enviar() {
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
 
+            // MUDAR PROJETO
             const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
             if (switchM) {
                 const novoProjeto = switchM[1].trim();
@@ -625,6 +705,19 @@ async function enviar() {
                 }
             }
 
+            // BUSCA WEB (RESTAURADA)
+            const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
+            if (webM && tentativas === 1) {
+                t.div.textContent = `Pesquisando na web: "${webM[1]}"...`;
+                addLog(`Web Search: ${webM[1]}`);
+                const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(webM[1])}`);
+                const sd = await sr.json();
+                msgs.push({ role: 'assistant', content: resposta });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca na web: ${sd.results}. Responda agora.` });
+                continue;
+            }
+
+            // GITHUB FIND
             const findM = [...resposta.matchAll(/\[GITHUB_FIND:\s*(.*?)\]/g)];
             if (findM.length > 0) {
                 let allRes = "";
@@ -638,6 +731,7 @@ async function enviar() {
                 continue;
             }
 
+            // GITHUB READ
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
                 if (!projetoAtivo) {
@@ -663,13 +757,15 @@ async function enviar() {
         let txtFalar = vozM ? vozM[1] : respostaFinal;
         if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
 
-        // RESTAURADO: EXTRAÇÃO DE TAGS DE MÍDIA
+        // EXTRAÇÃO DE MÍDIA E OUTRAS TAGS
         const mImg = respostaFinal.match(/\[IMAGE_SEARCH:\s*(.*?)\]/);
         const mVid = respostaFinal.match(/\[VIDEO_SEARCH:\s*(.*?)\]/);
         const mMer = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
         const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
+        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
 
+        // MEMÓRIA / AGENDA
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
             memoriaDecisoes.push(memAdd[1].trim());
@@ -685,7 +781,6 @@ async function enviar() {
             respostaFinal = respostaFinal.replace(memDel[0], '').trim();
             atualizarHUD();
         }
-
         const addAgenda = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
         if (addAgenda) {
             agendaInterna.push(addAgenda[1].trim());
@@ -702,14 +797,14 @@ async function enviar() {
 
         t.wrapper.remove();
 
-        // RESTAURADO: TEXTO E RENDERIZAÇÃO
         let limpo = respostaFinal
-            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT):[\s\S]*?\]/g, '')
+            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE):[\s\S]*?\]/g, '')
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
         if (limpo) { addMsg('boss', limpo); }
         
         falarTexto(txtFalar);
 
+        // RENDERIZAÇÃO DE MÍDIA
         if (mGen) {
             const w = document.createElement('div'); w.style.padding = '10px';
             w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
@@ -747,6 +842,16 @@ async function enviar() {
                     else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
                 }
             });
+        }
+
+        // GITHUB CREATE (DIFF RESTAURADO)
+        if (mGit) {
+            const path = mGit[1].trim(); const content = mGit[2].trim();
+            addLog(`Preparando commit de ${path}...`);
+            const existing = await fetchGithubFile(projetoAtivo, path);
+            const oldText = existing.startsWith('[ERRO') ? '' : existing;
+            pendingCommit = { path, content, oldText };
+            mostrarDiff(path, oldText, content);
         }
 
         document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
