@@ -203,7 +203,7 @@
             <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE</button>
 
             <label class="config-label" style="color:#ef4444; margin-top: 20px;">ZONA DE PERIGO</label>
-            <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR TUDO</button>
+            <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR HISTÓRICO/MEMÓRIA</button>
         </aside>
     </main>
 
@@ -292,11 +292,12 @@
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
+// MODELOS ATUALIZADOS (Correção 2 e 3)
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
-const GROQ_VISION_MODELO = 'llama-3.2-11b-vision-preview';
-const MODELO = 'qwen/qwen-2.5-72b-instruct';
+const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct'; // Modelo de visão atualizado
+const MODELO = 'llama-3.3-70b-versatile'; // Modelo principal atualizado para Groq
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
@@ -322,6 +323,7 @@ let listaRepos = [];
 let cacheTrees = {}; 
 let fileCache = {};  
 let pendingCommit = null;
+let lastSaveTime = 0; // Debounce de salvamento
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let metricLatency = localStorage.getItem('metric_latency') || '--';
@@ -413,14 +415,10 @@ function formatarTexto(texto) {
     return texto.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>').replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>').replace(/\n/g, '<br>');
 }
 
-async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
-    const isTypewriterOn = true;
-    if (!isTypewriterOn) {
-        elemento.innerHTML = formatarTexto(textoFinal);
-        elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
-        return;
-    }
-
+async function efeitoDigitacao(elemento, textoFinal) {
+    // Velocidade dinâmica baseada no tamanho do texto (Correção 10)
+    const velocidade = Math.max(2, 3000 / textoFinal.length);
+    
     elemento.innerHTML = formatarTexto(textoFinal);
     const chat = document.getElementById('chat');
     const walk = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT, null, false);
@@ -479,8 +477,10 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
     if (tipo === 'boss') {
         const feedback = document.createElement('div');
         feedback.className = 'feedback-box';
-        feedback.innerHTML = `<button class="btn-feedback" onclick="avaliar(this, '${texto.replace(/'/g, "\\'")}', true)">👍 Resolveu</button>
-                              <button class="btn-feedback bad" onclick="avaliar(this, '${texto.replace(/'/g, "\\'")}', false)">👎 Errou</button>`;
+        // Correção 12: Uso de encodeURIComponent para evitar quebra de HTML
+        const safeText = encodeURIComponent(texto);
+        feedback.innerHTML = `<button class="btn-feedback" onclick="avaliar(this, '${safeText}', true)">👍 Resolveu</button>
+                              <button class="btn-feedback bad" onclick="avaliar(this, '${safeText}', false)">👎 Errou</button>`;
         w.appendChild(feedback);
     }
 
@@ -497,7 +497,8 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
     return { wrapper: w, div: d };
 }
 
-function avaliar(btn, resposta, isBom) {
+function avaliar(btn, safeResposta, isBom) {
+    const resposta = decodeURIComponent(safeResposta);
     const parent = btn.parentElement;
     if (isBom) { parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>'; }
     else {
@@ -515,9 +516,10 @@ function buscarMemoriaAntiga(termo) {
     if (palavras.length === 0) return "";
     let resultados = [];
     passado.forEach(msg => {
-        const txt = msg.content.toLowerCase();
+        // Correção 6: Garantir que content é string
+        const txt = String(msg.content || '').toLowerCase();
         if (palavras.some(p => txt.includes(p))) {
-            resultados.push(`[${msg.role === 'user' ? 'VOCÊ' : 'BOSS'} DISSE]: ${msg.content.substring(0, 200)}...`);
+            resultados.push(`[${msg.role === 'user' ? 'VOCÊ' : 'BOSS'} DISSE]: ${String(msg.content).substring(0, 200)}...`);
         }
     });
     if (resultados.length === 0) return "";
@@ -611,12 +613,16 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'hidden') {
-        forcarSalvarMemoria(); 
+        // Correção 7: Debounce de 30s para não spammar a API
+        if (Date.now() - lastSaveTime > 30000) {
+            forcarSalvarMemoria(); 
+            lastSaveTime = Date.now();
+        }
     }
 });
 
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
-    const PROMPT_VERSION = "v6.1 - Auditoria Sênior";
+    const PROMPT_VERSION = "v6.2 - Auditoria Sênior";
     
     let memFirebaseStr = "";
     if (dbMemory) {
@@ -648,15 +654,18 @@ ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 2. [GITHUB_FIND: termo] - Busca. 
    - SE falhar ou vier vazio: tente [GITHUB_READ: README.md]. 
    - SE o README não existir: use [GITHUB_TREE] para listar os arquivos disponíveis e tentar achar o alvo.
-3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo para você se orientar.
+3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo.
 4. [GITHUB_READ: arquivo] - Lê arquivo.
 5. [GITHUB_CREATE: caminho | conteúdo] - Cria/edita arquivo. O sistema mostrará o Diff antes.
-6. [MEMORIA_ADD: chave | valor] - Salva um fato técnico. O sistema vai retornar um ECO de confirmação.
-7. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda. O sistema vai retornar um ECO.
-8. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
-9. [IMAGE_SEARCH: termo] - Busca imagem real.
-10. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
-11. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
+6. [MEMORIA_ADD: chave | valor] - Salva um fato técnico.
+7. [MEMORIA_DEL: termo] - Apaga um fato técnico da memória.
+8. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
+9. [AGENDA_DEL: termo] - Remove tarefa da agenda.
+10. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
+11. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
+12. [IMAGE_SEARCH: termo] - Busca imagem real na web.
+13. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
+14. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
 
 === REGRAS DE VOZ ===
 - Você DEVE terminar a resposta com [VOZ: resumo curto em até 180 caracteres].
@@ -700,7 +709,7 @@ async function chamarIA(messages, temp) {
 }
 
 async function mapearRepositorio() {
-    toggleConfig();
+    // Correção 15: Não abre o painel de config no boot
     addMsg('boss', '⚙ Sincronizando lista de repositórios. Aguarde...');
     document.getElementById('metric-index-status').textContent = 'Baixando repos...';
     document.getElementById('metric-index-status').style.color = '#F1C40F';
@@ -853,8 +862,7 @@ async function confirmarCommit() {
     if (!pendingCommit) return;
     document.getElementById('modalDiff').classList.remove('open');
     let { repo, path, content } = pendingCommit;
-    pendingCommit = null;
-    
+    // Correção 9: Mantém pendingCommit até sucesso total para não perder conteúdo
     path = path.replace(/^\/+/, ''); 
 
     addLog(`Commitando ${path} em ${repo}...`);
@@ -862,7 +870,10 @@ async function confirmarCommit() {
         const r = await fetch(`${WORKER_URL}/github-write`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: repo, path, content, message: 'Atualização via BOSS AI' }) });
         const d = await r.json();
         addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
-        if (d.success) { delete fileCache[`${repo}/${path}`]; }
+        if (d.success) { 
+            delete fileCache[`${repo}/${path}`]; 
+            pendingCommit = null; // Só anula se der certo
+        }
     } catch(e) { addMsg('error', 'Erro no commit: ' + e.message); }
 }
 function cancelarCommit() { pendingCommit = null; document.getElementById('modalDiff').classList.remove('open'); addMsg('boss', 'Commit cancelado.'); }
@@ -926,7 +937,7 @@ async function enviar() {
             tentativas++;
             const data = await chamarIA(msgs, isConversational ? 0.65 : 0.2);
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
-            let resposta = data.choices?.[0]?.message?.content?.trim() || "Erro.";
+            let resposta = data.choices?.[0]?.message?.content?.trim() || "";
 
             const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
             if (switchM) {
@@ -1002,6 +1013,11 @@ async function enviar() {
 
             respostaFinal = resposta; continuar = false;
         }
+        
+        // Correção 4: Loop silencioso tratado
+        if (!respostaFinal) {
+            throw new Error("O BOSS não conseguiu gerar uma resposta válida após 5 tentativas. Verifique a API.");
+        }
 
         const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
         let txtFalar = vozM ? vozM[1] : respostaFinal;
@@ -1012,9 +1028,10 @@ async function enviar() {
         const mMer = respostaFinal.match(/```mermaid\n([\s\S]*?)```/);
         const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
-        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]/);
+        
+        // Correção 5: Regex mais robusta para GITHUB_CREATE que aceita colchetes no meio
+        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\]\s*$/);
 
-        // ECHO DE MEMÓRIA E AGENDA (CORREÇÃO DO SILÊNCIO)
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
             memoriaDecisoes.push(memAdd[1].trim());
@@ -1081,8 +1098,12 @@ async function enviar() {
             const w = document.createElement('div'); w.className = 'mermaid-container';
             w.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
             document.getElementById('chat').appendChild(w);
-            mermaid.run({ nodes: [w.querySelector('.mermaid')] });
-            setTimeout(() => addMsg('boss', `📊 **[SISTEMA]:** Diagrama renderizado com sucesso.`), 100);
+            try {
+                mermaid.run({ nodes: [w.querySelector('.mermaid')] });
+                setTimeout(() => addMsg('boss', `📊 **[SISTEMA]:** Diagrama renderizado com sucesso.`), 100);
+            } catch(e) {
+                w.innerHTML += `<div style="color:#E74C3C; font-size:12px;">[ Erro no diagrama Mermaid ]</div>`;
+            }
         }
 
         if (mImg) {
@@ -1147,7 +1168,19 @@ function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-to
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-function falarTexto(t) { if (!vozAtiva || !('speechSynthesis' in window)) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t.replace(/[*_~`#]/g, '').replace(/\n/g, ' ')); u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch; if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } window.speechSynthesis.speak(u); }
+// Correção 11: Limpa tags e emojis antes de falar
+function falarTexto(t) { 
+    if (!vozAtiva || !('speechSynthesis' in window)) return; 
+    window.speechSynthesis.cancel(); 
+    let limpo = t.replace(/\[.*?\]/g, '') // Remove tags [SISTEMA], [VOZ], etc.
+                 .replace(/[*_~`#]/g, '')
+                 .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Remove emojis
+                 .replace(/\n/g, ' '); 
+    const u = new SpeechSynthesisUtterance(limpo); 
+    u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch; 
+    if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } 
+    window.speechSynthesis.speak(u); 
+}
 function testarVoz() { falarTexto("Sistemas de voz operando."); }
 
 let reconhecimento;
@@ -1161,13 +1194,26 @@ function lerArquivo(event) {
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
-        reader.onload = function(e) { arquivoAnexado = e.target.result.substring(0, 50000); addMsg('user', `[Arquivo "${file.name}" anexado]`); };
+        reader.onload = function(e) { 
+            arquivoAnexado = e.target.result.substring(0, 50000); 
+            addMsg('user', `[Arquivo "${file.name}" anexado]`); 
+            if (e.target.result.length > 50000) addMsg('error', 'Aviso: O arquivo era grande e foi truncado em 50.000 caracteres.');
+        };
         reader.readAsText(file);
     }
     event.target.value = '';
 }
 
-function limparHistorico() { if(confirm("Apagar TODO o histórico, memórias locais e forçar recarregamento?")) { localStorage.clear(); location.reload(); } }
+function limparHistorico() { 
+    if(confirm("Apagar histórico de conversas, memórias e agenda locais?")) { 
+        // Correção 14: Não apaga configurações (voz, chaves, tema)
+        localStorage.removeItem('boss_historico_full');
+        localStorage.removeItem('boss_memoria_decisoes');
+        localStorage.removeItem('boss_agenda_interna');
+        localStorage.removeItem('boss_erros');
+        location.reload(); 
+    } 
+}
 
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
