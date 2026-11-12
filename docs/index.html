@@ -296,7 +296,7 @@ const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODELO = 'llama-3.3-70b-versatile';
 const GROQ_VISION_MODELO = 'llama-3.2-11b-vision-preview';
-const MODELO = 'qwen/qwen-2.5-72b-instruct'; // MODELO OFICIAL CORRIGIDO
+const MODELO = 'qwen/qwen-2.5-72b-instruct';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
@@ -307,7 +307,10 @@ let temaAtual = localStorage.getItem('boss_theme') || 'theme-cyan';
 let gitUser = localStorage.getItem('boss_git_user') || 'lexpaker-arch';
 let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
 
-let historicoCompleto = JSON.parse(localStorage.getItem('boss_historico_full')) || []; 
+// HISTÓRICO SEPARADO POR PROJETO (CORREÇÃO PONTO 2)
+let todosOsHistoricos = JSON.parse(localStorage.getItem('boss_historico_full')) || {};
+let historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
+
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let logErros = JSON.parse(localStorage.getItem('boss_erros')) || [];
@@ -411,12 +414,68 @@ function formatarTexto(texto) {
     return texto.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>').replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>').replace(/\n/g, '<br>');
 }
 
-function addMsg(tipo, texto, salvar = true) {
+// EFEITO DE DIGITAÇÃO RESTAURADO
+async function efeitoDigitacao(elemento, textoFinal, velocidade = 15) {
+    const isTypewriterOn = true; // Podemos adicionar um toggle no menu se quiser
+    if (!isTypewriterOn) {
+        elemento.innerHTML = formatarTexto(textoFinal);
+        elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
+        return;
+    }
+
+    elemento.innerHTML = formatarTexto(textoFinal);
+    const chat = document.getElementById('chat');
+    const walk = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    const textNodes = [];
+    while (node = walk.nextNode()) {
+        if (node.nodeValue.trim() !== '') {
+            textNodes.push({ node, text: node.nodeValue });
+            node.nodeValue = ''; 
+        }
+    }
+
+    if (textNodes.length === 0) return; 
+
+    return new Promise(resolve => {
+        let currentTextIndex = 0;
+        let currentCharIndex = 0;
+
+        const timer = setInterval(() => {
+            if (currentTextIndex >= textNodes.length) {
+                clearInterval(timer);
+                elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
+                resolve();
+                return;
+            }
+
+            const currentObj = textNodes[currentTextIndex];
+            currentObj.node.nodeValue += currentObj.text[currentCharIndex];
+            currentCharIndex++;
+
+            const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 100;
+            if (isAtBottom) { chat.scrollTop = chat.scrollHeight; }
+
+            if (currentCharIndex >= currentObj.text.length) {
+                currentTextIndex++;
+                currentCharIndex = 0;
+            }
+        }, velocidade);
+    });
+}
+
+function addMsg(tipo, texto, salvar = true, animar = false) {
     const chat = document.getElementById('chat');
     const w = document.createElement('div'); w.className = `msg-wrapper`;
     const d = document.createElement('div'); d.className = `msg ${tipo}`;
-    if (tipo === 'boss') { d.innerHTML = formatarTexto(texto); d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); }
-    else { d.textContent = texto; }
+    
+    if (tipo === 'boss' && !animar) { 
+        d.innerHTML = formatarTexto(texto); 
+        d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); 
+    } else if (tipo !== 'boss') { 
+        d.textContent = texto; 
+    }
+    
     w.appendChild(d); 
     
     if (tipo === 'boss') {
@@ -432,7 +491,9 @@ function addMsg(tipo, texto, salvar = true) {
     if (salvar && tipo !== 'thinking') {
         historicoCompleto.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
         if (historicoCompleto.length > 2000) historicoCompleto = historicoCompleto.slice(-2000);
-        localStorage.setItem('boss_historico_full', JSON.stringify(historicoCompleto));
+        
+        todosOsHistoricos[projetoAtivo] = historicoCompleto;
+        localStorage.setItem('boss_historico_full', JSON.stringify(todosOsHistoricos));
         atualizarHUD();
     }
     return { wrapper: w, div: d };
@@ -525,7 +586,7 @@ async function forcarSalvarMemoria() {
     
     try {
         addLog("Resumindo sessão em background...");
-        const prompt = `Resuma a conversa que tivemos hoje em um parágrafo curto e direto. Em seguida, extraia os FATOS TÉCNICOS discutidos (como senhas, configurações, nomes de arquivos) em um objeto JSON estrito. Formato da resposta exata:
+        const prompt = `Resuma a conversa que tivemos hoje em um parágrafo curto e direto. Em seguida, extraia os FATOS TÉCNICOS discutidos em um objeto JSON estrito. Formato da resposta exata:
 RESUMO: [seu resumo aqui]
 JSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
@@ -560,18 +621,18 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ==========================================
-// PROMPT BLINDADO (v5.0 - Auditoria Sênior)
+// PROMPT BLINDADO (v6.0 - Auditoria Sênior)
 // ==========================================
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
-    const PROMPT_VERSION = "v5.0 - Auditoria Sênior";
+    const PROMPT_VERSION = "v6.0 - Auditoria Sênior";
     
     let memFirebaseStr = "";
     if (dbMemory) {
         if (dbMemory.diario_bordo) memFirebaseStr += `- Diário de Bordo Anterior: ${dbMemory.diario_bordo}\n`;
-        if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos Conhecidos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
+        if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
     }
 
-    const base = `Você é o BOSS, engenheiro sênior da EXODRIVE. O usuário é o Patrão. NUNCA o chame de "Chefe".
+    const base = `Você é o BOSS, a inteligência de engenharia da EXODRIVE. O sistema tem 3 partes: o index.html (seu corpo/execução), o Prompt (seu cérebro/raciocínio) e o repo 'BOSS-' (sua memória). O usuário é o Patrão. NUNCA o chame de "Chefe".
 [VERSÃO DO PROMPT: ${PROMPT_VERSION}]
 
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
@@ -580,28 +641,31 @@ Você tem acesso aos repositórios do usuário '${gitUser}'.
 === MEMÓRIA DE LONGO PRAZO (FIREBASE) ===
 ${memFirebaseStr || 'Nenhuma memória anterior encontrada para este projeto.'}
 
-=== MEMÓRIA DE CONVERSAS RECENTES (RAG) ===
+=== MEMÓRIA DE CONVERSAS DESTE PROJETO (RAG) ===
 ${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 
 === AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
-=== REGRAS DE SEGURANÇA CRÍTICAS ===
-1. NUNCA tente ler arquivos com extensões perigosas ou nomes como '.env', '.keystore', 'secrets'. O sistema irá bloqueá-lo.
-2. O sistema já mascara senhas automaticamente, mas se você ver '***', não tente adivinhar.
-3. NUNCA diga que um commit foi "concluído" ou "salvo" antes de receber a confirmação do sistema. Use [GITHUB_CREATE: caminho | conteúdo] e espere o usuário aprovar o Diff.
+=== REGRAS DE SEGURANÇA ===
+1. O sistema bloqueia automaticamente leitura de .env e mascaramento de senhas. Se o sistema retornar "[ERRO DE SEGURANÇA]", NÃO insista.
+2. NUNCA diga que um commit foi "concluído". O sistema abrirá o Diff e só commitará se o usuário aprovar.
 
 === REGRAS DE AÇÃO E FALLBACK ===
-1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir explicitamente para mudar de projeto.
-2. [GITHUB_FIND: termo] - Busca por palavra-chave. Se falhar ou retornar vazio, tente [GITHUB_READ: README.md] ou outro arquivo óbvio.
-3. [GITHUB_READ: arquivo] - Lê arquivo. Se o sistema retornar [ERRO GITHUB], avise o usuário e pare de insistir no mesmo arquivo.
-4. [GITHUB_CREATE: caminho | conteúdo] - Edita/cria arquivo. O sistema abrirá um Diff para o usuário aprovar.
-5. [MEMORIA_ADD: chave | valor] - Salva um fato imutável (ex: [MEMORIA_ADD: senha_hc05 | 1234]).
-6. [AGENDA_ADD: tarefa] - Adiciona tarefa.
-7. Ferramentas de mídia ([GENERATE_IMAGE], [VIDEO_SEARCH]) devem ser usadas com moderação e apenas se solicitadas.
+1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir explicitamente.
+2. [GITHUB_FIND: termo] - Busca. Se falhar ou vier vazio, tente [GITHUB_READ: README.md]. Se falhar de novo, PARE e peça ajuda.
+3. [GITHUB_READ: arquivo] - Lê arquivo.
+4. [GITHUB_CREATE: caminho | conteúdo] - Cria/edita arquivo.
+5. [MEMORIA_ADD: chave | valor] - Salva um fato técnico (ex: [MEMORIA_ADD: senha_hc05 | 1234]).
+6. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
+7. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
+8. [IMAGE_SEARCH: termo] - Busca imagem real na web.
+9. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
+10. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
 
 === REGRAS DE VOZ ===
-- O resumo dentro de [VOZ: ...] deve ter NO MÁXIMO 120 caracteres. Seja ultra direto.
+- Você DEVE sempre terminar a resposta com [VOZ: resumo curto em até 120 caracteres].
+- Se você não usar a tag, o sistema lerá a resposta inteira e ficará longo demais.
 
 `;
 
@@ -688,9 +752,7 @@ async function carregarArvoreProjeto() {
     }
 }
 
-// ==========================================
 // CORREÇÃO DE SEGURANÇA (Blacklist e Máscara)
-// ==========================================
 async function fetchGithubFile(repo, path) {
     const pathLower = path.toLowerCase();
     const blacklist = ['.env', 'secrets.properties', '.keystore', '.jks', 'id_rsa', 'id_dsa'];
@@ -700,8 +762,7 @@ async function fetchGithubFile(repo, path) {
 
     const key = `${repo}/${path}`;
     if (fileCache[key]) {
-        // Se já tem cache, retorna o mascarado para a IA
-        return fileCache[key].masked;
+        return fileCache[key].masked; // Retorna o mascarado para a IA
     }
     try {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
@@ -709,7 +770,6 @@ async function fetchGithubFile(repo, path) {
         if (data.content) { 
             let txt = decodeURIComponent(escape(atob(data.content))); 
             
-            // Guarda o original e gera o mascarado
             let masked = txt.replace(/(storePassword|keyPassword|password|senha)\s*=\s*["']([^"']+)["']/gi, '$1 = "***"');
             masked = masked.replace(/(password|senha)\s*:\s*["']([^"']+)["']/gi, '$1: "***"');
             
@@ -783,7 +843,7 @@ function diffLines(a, b) {
 
 function mostrarDiff(path, oldText, newText) {
     document.getElementById('diffPath').textContent = path;
-    document.getElementById('diffRepo').textContent = pendingCommit.repo; // Mostra o repo travado
+    document.getElementById('diffRepo').textContent = pendingCommit.repo; 
     const d = diffLines(oldText, newText);
     let html = '';
     d.slice(0, 500).forEach(x => {
@@ -800,8 +860,7 @@ async function confirmarCommit() {
     let { repo, path, content } = pendingCommit;
     pendingCommit = null;
     
-    // CORREÇÃO DO ERRO 422: Remove barras do início do path
-    path = path.replace(/^\/+/, '');
+    path = path.replace(/^\/+/, ''); // Remove barras do path
 
     addLog(`Commitando ${path} em ${repo}...`);
     try {
@@ -884,6 +943,9 @@ async function enviar() {
                     atualizarDisplayProjeto();
                     resposta = resposta.replace(switchM[0], '').trim();
                     if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**. Baixando árvore de arquivos...`;
+                    
+                    // CARREGA O HISTÓRICO DO NOVO PROJETO
+                    historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
                     
                     await carregarArvoreProjeto();
                     carregarMemoriaFirebase();
@@ -981,7 +1043,11 @@ async function enviar() {
         let limpo = respostaFinal
             .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE):[\s\S]*?\]/g, '')
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
-        if (limpo) { addMsg('boss', limpo); }
+            
+        if (limpo) { 
+            const msgObj = addMsg('boss', limpo, true, true); 
+            await efeitoDigitacao(msgObj.div, limpo); 
+        }
         
         falarTexto(txtFalar);
 
@@ -1028,7 +1094,7 @@ async function enviar() {
             let path = mGit[1].trim().replace(/^\/+/, ''); // Remove barras
             const content = mGit[2].trim();
             
-            // P2-c: Verifica se a IA está tentando salvar "***" 
+            // Verifica se a IA está tentando salvar "***" 
             if (content.includes('***') && content.includes('Password')) {
                 addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***). O arquivo original no GitHub seria corrompido. Altere a senha manualmente ou peça ao BOSS para não alterar essa linha.`);
                 return;
