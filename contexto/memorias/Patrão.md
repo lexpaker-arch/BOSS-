@@ -78,4 +78,21 @@
 
 ---
 
-> **Regra de ouro deste arquivo:** se não está escrito aqui, não aconteceu. Se aconteceu e não está aqui, é dívida de memória — e o BOSS deve pagá-la no próximo turno.
+## 📅 2026-11-13 — v8.2: DeepSeek primário, Mermaid render(), robustez mantida
+
+**Contexto:** Patrão atualizou o `index.html` para **v8.2**, aplicando correções auditadas e novas integrações.
+
+### 1. DeepSeek V4.1 Flash (provider primário)
+- `deepseek-flash` vira o **modelo principal** de inferência.
+- Fluxo de fallback: **DeepSeek → Worker (Groq) → Groq Direto**.
+- Novo campo de chave DeepSeek no menu de configurações.
+- `[WEB_SEARCH]` e `[WEB_FETCH: url]` migradas para APIs nativas do DeepSeek (Search/Fetch) — economiza chamadas do Worker e melhora o RAG.
+
+### 2. Correção do Mermaid (bug visual)
+- `mermaid.run()` substituído por `mermaid.render()` — SVG gerado direto no container.
+- CSS ajustado: `min-height` + centralização; barra de rolagem vazia eliminada.
+- Código Mermaid inválido agora cai no `try/catch` e exibe caixa vermelha — não finge sucesso.
+
+### 3. Segurança e robustez (herdadas da v7.3, mantidas)
+- Firebase com sintaxe nativa correta.
+- `GITHUB_PATCH`: `escapeRegex`, delimitadores `<<<OLD>>>/
