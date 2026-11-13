@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v8.5.2)</title>
+<title>BOSS - EXODRIVE (v8.5.3)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -56,7 +56,7 @@
     .widget-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; }
     .log-line { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
 
-    /* CENTER AREA AGORA INCLUI O FOOTER */
+    /* CENTER AREA ABRAÇA O CHAT E O FOOTER */
     .center-area { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, var(--bg-dark) 100%); min-width: 0; }
     
     .orb-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 0; opacity: 0.15; pointer-events: none; display: flex; justify-content: center; align-items: center; }
@@ -68,7 +68,7 @@
 
     #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; z-index: 1; scroll-behavior: smooth; }
     
-    /* Nova Animação Fade-In para as mensagens */
+    /* Animação Fade-In */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     .msg-wrapper { display: flex; flex-direction: column; width: 100%; animation: fadeIn 0.3s ease-out forwards; }
     
@@ -99,7 +99,7 @@
     .diff-line.del { background: rgba(231,76,60,0.15); color: #E74C3C; }
     .diff-line.same { color: #8A9AAA; }
 
-    /* FOOTER AGORA FICA DENTRO DO CENTER AREA */
+    /* FOOTER */
     footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: flex-end; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
     .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; margin-bottom: 2px;}
     .cmd-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -182,7 +182,6 @@
             <div class="orb-container"><div class="orb"><div class="orb-2"></div><div class="orb-core"></div></div></div>
             <div id="chat"></div>
             
-            <!-- FOOTER MOVIDO PARA CÁ -->
             <footer>
                 <input type="file" id="fileInput" accept="image/*,text/*,.kt,.xml,.gradle,.md,.json" style="display:none" onchange="lerArquivo(event)">
                 <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
@@ -1049,13 +1048,19 @@ function testeDeFumaca() {
         } else {
             erros.push("❌ Falha: Animação de texto antiga ou conflitante ainda presente.");
         }
+
+        if (html.includes('Promise.all')) {
+            sucessos.push("✅ Inicialização assíncrona correta (Fim do Falso Primeiro Contato).");
+        } else {
+            erros.push("❌ Falha: Verificação de inicialização ainda usa setTimeout.");
+        }
         
         t.wrapper.remove();
         let msgFinal = "📋 **RESULTADO DO AUTODIAGNÓSTICO**\n\n";
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.5.2)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.5.3)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1591,21 +1596,24 @@ if (window.speechSynthesis) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    mapearRepositorio();
-    if (projetoAtivo) {
-        await carregarMemoriaFirebase();
-    }
+    // 1. Inicializa os processos em paralelo (Mais rápido)
+    const pRepos = mapearRepositorio();
+    const pMemoria = projetoAtivo ? carregarMemoriaFirebase() : Promise.resolve();
     
-    setTimeout(() => {
-        if (historicoCompleto.length === 0 && !dbMemory) {
-            const msg = `Bom dia, Patrão. Sincronização concluída. 
-Não encontrei nenhuma memória no Firebase para o projeto **${projetoAtivo.split('/')[1] || 'Atual'}**. 
+    // 2. Aguarda ambos terminarem (AQUI ESTÁ A CORREÇÃO DO BUG)
+    await Promise.all([pRepos, pMemoria]);
+    
+    // 3. Avalia o estado real, sem setTimeout
+    const histAtual = todosOsHistoricos[projetoAtivo] || [];
+    if (histAtual.length === 0 && !dbMemory) {
+        const nomeProjeto = projetoAtivo ? (projetoAtivo.split('/')[1] || projetoAtivo) : 'Atual';
+        const msg = `Bom dia, Patrão. Sincronização concluída. 
+Não encontrei nenhuma memória no Firebase para o projeto **${nomeProjeto}**. 
 
 Como este é o nosso primeiro contato neste projeto, qual é o contexto inicial? O que vamos fazer hoje?`;
-            addMsg('boss', msg);
-            falarTexto("Sistemas online. Memória vazia para este projeto. Qual o contexto inicial?");
-        }
-    }, 2000);
+        addMsg('boss', msg);
+        falarTexto("Sistemas online. Memória vazia para este projeto. Qual o contexto inicial?");
+    }
 });
 </script>
 </body>
