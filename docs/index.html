@@ -201,6 +201,11 @@
             <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)" style="width:100%;">
             <button class="btn-config-action" onclick="testarVoz()">🔊 TESTAR VOZ</button>
 
+            <!-- DEEPSEEK INTEGRATION -->
+            <label class="config-label" style="color:#60a5fa; margin-top: 20px;">🧠 API DEEPSEEK V4.1 FLASH</label>
+            <input type="password" id="deepseekKeyInput" class="config-input" placeholder="sk-...">
+            <button class="btn-config-action" onclick="salvarDeepseekKey()">SALVAR CHAVE DEEPSEEK</button>
+
             <label class="config-label" style="color:var(--accent); margin-top: 20px;">⚡ API RESERVA (GROQ)</label>
             <input type="password" id="groqKeyInput" class="config-input" placeholder="gsk_...">
             <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE</button>
@@ -303,6 +308,12 @@ const GROQ_MODELO = 'llama-3.1-8b-instant';
 const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct';
 const MODELO = 'llama-3.3-70b-versatile'; 
 
+// DEEPSEEK CONSTANTS
+const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
+const DEEPSEEK_SEARCH_URL = 'https://api.deepseek.com/v1/tools/search';
+const DEEPSEEK_FETCH_URL = 'https://api.deepseek.com/v1/tools/fetch';
+const DEEPSEEK_MODELO = 'deepseek-flash';
+
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozNome = localStorage.getItem('boss_voice') || '';
@@ -344,6 +355,7 @@ document.getElementById('userSelect').value = userRole;
 document.getElementById('rateSlider').value = vozRate; document.getElementById('rateVal').textContent = vozRate.toFixed(2);
 document.getElementById('pitchSlider').value = vozPitch; document.getElementById('pitchVal').textContent = vozPitch.toFixed(2);
 document.getElementById('groqKeyInput').value = localStorage.getItem('boss_groq_key') || '';
+document.getElementById('deepseekKeyInput').value = localStorage.getItem('boss_deepseek_key') || '';
 document.getElementById('gitUserInput').value = gitUser;
 atualizarMuteBtn(); atualizarHUD(); atualizarDisplayProjeto();
 
@@ -394,6 +406,7 @@ function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; lo
 function mudarRate(val) { vozRate = parseFloat(val); document.getElementById('rateVal').textContent = vozRate.toFixed(2); localStorage.setItem('boss_rate', vozRate); }
 function mudarPitch(val) { vozPitch = parseFloat(val); document.getElementById('pitchVal').textContent = vozPitch.toFixed(2); localStorage.setItem('boss_pitch', vozPitch); }
 function salvarGroqKey() { const k = document.getElementById('groqKeyInput').value.trim(); localStorage.setItem('boss_groq_key', k); alert(k ? 'Chave Groq salva!' : 'Chave removida.'); }
+function salvarDeepseekKey() { const k = document.getElementById('deepseekKeyInput').value.trim(); localStorage.setItem('boss_deepseek_key', k); alert(k ? 'Chave DeepSeek salva!' : 'Chave removida.'); }
 function salvarGitUser() { gitUser = document.getElementById('gitUserInput').value.trim(); localStorage.setItem('boss_git_user', gitUser); alert('Usuário do GitHub salvo. Sincronizando...'); mapearRepositorio(); }
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -700,10 +713,11 @@ REGRAS:
 9. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
 10. [AGENDA_DEL: termo] - Remove tarefa da agenda.
 11. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
-12. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
-13. [IMAGE_SEARCH: termo] - Busca imagem real na web.
-14. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
-15. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
+12. [WEB_FETCH: url] - Lê o conteúdo de uma página web (Markdown). Use para documentações.
+13. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
+14. [IMAGE_SEARCH: termo] - Busca imagem real na web.
+15. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
+16. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
 
 === REGRAS DE VOZ ===
 - Você DEVE terminar a resposta com [VOZ: resumo curto em até 180 caracteres].
@@ -717,6 +731,7 @@ function escapeRegex(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// DEEPSEEK PRIMARY, WORKER FALLBACK 1, GROQ FALLBACK 2
 async function chamarIA(messages, temp) {
     const estimativaTokens = messages.reduce((acc, m) => acc + Math.ceil((m.content?.length || 0) / 3.5), 0);
     if (estimativaTokens > 100000) {
@@ -724,48 +739,72 @@ async function chamarIA(messages, temp) {
         addLog(`Contexto grande. Truncado para ${Math.ceil(messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) / 3.5)} tokens.`);
     }
 
-    const payload = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
+    const deepseekKey = localStorage.getItem('boss_deepseek_key');
+    
+    // 1. Tenta DeepSeek
+    if (deepseekKey) {
+        try {
+            const st = performance.now();
+            const payload = { 
+                model: DEEPSEEK_MODELO, 
+                messages: messages, 
+                temperature: temp, 
+                max_tokens: 4096 
+            };
+            const resp = await fetch(DEEPSEEK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
+                body: JSON.stringify(payload)
+            });
+            const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
+            if (!resp.ok) throw new Error(`DeepSeek HTTP ${resp.status}`);
+            
+            document.getElementById('statusDot').className = 'status-dot ok';
+            document.getElementById('statusText').textContent = 'DEEPSEEK';
+            return await resp.json();
+        } catch (eDeep) {
+            addLog(`DeepSeek falhou (${eDeep.message}). Tentando Worker...`);
+        }
+    }
+
+    // 2. Fallback Worker (Groq via proxy)
+    const payloadWorker = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), 45000);
-
     try {
         const st = performance.now();
-        const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl.signal });
+        const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadWorker), signal: ctrl.signal });
         clearTimeout(to);
-        
         const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
         if (!resp.ok) throw new Error(resp.status === 429 ? "COTA_ESGOTADA" : `Erro ${resp.status}`);
-        
-        document.getElementById('statusDot').className = 'status-dot ok'; document.getElementById('statusText').textContent = 'ONLINE';
+        document.getElementById('statusDot').className = 'status-dot ok';
+        document.getElementById('statusText').textContent = 'ONLINE (WORKER)';
         return await resp.json();
     } catch (e1) {
         clearTimeout(to);
-        addLog(`Falha Principal. Tentando Fallback...`);
+        addLog(`Worker falhou. Tentando Groq...`);
         const groqKey = localStorage.getItem('boss_groq_key');
-        
         if (!groqKey) {
-            document.getElementById('statusDot').className = 'status-dot err'; document.getElementById('statusText').textContent = 'SEM API';
-            throw new Error(`API Principal falhou e não há chave de fallback.`);
+            document.getElementById('statusDot').className = 'status-dot err';
+            document.getElementById('statusText').textContent = 'SEM API';
+            throw new Error(`Todas as APIs falharam. Configure uma chave.`);
         }
-        
+        // 3. Fallback Groq Direto
         try {
-            document.getElementById('statusDot').className = 'status-dot warn'; document.getElementById('statusText').textContent = 'FALLBACK';
-            
+            document.getElementById('statusDot').className = 'status-dot warn';
+            document.getElementById('statusText').textContent = 'FALLBACK';
             const st = performance.now();
             const ctrl2 = new AbortController();
             const to2 = setTimeout(() => ctrl2.abort(), 45000);
-            
-            const payloadFallback = { model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 };
-            
-            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify(payloadFallback), signal: ctrl2.signal });
+            const payloadGroq = { model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 };
+            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify(payloadGroq), signal: ctrl2.signal });
             clearTimeout(to2);
-            
             const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
-            if (!resp2.ok) throw new Error(`Erro Fallback: ${resp2.status}`);
-            
+            if (!resp2.ok) throw new Error(`Erro Groq: ${resp2.status}`);
             return await resp2.json();
         } catch (e2) {
-            document.getElementById('statusDot').className = 'status-dot err'; document.getElementById('statusText').textContent = 'OFFLINE';
+            document.getElementById('statusDot').className = 'status-dot err';
+            document.getElementById('statusText').textContent = 'OFFLINE';
             throw new Error(`Ambas APIs falharam. (${e1.message} / ${e2.message})`);
         }
     }
@@ -881,7 +920,7 @@ async function buscarZeroToken(termo) {
     if(!tree) return `(A árvore do projeto falhou. Tente pedir um arquivo específico com GITHUB_READ).`;
 
     let resultados = "";
-    let arquivosLidos = 0; // Correção do contador
+    let arquivosLidos = 0; 
     
     const matchesName = tree.filter(p => p.toLowerCase().includes(termo.toLowerCase()));
     const codeExts = ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json', '.gradle'];
@@ -971,7 +1010,7 @@ async function confirmarCommit() {
         addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
         if (d.success) { 
             delete fileCache[`${repo}/${path}`]; 
-            delete cacheTrees[repo]; // Invalida a árvore para recarregar
+            delete cacheTrees[repo]; 
             pendingCommit = null; 
         }
     } catch(e) { addMsg('error', 'Erro no commit: ' + e.message); }
@@ -986,7 +1025,6 @@ function testeDeFumaca() {
         let erros = [];
         let sucessos = [];
         
-        // Verifica Firebase
         if (typeof window.db !== 'undefined' && window.db !== null) {
             sucessos.push("✅ Firebase inicializado (window.db existe).");
         } else {
@@ -995,25 +1033,28 @@ function testeDeFumaca() {
 
         const html = document.documentElement.innerHTML;
         
-        // Verifica GITHUB_CREATE
         if (html.includes('GITHUB_CREATE:') && html.includes('[/GITHUB_CREATE]')) {
             sucessos.push("✅ Módulo GITHUB_CREATE presente e fechado.");
         } else {
             erros.push("❌ Falha: Módulo GITHUB_CREATE ausente ou sem tag de fechamento.");
         }
 
-        // Verifica GITHUB_PATCH
         if (html.includes('GITHUB_PATCH') && html.includes('<<<OLD>>>')) {
             sucessos.push("✅ Módulo GITHUB_PATCH (com delimitadores) presente.");
         } else {
             erros.push("❌ Falha: Módulo GITHUB_PATCH ausente ou mal formatado.");
         }
 
-        // Verifica Token Estimation
         if (html.includes('/ 3.5')) {
             sucessos.push("✅ Estimativa de Tokens corrigida (/3.5).");
         } else {
             erros.push("❌ Falha: Fórmula de estimativa de tokens ausente.");
+        }
+
+        if (html.includes('DEEPSEEK_URL')) {
+            sucessos.push("✅ Integração DeepSeek V4.1 Flash ativa.");
+        } else {
+            erros.push("❌ Falha: Integração DeepSeek ausente.");
         }
         
         t.wrapper.remove();
@@ -1021,7 +1062,7 @@ function testeDeFumaca() {
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v7.3)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.0)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1108,13 +1149,71 @@ async function enviar() {
                 }
             }
 
+            // WEB SEARCH (DEEPSEEK E FALLBACK)
             const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
             if (webM && tentativas === 1) {
-                t.div.textContent = `Pesquisando na web: "${webM[1]}"...`;
-                const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(webM[1])}`);
-                const sd = await sr.json();
-                msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca na web: ${sd.results}. Responda agora.` });
+                const termo = webM[1];
+                const deepseekKey = localStorage.getItem('boss_deepseek_key');
+                
+                if (deepseekKey) {
+                    t.div.textContent = `Pesquisando (DeepSeek): "${termo}"...`;
+                    try {
+                        const sr = await fetch(DEEPSEEK_SEARCH_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
+                            body: JSON.stringify({ query: termo, count: 5, need_content: false })
+                        });
+                        const sd = await sr.json();
+                        const results = sd.results || [];
+                        let allRes = results.map(r => `[${r.title}](${r.url})\n${r.snippet || r.summary || ''}`).join('\n\n');
+                        if (!allRes) allRes = "Nenhum resultado encontrado.";
+                        
+                        msgs.push({ role: 'assistant', content: resposta });
+                        msgs.push({ role: 'user', content: `[SISTEMA]: Resultados da busca (DeepSeek):\n${allRes}\n\nResponda agora.` });
+                    } catch (e) {
+                        addLog(`Search DeepSeek falhou. Usando Worker...`);
+                        const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
+                        const sd = await sr.json();
+                        msgs.push({ role: 'assistant', content: resposta });
+                        msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca (Worker): ${sd.results}. Responda agora.` });
+                    }
+                } else {
+                    t.div.textContent = `Pesquisando (Worker): "${termo}"...`;
+                    const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
+                    const sd = await sr.json();
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca na web: ${sd.results}. Responda agora.` });
+                }
+                continue;
+            }
+
+            // WEB FETCH (DEEPSEEK)
+            const fetchM = resposta.match(/\[WEB_FETCH:\s*(.*?)\]/);
+            if (fetchM && tentativas === 1) {
+                const url = fetchM[1];
+                const deepseekKey = localStorage.getItem('boss_deepseek_key');
+                
+                if (deepseekKey) {
+                    t.div.textContent = `Lendo página (DeepSeek): ${url}...`;
+                    try {
+                        const fr = await fetch(DEEPSEEK_FETCH_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
+                            body: JSON.stringify({ url: url })
+                        });
+                        const fd = await fr.json();
+                        const content = fd.content || "Conteúdo não disponível.";
+                        msgs.push({ role: 'assistant', content: resposta });
+                        msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
+                    } catch (e) {
+                        addLog(`Fetch DeepSeek falhou.`);
+                        msgs.push({ role: 'assistant', content: resposta });
+                        msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página. Responda com o que sabe.` });
+                    }
+                } else {
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Leitura de página não suportada sem chave DeepSeek.` });
+                }
                 continue;
             }
 
@@ -1223,7 +1322,7 @@ async function enviar() {
         t.wrapper.remove();
 
         let limpo = respostaFinal
-            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE|GITHUB_PATCH|GITHUB_TREE):[\s\S]*?(\]|\/GITHUB_CREATE\])/g, '')
+            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE|GITHUB_PATCH|GITHUB_TREE|WEB_FETCH):[\s\S]*?(\]|\/GITHUB_CREATE\])/g, '')
             .replace(/\[GITHUB_PATCH:[\s\S]*?<<<END>>>/g, '')
             .replace(/\[GITHUB_CREATE:[\s\S]*?\[\/GITHUB_CREATE\]/g, '')
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
@@ -1310,7 +1409,6 @@ async function enviar() {
                 return;
             }
 
-            // O SEGREDO: Usar o original se estiver no cache
             const cacheKey = `${projetoDaVez}/${path}`;
             const existingOriginal = fileCache[cacheKey] ? fileCache[cacheKey].original : existingMasked;
             
@@ -1328,7 +1426,6 @@ async function enviar() {
 
             const newContentOriginal = existingOriginal.replace(oldText, newText);
             
-            // Mascarar de novo só para o Diff
             let newContentMasked = newContentOriginal.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
 
             pendingCommit = { repo: projetoDaVez, path, content: newContentOriginal, oldTextMasked: existingMasked, timestamp: Date.now() };
