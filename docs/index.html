@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE</title>
+<title>BOSS - EXODRIVE (v8.5.2)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -56,7 +56,9 @@
     .widget-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; }
     .log-line { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
 
+    /* CENTER AREA AGORA INCLUI O FOOTER */
     .center-area { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, var(--bg-dark) 100%); min-width: 0; }
+    
     .orb-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 0; opacity: 0.15; pointer-events: none; display: flex; justify-content: center; align-items: center; }
     .orb { width: 250px; height: 250px; border-radius: 50%; border: 1px dashed var(--orb-color); display: flex; justify-content: center; align-items: center; animation: spin 30s linear infinite; transition: 0.3s; }
     .orb-2 { position: absolute; width: 150px; height: 150px; border-radius: 50%; border: 2px solid var(--orb-color); border-top-color: transparent; border-bottom-color: transparent; animation: spin 10s linear infinite reverse; }
@@ -65,7 +67,11 @@
     @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
 
     #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; z-index: 1; scroll-behavior: smooth; }
-    .msg-wrapper { display: flex; flex-direction: column; width: 100%; }
+    
+    /* Nova Animação Fade-In para as mensagens */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .msg-wrapper { display: flex; flex-direction: column; width: 100%; animation: fadeIn 0.3s ease-out forwards; }
+    
     .msg { font-size: 13px; line-height: 1.6; max-width: 90%; padding: 10px; border-left: 2px solid transparent; border-radius: 0 var(--radius) var(--radius) 0; }
     .msg.user { border-left: none; border-right: 2px solid var(--text-muted); color: var(--text-muted); background: rgba(255,255,255,0.02); align-self: flex-end; margin-left: auto; border-radius: var(--radius) 0 0 var(--radius); text-align: right; }
     .msg.boss { border-left-color: var(--accent); color: var(--text-main); background: rgba(255, 255, 255, 0.03); align-self: flex-start; }
@@ -84,20 +90,7 @@
     .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin-top: 10px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
     .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     
-    /* MERMAID FIX */
-    .mermaid-container { 
-        background: var(--bg-dark); 
-        padding: 15px; 
-        border-radius: 6px; 
-        border: 1px solid var(--accent); 
-        margin-top: 10px; 
-        text-align: center; 
-        overflow-x: auto; 
-        min-height: 100px; 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-    }
+    .mermaid-container { background: var(--bg-dark); padding: 15px; border-radius: 6px; border: 1px solid var(--accent); margin-top: 10px; text-align: center; overflow-x: auto; min-height: 100px; display: flex; justify-content: center; align-items: center; }
     .mermaid-container svg { max-width: 100%; height: auto; }
 
     .diff-view { font-family: var(--font-mono); font-size: 12px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; max-height: 300px; overflow-y: auto; padding: 10px; width: 100%; text-align: left;}
@@ -106,12 +99,17 @@
     .diff-line.del { background: rgba(231,76,60,0.15); color: #E74C3C; }
     .diff-line.same { color: #8A9AAA; }
 
-    footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: center; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
-    .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; }
+    /* FOOTER AGORA FICA DENTRO DO CENTER AREA */
+    footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: flex-end; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
+    .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; margin-bottom: 2px;}
     .cmd-btn:hover { border-color: var(--accent); color: var(--accent); }
-    #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-color); color: var(--accent); padding: 8px; font-family: var(--font-mono); font-size: 13px; outline: none; transition: 0.3s; min-width: 0; }
+    
+    /* Caixa de texto expansível com limite */
+    #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-color); color: var(--accent); padding: 8px; font-family: var(--font-mono); font-size: 13px; outline: none; transition: 0.3s; min-width: 0; resize: none; max-height: 120px; overflow-y: auto; line-height: 1.4; }
     #input:focus { border-bottom-color: var(--accent); }
-    .btn-send { background: var(--accent); color: var(--bg-dark); border: none; padding: 0 15px; height: 36px; border-radius: var(--radius); font-family: var(--font-ui); font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+    
+    .btn-send { background: var(--accent); color: var(--bg-dark); border: none; padding: 0 15px; height: 36px; border-radius: var(--radius); font-family: var(--font-ui); font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; flex-shrink: 0; margin-bottom: 2px;}
+    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .sidebar-right { width: 300px; border-left: 1px solid var(--border-color); padding: 20px; display: none; flex-direction: column; gap: 10px; background: var(--bg-dark); overflow-y: auto; flex-shrink: 0; }
     .sidebar-right.open { display: flex; }
@@ -179,9 +177,20 @@
             <div class="widget" style="flex:1;"><div class="widget-title">LOG DE ATIVIDADE</div><div id="action-log"><div class="log-line">[SYS] Aguardando inicialização...</div></div></div>
         </aside>
 
+        <!-- CENTER AREA ABRAÇA O CHAT E O FOOTER -->
         <div class="center-area">
             <div class="orb-container"><div class="orb"><div class="orb-2"></div><div class="orb-core"></div></div></div>
             <div id="chat"></div>
+            
+            <!-- FOOTER MOVIDO PARA CÁ -->
+            <footer>
+                <input type="file" id="fileInput" accept="image/*,text/*,.kt,.xml,.gradle,.md,.json" style="display:none" onchange="lerArquivo(event)">
+                <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
+                <button class="cmd-btn" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar">🖊</button>
+                <button class="cmd-btn" onclick="iniciarEscuta()" title="Falar">🎤</button>
+                <textarea id="input" placeholder="DIRETRIZ..." rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();enviar();}"></textarea>
+                <button class="btn-send" id="send" onclick="enviar()">EXEC</button>
+            </footer>
         </div>
 
         <aside class="sidebar-right" id="configPanel">
@@ -235,15 +244,6 @@
             <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR HISTÓRICO/MEMÓRIA</button>
         </aside>
     </main>
-
-    <footer>
-        <input type="file" id="fileInput" accept="image/*,text/*,.kt,.xml,.gradle,.md,.json" style="display:none" onchange="lerArquivo(event)">
-        <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
-        <button class="cmd-btn" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar">🖊</button>
-        <button class="cmd-btn" onclick="iniciarEscuta()" title="Falar">🎤</button>
-        <input type="text" id="input" placeholder="DIRETRIZ..." onkeydown="if(event.key==='Enter')enviar()">
-        <button class="btn-send" id="send" onclick="enviar()">EXEC</button>
-    </footer>
 </div>
 
 <div class="modal-overlay" id="modalMemoria">
@@ -328,9 +328,7 @@ const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct';
 const MODELO = 'llama-3.3-70b-versatile'; 
 
 const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
-// Endpoints de tools NÃO são oficiais da DeepSeek. Deixados null para forçar fallback ao Worker.
-// Se a DeepSeek publicar oficialmente, reative os URLs abaixo.
-const DEEPSEEK_SEARCH_URL = null;
+const DEEPSEEK_SEARCH_URL = null; 
 const DEEPSEEK_FETCH_URL  = null;
 const DEEPSEEK_MODELO = 'deepseek-chat';
 
@@ -379,6 +377,15 @@ document.getElementById('deepseekKeyInput').value = localStorage.getItem('boss_d
 document.getElementById('gitUserInput').value = gitUser;
 atualizarMuteBtn(); atualizarHUD(); atualizarDisplayProjeto();
 
+// Configura auto-resize do textarea
+const inputEl = document.getElementById('input');
+inputEl.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+    if(this.scrollHeight > 120) this.style.overflowY = 'auto';
+    else this.style.overflowY = 'hidden';
+});
+
 function atualizarDisplayProjeto() {
     const el = document.getElementById('displayActiveProject');
     if (el) el.textContent = projetoAtivo ? projetoAtivo.split('/')[1] || projetoAtivo : 'NENHUM';
@@ -389,7 +396,6 @@ function atualizarHUD() {
     document.getElementById('metric-repos').textContent = listaRepos.length;
     document.getElementById('metric-files').textContent = Object.keys(fileCache).length;
     document.getElementById('metric-memoria').textContent = memoriaDecisoes.length;
-    // CORRIGIDO: contador de histórico sempre fresco (não snapshot do load)
     document.getElementById('metric-history').textContent = (todosOsHistoricos[projetoAtivo] || []).length;
     document.getElementById('metric-latency').textContent = metricLatency + ' ms';
     localStorage.setItem('metric_tokens', metricTokens);
@@ -470,66 +476,14 @@ function formatarTexto(texto) {
             .replace(/\n/g, '<br>');
 }
 
-async function efeitoDigitacao(elemento, textoFinal) {
-    const len = textoFinal.length;
-    if (len === 0) return Promise.resolve();
-    const velocidade = Math.max(2, 3000 / len);
-    
-    elemento.innerHTML = formatarTexto(textoFinal);
-    const chat = document.getElementById('chat');
-    const walk = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT, null, false);
-    let node;
-    const textNodes = [];
-    while (node = walk.nextNode()) {
-        if (node.nodeValue.trim() !== '') {
-            textNodes.push({ node, text: node.nodeValue });
-            node.nodeValue = ''; 
-        }
-    }
-
-    if (textNodes.length === 0) {
-        elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
-        return Promise.resolve();
-    }
-
-    return new Promise(resolve => {
-        let currentTextIndex = 0;
-        let currentCharIndex = 0;
-
-        const timer = setInterval(() => {
-            if (currentTextIndex >= textNodes.length) {
-                clearInterval(timer);
-                elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
-                resolve();
-                return;
-            }
-
-            const currentObj = textNodes[currentTextIndex];
-            currentObj.node.nodeValue += currentObj.text[currentCharIndex];
-            currentCharIndex++;
-
-            const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 100;
-            if (isAtBottom) { chat.scrollTop = chat.scrollHeight; }
-
-            if (currentCharIndex >= currentObj.text.length) {
-                currentTextIndex++;
-                currentCharIndex = 0;
-            }
-        }, velocidade);
-    });
-}
-
-function addMsg(tipo, texto, salvar = true, animar = false, proj = projetoAtivo) {
+// Renderização instantânea com Fade-in
+function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
     const chat = document.getElementById('chat');
     const w = document.createElement('div'); w.className = `msg-wrapper`;
     const d = document.createElement('div'); d.className = `msg ${tipo}`;
     
-    if (tipo === 'boss' && !animar) { 
-        d.innerHTML = formatarTexto(texto); 
-        d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); 
-    } else if (tipo !== 'boss') { 
-        d.textContent = texto; 
-    }
+    d.innerHTML = formatarTexto(texto); 
+    d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); 
     
     w.appendChild(d); 
     
@@ -551,7 +505,13 @@ function addMsg(tipo, texto, salvar = true, animar = false, proj = projetoAtivo)
         w.appendChild(feedback);
     }
 
-    chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
+    chat.appendChild(w); 
+    
+    // Smart Scroll: Só desce se o usuário já estiver no final
+    const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 150;
+    if (isAtBottom) {
+        chat.scrollTop = chat.scrollHeight;
+    }
     
     if (salvar && tipo !== 'thinking') {
         if (!todosOsHistoricos[proj]) todosOsHistoricos[proj] = [];
@@ -647,7 +607,6 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
 
 async function forcarSalvarMemoria() {
     if (!projetoAtivo) return; 
-    // CORRIGIDO: lê fresco, não o snapshot do load
     const histAtual = todosOsHistoricos[projetoAtivo] || [];
     if (histAtual.length < 2) return; 
     
@@ -1084,13 +1043,19 @@ function testeDeFumaca() {
         } else {
             erros.push("❌ Falha: Regra de Imagem ausente.");
         }
+
+        if (html.includes('fadeIn') && !html.includes('efeitoDigitacao')) {
+            sucessos.push("✅ Animação instantânea (Fade-In) ativa. UI destravada.");
+        } else {
+            erros.push("❌ Falha: Animação de texto antiga ou conflitante ainda presente.");
+        }
         
         t.wrapper.remove();
         let msgFinal = "📋 **RESULTADO DO AUTODIAGNÓSTICO**\n\n";
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.4)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.5.2)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1105,7 +1070,8 @@ async function enviar() {
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
 
     input.value = '';
-    if (texto) addMsg('user', texto, true, false, projetoDaVez);
+    input.style.height = 'auto'; // Reseta altura do textarea
+    if (texto) addMsg('user', texto, true, projetoDaVez);
     const t = addMsg('thinking', 'Analisando...', false);
     document.getElementById('send').disabled = true;
 
@@ -1117,7 +1083,6 @@ async function enviar() {
         if (imagemAnexadaBase64) {
             t.div.textContent = "Processando visão...";
             try {
-                // AQUI ESTÁ A CORREÇÃO DO PROMPT DE VISÃO
                 const vr = await fetch(`${WORKER_URL}/analyze-image`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
@@ -1196,7 +1161,6 @@ async function enviar() {
                 const termo = webM[1];
                 const deepseekKey = localStorage.getItem('boss_deepseek_key');
                 
-                // v8.4: só tenta DeepSeek se o endpoint oficial existir
                 if (deepseekKey && DEEPSEEK_SEARCH_URL) {
                     t.div.textContent = `Pesquisando (DeepSeek): "${termo}"...`;
                     try {
@@ -1234,7 +1198,6 @@ async function enviar() {
                 const url = fetchM[1];
                 const deepseekKey = localStorage.getItem('boss_deepseek_key');
                 
-                // v8.4: só tenta DeepSeek se o endpoint oficial existir
                 if (deepseekKey && DEEPSEEK_FETCH_URL) {
                     t.div.textContent = `Lendo página (DeepSeek): ${url}...`;
                     try {
@@ -1263,7 +1226,6 @@ async function enviar() {
                         }
                     }
                 } else {
-                    // v8.4: fallback direto para o Worker
                     t.div.textContent = `Lendo página (Worker): ${url}...`;
                     try {
                         const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(url)}`);
@@ -1392,8 +1354,7 @@ async function enviar() {
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
             
         if (limpo) { 
-            const msgObj = addMsg('boss', limpo, true, true, projetoDaVez); 
-            await efeitoDigitacao(msgObj.div, limpo); 
+            addMsg('boss', limpo, true, projetoDaVez); 
         }
         
         falarTexto(txtFalar);
@@ -1523,7 +1484,9 @@ async function enviar() {
             mostrarDiff(path, oldTextMasked, content);
         }
 
-        document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+        const chatContainer = document.getElementById('chat');
+        const isAtBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 150;
+        if(isAtBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
 
     } catch (e) {
         t.wrapper.remove(); addMsg('error', `Deu ruim: ${e.message}`);
@@ -1560,7 +1523,7 @@ function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); im
 
 function falarTexto(t) { 
     if (!vozAtiva || !('speechSynthesis' in window)) return; 
-    if (!t || !String(t).trim()) return; // v8.4: guarda contra string vazia
+    if (!t || !String(t).trim()) return; 
     window.speechSynthesis.cancel(); 
     let limpo = t.replace(/\[.*?\]/g, '') 
                  .replace(/[*_~`#]/g, '')
