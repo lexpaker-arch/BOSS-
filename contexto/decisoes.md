@@ -1,5 +1,12 @@
 # Decisões Travadas
 
+> **Este arquivo é o índice temático (estado atual).**
+> A fonte da verdade **temporal** (quando, por quê, em que ordem) é o diário `contexto/memorias/Patrão.md`.
+> Regra: decisão nova entra aqui **e** ganha uma linha no diário no mesmo turno.
+> Última revisão estrutural: [DATA DA SESSÃO ATUAL]
+
+---
+
 ## EXODASH
 - Nome do carro vem do Prefs (manual), não de IA
 - Bateria via AT RV (não PID 02 42)
