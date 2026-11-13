@@ -213,7 +213,7 @@
     </main>
 
     <footer>
-        <input type="file" id="fileInput" accept="image/*,text/*" style="display:none" onchange="lerArquivo(event)">
+        <input type="file" id="fileInput" accept="image/*,text/*,.kt,.xml,.gradle,.md,.json" style="display:none" onchange="lerArquivo(event)">
         <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
         <button class="cmd-btn" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar">🖊</button>
         <button class="cmd-btn" onclick="iniciarEscuta()" title="Falar">🎤</button>
@@ -279,7 +279,6 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-  // CORREÇÃO 1: FIREBASE COM ':' (Não '=')
   const firebaseConfig = {
     apiKey: "AIzaSyChk1LKknneIvOvgQiCzEi_0exl8241y2Y",
     authDomain: "boss-exodrive.firebaseapp.com",
@@ -300,7 +299,6 @@ mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
-// CORREÇÃO 9: Fallback Model Diferente
 const GROQ_MODELO = 'llama-3.1-8b-instant'; 
 const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct';
 const MODELO = 'llama-3.3-70b-versatile'; 
@@ -330,7 +328,6 @@ let cacheTrees = {};
 let fileCache = {};  
 let pendingCommit = null;
 
-// CORREÇÃO 10: Reset diário do metricTokens
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let lastTokenReset = localStorage.getItem('last_token_reset') || '';
 const today = new Date().toDateString();
@@ -488,7 +485,7 @@ async function efeitoDigitacao(elemento, textoFinal) {
     });
 }
 
-function addMsg(tipo, texto, salvar = true, animar = false) {
+function addMsg(tipo, texto, salvar = true, animar = false, proj = projetoAtivo) {
     const chat = document.getElementById('chat');
     const w = document.createElement('div'); w.className = `msg-wrapper`;
     const d = document.createElement('div'); d.className = `msg ${tipo}`;
@@ -523,12 +520,12 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
     chat.appendChild(w); chat.scrollTop = chat.scrollHeight;
     
     if (salvar && tipo !== 'thinking') {
-        historicoCompleto.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
-        if (historicoCompleto.length > 500) historicoCompleto = historicoCompleto.slice(-500);
+        if (!todosOsHistoricos[proj]) todosOsHistoricos[proj] = [];
+        todosOsHistoricos[proj].push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
+        if (todosOsHistoricos[proj].length > 500) todosOsHistoricos[proj] = todosOsHistoricos[proj].slice(-500);
         
-        todosOsHistoricos[projetoAtivo] = historicoCompleto;
         localStorage.setItem('boss_historico_full', JSON.stringify(todosOsHistoricos));
-        atualizarHUD();
+        if (proj === projetoAtivo) atualizarHUD();
     }
     return { wrapper: w, div: d };
 }
@@ -544,10 +541,11 @@ function avaliar(btn, resposta, isBom) {
     }
 }
 
-function buscarMemoriaAntiga(termo) {
-    if (historicoCompleto.length < 5) return "";
-    const limit = Math.max(0, historicoCompleto.length - 10);
-    const passado = historicoCompleto.slice(0, limit);
+function buscarMemoriaAntiga(termo, proj = projetoAtivo) {
+    let hist = todosOsHistoricos[proj] || [];
+    if (hist.length < 5) return "";
+    const limit = Math.max(0, hist.length - 10);
+    const passado = hist.slice(0, limit);
     
     const palavras = termo.toLowerCase().split(' ').filter(p => p.length > 3); 
     if (palavras.length === 0) return "";
@@ -720,7 +718,6 @@ function escapeRegex(string) {
 }
 
 async function chamarIA(messages, temp) {
-    // CORREÇÃO 10: Estimativa de tokens (÷3.5)
     const estimativaTokens = messages.reduce((acc, m) => acc + Math.ceil((m.content?.length || 0) / 3.5), 0);
     if (estimativaTokens > 100000) {
         messages = [messages[0], ...messages.slice(-3)];
@@ -758,7 +755,9 @@ async function chamarIA(messages, temp) {
             const ctrl2 = new AbortController();
             const to2 = setTimeout(() => ctrl2.abort(), 45000);
             
-            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify({ model: GROQ_MODELO, messages: messages, temperature: temp }), signal: ctrl2.signal });
+            const payloadFallback = { model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 };
+            
+            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify(payloadFallback), signal: ctrl2.signal });
             clearTimeout(to2);
             
             const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
@@ -783,7 +782,10 @@ async function mapearRepositorio() {
         let hasMore = true;
         while(hasMore) {
             const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&page=${page}&sort=updated`);
+            
+            if (res.status === 403) throw new Error("Limite de requisições do GitHub atingido. Aguarde 1 hora.");
             if(!res.ok) throw new Error("Usuário não encontrado.");
+            
             const data = await res.json();
             
             if (data.length === 0) {
@@ -830,7 +832,7 @@ async function carregarArvoreProjeto() {
         } catch(e) {
             retries--;
             if (retries === 0) addLog(`Erro de rede ao ler árvore de ${projetoAtivo}.`);
-            else await new Promise(r => setTimeout(r, 1000)); // Backoff
+            else await new Promise(r => setTimeout(r, 1000)); 
         }
     }
 }
@@ -858,7 +860,6 @@ async function fetchGithubFile(repo, path) {
             
             let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
             
-            // CORREÇÃO 12: fileCache LRU (max 50)
             if (Object.keys(fileCache).length >= 50) {
                 const oldest = Object.keys(fileCache)[0];
                 delete fileCache[oldest];
@@ -880,6 +881,7 @@ async function buscarZeroToken(termo) {
     if(!tree) return `(A árvore do projeto falhou. Tente pedir um arquivo específico com GITHUB_READ).`;
 
     let resultados = "";
+    let arquivosLidos = 0; // Correção do contador
     
     const matchesName = tree.filter(p => p.toLowerCase().includes(termo.toLowerCase()));
     const codeExts = ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json', '.gradle'];
@@ -887,8 +889,9 @@ async function buscarZeroToken(termo) {
     
     const toScan = [...new Set([...matchesName, ...codeFiles.slice(0, 15)])].slice(0, 15);
 
-    // CORREÇÃO 6: Promise.all em lotes de 5
     for (let i = 0; i < toScan.length; i += 5) {
+        if (arquivosLidos >= 5) break; 
+
         const chunk = toScan.slice(i, i + 5);
         const results = await Promise.all(chunk.map(async path => {
             const content = await fetchGithubFile(projetoAtivo, path);
@@ -912,7 +915,7 @@ async function buscarZeroToken(termo) {
         const validos = results.filter(r => r !== null);
         if (validos.length > 0) {
             resultados += validos.join('\n');
-            if (resultados.split('ENCONTRADO').length > 5) break;
+            arquivosLidos += validos.length;
         }
     }
 
@@ -968,6 +971,7 @@ async function confirmarCommit() {
         addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
         if (d.success) { 
             delete fileCache[`${repo}/${path}`]; 
+            delete cacheTrees[repo]; // Invalida a árvore para recarregar
             pendingCommit = null; 
         }
     } catch(e) { addMsg('error', 'Erro no commit: ' + e.message); }
@@ -982,32 +986,30 @@ function testeDeFumaca() {
         let erros = [];
         let sucessos = [];
         
-        // 1. Verifica Firebase ':'
-        if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
-            sucessos.push("✅ Firebase configurado corretamente (apiKey com ':').");
+        // Verifica Firebase
+        if (typeof window.db !== 'undefined' && window.db !== null) {
+            sucessos.push("✅ Firebase inicializado (window.db existe).");
         } else {
-            // Tenta achar no código fonte
-            const html = document.documentElement.innerHTML;
-            if (html.includes('apiKey:')) sucessos.push("✅ Firebase configurado (verificado via HTML).");
-            else erros.push("❌ Falha no Firebase: `apiKey:` não encontrado.");
+            erros.push("❌ Falha crítica: window.db é undefined. O Firebase não inicializou.");
         }
 
-        // 2. Verifica GITHUB_CREATE
         const html = document.documentElement.innerHTML;
-        if (html.includes('[\\/GITHUB_CREATE]') || html.includes('[/GITHUB_CREATE]') || html.includes('GITHUB_CREATE:')) {
-            sucessos.push("✅ Módulo GITHUB_CREATE presente.");
+        
+        // Verifica GITHUB_CREATE
+        if (html.includes('GITHUB_CREATE:') && html.includes('[/GITHUB_CREATE]')) {
+            sucessos.push("✅ Módulo GITHUB_CREATE presente e fechado.");
         } else {
-            erros.push("❌ Falha: Módulo GITHUB_CREATE ausente.");
+            erros.push("❌ Falha: Módulo GITHUB_CREATE ausente ou sem tag de fechamento.");
         }
 
-        // 3. Verifica GITHUB_PATCH
+        // Verifica GITHUB_PATCH
         if (html.includes('GITHUB_PATCH') && html.includes('<<<OLD>>>')) {
             sucessos.push("✅ Módulo GITHUB_PATCH (com delimitadores) presente.");
         } else {
             erros.push("❌ Falha: Módulo GITHUB_PATCH ausente ou mal formatado.");
         }
 
-        // 4. Verifica Token Estimation
+        // Verifica Token Estimation
         if (html.includes('/ 3.5')) {
             sucessos.push("✅ Estimativa de Tokens corrigida (/3.5).");
         } else {
@@ -1019,7 +1021,7 @@ function testeDeFumaca() {
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v7.2)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v7.3)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1027,7 +1029,6 @@ function testeDeFumaca() {
 }
 
 async function enviar() {
-    // CORREÇÃO 5: Captura do projeto para evitar race condition
     const projetoDaVez = projetoAtivo;
     
     const input = document.getElementById('input');
@@ -1035,7 +1036,7 @@ async function enviar() {
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
 
     input.value = '';
-    if (texto) addMsg('user', texto);
+    if (texto) addMsg('user', texto, true, false, projetoDaVez);
     const t = addMsg('thinking', 'Analisando...', false);
     document.getElementById('send').disabled = true;
 
@@ -1075,7 +1076,7 @@ async function enviar() {
         
         if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "Analise."}`;
 
-        const memoriaRag = buscarMemoriaAntiga(texto);
+        const memoriaRag = buscarMemoriaAntiga(texto, projetoDaVez);
         if (memoriaRag) addLog("Memória antiga recuperada (RAG).");
 
         const isConversational = ['acha', 'pensa', 'opinião'].some(p => texto.toLowerCase().includes(p));
@@ -1176,7 +1177,6 @@ async function enviar() {
         const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
         
-        // CORREÇÃO PATCH E CREATE
         const patchIncompleto = respostaFinal.match(/\[GITHUB_PATCH:[^\]]*\]/);
         const patchCompleto = respostaFinal.match(/\[GITHUB_PATCH:\s*(.*?)\]\s*<<<OLD>>>([\s\S]*?)<<<NEW>>>([\s\S]*?)<<<END>>>/);
         
@@ -1229,7 +1229,7 @@ async function enviar() {
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
             
         if (limpo) { 
-            const msgObj = addMsg('boss', limpo, true, true); 
+            const msgObj = addMsg('boss', limpo, true, true, projetoDaVez); 
             await efeitoDigitacao(msgObj.div, limpo); 
         }
         
@@ -1298,16 +1298,24 @@ async function enviar() {
             const oldText = patchCompleto[2].trim(); 
             const newText = patchCompleto[3].trim();
             
+            if (!projetoDaVez) {
+                addMsg('error', `⚠️ **Patch Falhou:** Nenhum projeto ativo.`);
+                return;
+            }
+
             addLog(`Preparando patch de ${path}...`);
             const existingMasked = await fetchGithubFile(projetoDaVez, path);
             if (existingMasked.startsWith('[ERRO')) {
                 addMsg('error', `Não foi possível ler o arquivo para fazer o patch.`);
                 return;
             }
+
+            // O SEGREDO: Usar o original se estiver no cache
+            const cacheKey = `${projetoDaVez}/${path}`;
+            const existingOriginal = fileCache[cacheKey] ? fileCache[cacheKey].original : existingMasked;
             
-            // CORREÇÃO 1 e 2: escapeRegex e Unicidade
             const regex = new RegExp(escapeRegex(oldText), 'g');
-            const ocorrencias = (existingMasked.match(regex) || []).length;
+            const ocorrencias = (existingOriginal.match(regex) || []).length;
 
             if (ocorrencias === 0) {
                 addMsg('error', `⚠️ **Patch Falhou:** O trecho não foi encontrado no arquivo. Use GITHUB_READ para verificar e tentar novamente.`);
@@ -1318,9 +1326,13 @@ async function enviar() {
                 return;
             }
 
-            const newContent = existingMasked.replace(oldText, newText);
-            pendingCommit = { repo: projetoDaVez, path, content: newContent, oldTextMasked: existingMasked, timestamp: Date.now() };
-            mostrarDiff(path, existingMasked, newContent);
+            const newContentOriginal = existingOriginal.replace(oldText, newText);
+            
+            // Mascarar de novo só para o Diff
+            let newContentMasked = newContentOriginal.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
+
+            pendingCommit = { repo: projetoDaVez, path, content: newContentOriginal, oldTextMasked: existingMasked, timestamp: Date.now() };
+            mostrarDiff(path, existingMasked, newContentMasked);
         }
 
         if (mGit) {
@@ -1329,6 +1341,11 @@ async function enviar() {
             
             if (content.toLowerCase().includes('***') && content.toLowerCase().includes('password')) {
                 addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***).`);
+                return;
+            }
+
+            if (!projetoDaVez) {
+                addMsg('error', `⚠️ **Commit Falhou:** Nenhum projeto ativo.`);
                 return;
             }
 
