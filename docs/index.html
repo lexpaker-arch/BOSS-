@@ -219,7 +219,7 @@
 
             <div class="divider"></div>
 
-            <label class="config-label" style="color:#60a5fa;">🧠 API DEEPSEEK V4.1 FLASH</label>
+            <label class="config-label" style="color:#60a5fa;">🧠 API DEEPSEEK (deepseek-chat)</label>
             <input type="password" id="deepseekKeyInput" class="config-input" placeholder="sk-...">
             <button class="btn-config-action" onclick="salvarDeepseekKey()">SALVAR CHAVE DEEPSEEK</button>
 
@@ -328,9 +328,11 @@ const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct';
 const MODELO = 'llama-3.3-70b-versatile'; 
 
 const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
-const DEEPSEEK_SEARCH_URL = 'https://api.deepseek.com/v1/tools/search';
-const DEEPSEEK_FETCH_URL = 'https://api.deepseek.com/v1/tools/fetch';
-const DEEPSEEK_MODELO = 'deepseek-flash';
+// Endpoints de tools NÃO são oficiais da DeepSeek. Deixados null para forçar fallback ao Worker.
+// Se a DeepSeek publicar oficialmente, reative os URLs abaixo.
+const DEEPSEEK_SEARCH_URL = null;
+const DEEPSEEK_FETCH_URL  = null;
+const DEEPSEEK_MODELO = 'deepseek-chat';
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
@@ -387,7 +389,8 @@ function atualizarHUD() {
     document.getElementById('metric-repos').textContent = listaRepos.length;
     document.getElementById('metric-files').textContent = Object.keys(fileCache).length;
     document.getElementById('metric-memoria').textContent = memoriaDecisoes.length;
-    document.getElementById('metric-history').textContent = historicoCompleto.length;
+    // CORRIGIDO: contador de histórico sempre fresco (não snapshot do load)
+    document.getElementById('metric-history').textContent = (todosOsHistoricos[projetoAtivo] || []).length;
     document.getElementById('metric-latency').textContent = metricLatency + ' ms';
     localStorage.setItem('metric_tokens', metricTokens);
     localStorage.setItem('metric_latency', metricLatency);
@@ -644,7 +647,9 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
 
 async function forcarSalvarMemoria() {
     if (!projetoAtivo) return; 
-    if (historicoCompleto.length < 2) return; 
+    // CORRIGIDO: lê fresco, não o snapshot do load
+    const histAtual = todosOsHistoricos[projetoAtivo] || [];
+    if (histAtual.length < 2) return; 
     
     try {
         addLog("Resumindo sessão em background...");
@@ -654,7 +659,7 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
         const msgs = [
             { role: 'system', content: "Você é um sistema que resume conversas e extrai JSON." },
-            ...historicoCompleto.slice(-15),
+            ...histAtual.slice(-15),
             { role: 'user', content: prompt }
         ];
         
@@ -703,6 +708,9 @@ ${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 
 === AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
+
+=== REGRA DE IMAGEM (CRÍTICA) ===
+Se a mensagem do usuário contiver [ANÁLISE DA IMAGEM], trate-a como verdade absoluta sobre a imagem atual. Ignore QUALQUER descrição de imagem que apareça em mensagens anteriores do histórico. NÃO misture com OBD-II, DTC, diagnósticos ou fotos antigas. Se a análise da imagem parecer incoerente com a pergunta do usuário, avise, mas NUNCA invente uma descrição que não esteja no bloco [ANÁLISE DA IMAGEM] atual.
 
 === REGRAS DE PATCH (CRÍTICO) ===
 Para editar arquivos grandes, use GITHUB_PATCH. Formato EXATO:
@@ -1066,9 +1074,15 @@ function testeDeFumaca() {
         }
 
         if (html.includes('DEEPSEEK_URL')) {
-            sucessos.push("✅ Integração DeepSeek V4.1 Flash ativa.");
+            sucessos.push("✅ Integração DeepSeek ativa (modelo deepseek-chat).");
         } else {
             erros.push("❌ Falha: Integração DeepSeek ausente.");
+        }
+
+        if (html.includes('REGRA DE IMAGEM (CRÍTICA)')) {
+            sucessos.push("✅ Regra de Imagem presente no System Prompt.");
+        } else {
+            erros.push("❌ Falha: Regra de Imagem ausente.");
         }
         
         t.wrapper.remove();
@@ -1076,7 +1090,7 @@ function testeDeFumaca() {
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.3)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.4)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1182,7 +1196,8 @@ async function enviar() {
                 const termo = webM[1];
                 const deepseekKey = localStorage.getItem('boss_deepseek_key');
                 
-                if (deepseekKey) {
+                // v8.4: só tenta DeepSeek se o endpoint oficial existir
+                if (deepseekKey && DEEPSEEK_SEARCH_URL) {
                     t.div.textContent = `Pesquisando (DeepSeek): "${termo}"...`;
                     try {
                         const sr = await fetch(DEEPSEEK_SEARCH_URL, {
@@ -1219,7 +1234,8 @@ async function enviar() {
                 const url = fetchM[1];
                 const deepseekKey = localStorage.getItem('boss_deepseek_key');
                 
-                if (deepseekKey) {
+                // v8.4: só tenta DeepSeek se o endpoint oficial existir
+                if (deepseekKey && DEEPSEEK_FETCH_URL) {
                     t.div.textContent = `Lendo página (DeepSeek): ${url}...`;
                     try {
                         const fr = await fetch(DEEPSEEK_FETCH_URL, {
@@ -1232,13 +1248,35 @@ async function enviar() {
                         msgs.push({ role: 'assistant', content: resposta });
                         msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
                     } catch (e) {
-                        addLog(`Fetch DeepSeek falhou.`);
-                        msgs.push({ role: 'assistant', content: resposta });
-                        msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página. Responda com o que sabe.` });
+                        addLog(`Fetch DeepSeek falhou. Tentando Worker...`);
+                        try {
+                            const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(url)}`);
+                            if (!fr.ok) throw new Error(`HTTP ${fr.status}`);
+                            const fd = await fr.json();
+                            const content = fd.content || fd.text || fd.markdown || "Conteúdo não disponível.";
+                            msgs.push({ role: 'assistant', content: resposta });
+                            msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
+                        } catch(e2) {
+                            addLog(`WEB_FETCH falhou: ${e2.message}`);
+                            msgs.push({ role: 'assistant', content: resposta });
+                            msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página ${url}. Responda com o que sabe.` });
+                        }
                     }
                 } else {
-                    msgs.push({ role: 'assistant', content: resposta });
-                    msgs.push({ role: 'user', content: `[SISTEMA]: Leitura de página não suportada sem chave DeepSeek.` });
+                    // v8.4: fallback direto para o Worker
+                    t.div.textContent = `Lendo página (Worker): ${url}...`;
+                    try {
+                        const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(url)}`);
+                        if (!fr.ok) throw new Error(`HTTP ${fr.status}`);
+                        const fd = await fr.json();
+                        const content = fd.content || fd.text || fd.markdown || "Conteúdo não disponível.";
+                        msgs.push({ role: 'assistant', content: resposta });
+                        msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
+                    } catch(e2) {
+                        addLog(`WEB_FETCH falhou: ${e2.message}`);
+                        msgs.push({ role: 'assistant', content: resposta });
+                        msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página ${url}. Responda com o que sabe.` });
+                    }
                 }
                 continue;
             }
@@ -1522,11 +1560,13 @@ function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); im
 
 function falarTexto(t) { 
     if (!vozAtiva || !('speechSynthesis' in window)) return; 
+    if (!t || !String(t).trim()) return; // v8.4: guarda contra string vazia
     window.speechSynthesis.cancel(); 
     let limpo = t.replace(/\[.*?\]/g, '') 
                  .replace(/[*_~`#]/g, '')
                  .replace(/[\u{1F300}-\u{1FAFF}]/gu, '') 
                  .replace(/\n/g, ' '); 
+    if (!limpo.trim()) return;
     const u = new SpeechSynthesisUtterance(limpo); 
     u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch; 
     if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } 
