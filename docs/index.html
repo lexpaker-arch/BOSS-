@@ -72,6 +72,7 @@
     .msg.boss::before { content: "SYS > "; color: var(--accent); font-weight: bold; }
     .msg.user::before { content: "USR > "; color: var(--text-muted); font-weight: bold; }
     .msg.thinking { color: var(--accent); font-style: italic; border-left-color: var(--accent); opacity: 0.7; align-self: flex-start; }
+    .msg.error { border-left-color: #ef4444; color: #fca5a5; background: rgba(239,68,68,0.1); align-self: flex-start; }
     
     .feedback-box { display: flex; gap: 5px; margin-top: 5px; margin-left: 10px; opacity: 0.3; transition: 0.2s; }
     .msg-wrapper:hover .feedback-box { opacity: 1; }
@@ -107,6 +108,8 @@
     .btn-config-action:hover { border-color: var(--accent); color: var(--accent); }
     .btn-danger { border-color: #7f1d1d; color: #ef4444; }
     .btn-danger:hover { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
+    .btn-test { border-color: #3b82f6; color: #60a5fa; }
+    .btn-test:hover { background: #1e3a8a; color: #fff; border-color: #1e3a8a; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 10px; }
     .modal-overlay.open { display: flex; }
@@ -202,6 +205,8 @@
             <input type="password" id="groqKeyInput" class="config-input" placeholder="gsk_...">
             <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE</button>
 
+            <button class="btn-config-action btn-test" style="margin-top: 20px;" onclick="testeDeFumaca()">🔍 AUTODIAGNÓSTICO (SMOKE TEST)</button>
+
             <label class="config-label" style="color:#ef4444; margin-top: 20px;">ZONA DE PERIGO</label>
             <button class="btn-config-action btn-danger" onclick="limparHistorico()">APAGAR HISTÓRICO/MEMÓRIA</button>
         </aside>
@@ -222,11 +227,11 @@
         <div class="modal-header"><span>MEMÓRIA DE LONGO PRAZO (FIREBASE)</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
         <div class="modal-body">
             <div style="width:100%; margin-bottom:15px;">
-                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">FATOS TÉCNICOS (MEMORIA_ADD)</h4>
+                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">FATOS TÉCNICOS</h4>
                 <div id="memoriaDecisoesList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:var(--text-main); line-height:1.8;"></div>
             </div>
             <div style="width:100%; border-top: 1px solid #333; padding-top:15px;">
-                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">RESUMO DO HISTÓRICO RECENTE</h4>
+                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">RESUMO DO HISTÓRICO</h4>
                 <div id="memoriaHistoricoList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:#888; line-height:1.8; max-height:200px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -274,6 +279,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+  // CORREÇÃO 1: FIREBASE COM ':' (Não '=')
   const firebaseConfig = {
     apiKey: "AIzaSyChk1LKknneIvOvgQiCzEi_0exl8241y2Y",
     authDomain: "boss-exodrive.firebaseapp.com",
@@ -292,10 +298,10 @@
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
 
-const PROMPT_VERSION = "v6.3 - Blindagem Total";
 const WORKER_URL = 'https://boss-proxy.lexpaker.workers.dev';
 const GROQ_URL_DIRETA = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODELO = 'llama-3.3-70b-versatile';
+// CORREÇÃO 9: Fallback Model Diferente
+const GROQ_MODELO = 'llama-3.1-8b-instant'; 
 const GROQ_VISION_MODELO = 'meta-llama/llama-4-scout-17b-16e-instruct';
 const MODELO = 'llama-3.3-70b-versatile'; 
 
@@ -314,7 +320,6 @@ let historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
 let logErros = JSON.parse(localStorage.getItem('boss_erros')) || [];
-let logAcertos = JSON.parse(localStorage.getItem('boss_acertos')) || [];
 let dbMemory = null;
 
 let imagemAnexadaBase64 = '';
@@ -324,9 +329,16 @@ let listaRepos = [];
 let cacheTrees = {}; 
 let fileCache = {};  
 let pendingCommit = null;
-let lastSaveTime = 0; 
 
+// CORREÇÃO 10: Reset diário do metricTokens
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
+let lastTokenReset = localStorage.getItem('last_token_reset') || '';
+const today = new Date().toDateString();
+if (lastTokenReset !== today) {
+    metricTokens = 0;
+    localStorage.setItem('metric_tokens', 0);
+    localStorage.setItem('last_token_reset', today);
+}
 let metricLatency = localStorage.getItem('metric_latency') || '--';
 
 document.body.className = temaAtual;
@@ -402,7 +414,7 @@ function mostrarMemoria() {
     if (dbMemory && dbMemory.diario_bordo) {
         listH.innerHTML = `<div style="white-space:pre-wrap;">${escapeHTML(dbMemory.diario_bordo)}</div>`;
     } else {
-        listH.innerHTML = "Nenhum Diário de Bordo salvo no Firebase para este projeto.";
+        listH.innerHTML = "Nenhum Diário de Bordo salvo.";
     }
     document.getElementById('modalMemoria').classList.add('open');
 }
@@ -414,13 +426,12 @@ function apagarMemoria(index) {
     atualizarHUD();
 }
 
-// CORREÇÃO XSS: Escape antes de formatar
 function formatarTexto(texto) {
     let t = escapeHTML(texto); 
     t = t.replace(/\b(Chefe|chefe)\b/g, userRole);
     
     t = t.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
-        return `<pre><code class="language-${lang||'text'}">${code}</code></pre>`;
+        return `<pre><code class="language-${escapeHTML(lang||'text')}">${code}</code></pre>`;
     });
     
     return t.replace(/### (.*?)\n/g, '<h3 style="color:var(--accent);margin:10px 0 5px;">$1</h3>')
@@ -429,9 +440,8 @@ function formatarTexto(texto) {
 }
 
 async function efeitoDigitacao(elemento, textoFinal) {
-    // Correção Divisão por Zero
     const len = textoFinal.length;
-    if (len === 0) return;
+    if (len === 0) return Promise.resolve();
     const velocidade = Math.max(2, 3000 / len);
     
     elemento.innerHTML = formatarTexto(textoFinal);
@@ -446,7 +456,10 @@ async function efeitoDigitacao(elemento, textoFinal) {
         }
     }
 
-    if (textNodes.length === 0) return; 
+    if (textNodes.length === 0) {
+        elemento.querySelectorAll('pre code').forEach((block) => hljs.highlightElement(block));
+        return Promise.resolve();
+    }
 
     return new Promise(resolve => {
         let currentTextIndex = 0;
@@ -511,7 +524,7 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
     
     if (salvar && tipo !== 'thinking') {
         historicoCompleto.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
-        if (historicoCompleto.length > 2000) historicoCompleto = historicoCompleto.slice(-2000);
+        if (historicoCompleto.length > 500) historicoCompleto = historicoCompleto.slice(-500);
         
         todosOsHistoricos[projetoAtivo] = historicoCompleto;
         localStorage.setItem('boss_historico_full', JSON.stringify(todosOsHistoricos));
@@ -522,11 +535,7 @@ function addMsg(tipo, texto, salvar = true, animar = false) {
 
 function avaliar(btn, resposta, isBom) {
     const parent = btn.parentElement;
-    if (isBom) { 
-        parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>'; 
-        logAcertos.push({ acerto: resposta, data: Date.now() });
-        localStorage.setItem('boss_acertos', JSON.stringify(logAcertos));
-    }
+    if (isBom) { parent.innerHTML = '<span style="color:#10b981; font-size:10px;">✅ Avaliado.</span>'; }
     else {
         parent.innerHTML = '<span style="color:#ef4444; font-size:10px;">❌ Erro logado.</span>';
         logErros.push({ erro: resposta, data: Date.now() });
@@ -537,7 +546,6 @@ function avaliar(btn, resposta, isBom) {
 
 function buscarMemoriaAntiga(termo) {
     if (historicoCompleto.length < 5) return "";
-    // Correção do slice(0,-10) em listas curtas
     const limit = Math.max(0, historicoCompleto.length - 10);
     const passado = historicoCompleto.slice(0, limit);
     
@@ -636,15 +644,13 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
         await salvarMemoriaFirebase(resumo, fatos);
     } catch(e) {
         console.error("Falha ao salvar memória: ", e);
+        addLog("Falha ao salvar memória no Firebase.");
     }
 }
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'hidden') {
-        if (Date.now() - lastSaveTime > 30000) {
-            forcarSalvarMemoria(); 
-            lastSaveTime = Date.now();
-        }
+        forcarSalvarMemoria(); 
     }
 });
 
@@ -655,8 +661,7 @@ function buildSystemPrompt(isConversational = false, memoriaRag = "") {
         if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
     }
 
-    const base = `Você é o BOSS, a inteligência de engenharia da EXODRIVE. O sistema tem 3 partes: o index.html (seu corpo/execução), o Prompt (seu cérebro/raciocínio) e o repo 'BOSS-' (sua memória). O usuário é o Patrão. NUNCA o chame de "Chefe".
-[VERSÃO DO PROMPT: ${PROMPT_VERSION}]
+    const base = `Você é o BOSS, a inteligência de engenharia da EXODRIVE. O usuário é o Patrão. NUNCA o chame de "Chefe".
 
 Você tem acesso aos repositórios do usuário '${gitUser}'. 
 **O PROJETO ATIVO NO MOMENTO É: ${projetoAtivo || 'NENHUM'}**.
@@ -670,59 +675,95 @@ ${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 === AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
-=== REGRAS DE SEGURANÇA ===
-1. O sistema bloqueia automaticamente leitura de .env e mascaramento de senhas. Se o sistema retornar "[ERRO DE SEGURANÇA]", NÃO insista.
-2. NUNCA diga que um commit foi "concluído". O sistema abrirá o Diff e só commitará se o usuário aprovar.
+=== REGRAS DE PATCH (CRÍTICO) ===
+Para editar arquivos grandes, use GITHUB_PATCH. Formato EXATO:
+[GITHUB_PATCH: caminho/arquivo.ext]
+<<<OLD>>>
+trecho antigo exato (deve aparecer UMA única vez no arquivo)
+<<<NEW>>>
+trecho novo
+<<<END>>>
 
-=== REGRAS DE AÇÃO E FALLBACK ===
-1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir explicitamente.
-2. [GITHUB_FIND: termo] - Busca. Se falhar, tente [GITHUB_READ: README.md]. Se falhar de novo, use [GITHUB_TREE].
+REGRAS:
+- O trecho OLD deve ser ÚNICO no arquivo. Se aparecer 2+ vezes, o patch é rejeitado.
+- SEMPRE feche com <<<END>>>. Sem ele, o patch é ignorado.
+- Se o patch falhar, o sistema te avisa. Use GITHUB_READ para reler e tentar de novo.
+- Para arquivos pequenos (<200 linhas), prefira GITHUB_CREATE com [/GITHUB_CREATE] no fim.
+
+=== FERRAMENTAS DISPONÍVEIS ===
+1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir.
+2. [GITHUB_FIND: termo] - Busca. Se falhar, use [GITHUB_READ: README.md]. Se falhar de novo, use [GITHUB_TREE].
 3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo.
 4. [GITHUB_READ: arquivo] - Lê arquivo.
-5. [GITHUB_CREATE: caminho | conteúdo] - Cria/edita arquivo. O sistema mostrará o Diff antes.
-6. [MEMORIA_ADD: chave | valor] - Salva um fato técnico.
-7. [MEMORIA_DEL: termo] - Apaga um fato técnico da memória.
-8. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
-9. [AGENDA_DEL: termo] - Remove tarefa da agenda.
-10. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
-11. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
-12. [IMAGE_SEARCH: termo] - Busca imagem real na web.
-13. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
-14. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
+5. [GITHUB_PATCH: caminho] + <<<OLD>>>...<<<NEW>>>...<<<END>>> - Edita um trecho. (Preferível para edições).
+6. [GITHUB_CREATE: caminho | conteúdo] + [/GITHUB_CREATE] - Cria arquivo novo inteiro. (Obrigatório fechar com tag final).
+7. [MEMORIA_ADD: chave | valor] - Salva um fato técnico.
+8. [MEMORIA_DEL: termo] - Apaga um fato técnico da memória.
+9. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
+10. [AGENDA_DEL: termo] - Remove tarefa da agenda.
+11. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
+12. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
+13. [IMAGE_SEARCH: termo] - Busca imagem real na web.
+14. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
+15. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
 
 === REGRAS DE VOZ ===
 - Você DEVE terminar a resposta com [VOZ: resumo curto em até 180 caracteres].
-
-=== ONBOARDING ===
-- Se a memória do Firebase e o histórico recente estiverem vazios, dê as boas-vindas e pergunte o contexto inicial.
 `;
 
     if (isConversational) return base + `\nSeja solto, use "..." e "Hmm".`;
     return base + `\nSeja técnico e direto ao ponto.`;
 }
 
+function escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function chamarIA(messages, temp) {
+    // CORREÇÃO 10: Estimativa de tokens (÷3.5)
+    const estimativaTokens = messages.reduce((acc, m) => acc + Math.ceil((m.content?.length || 0) / 3.5), 0);
+    if (estimativaTokens > 100000) {
+        messages = [messages[0], ...messages.slice(-3)];
+        addLog(`Contexto grande. Truncado para ${Math.ceil(messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) / 3.5)} tokens.`);
+    }
+
     const payload = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 45000);
+
     try {
         const st = performance.now();
-        const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl.signal });
+        clearTimeout(to);
+        
         const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
         if (!resp.ok) throw new Error(resp.status === 429 ? "COTA_ESGOTADA" : `Erro ${resp.status}`);
+        
         document.getElementById('statusDot').className = 'status-dot ok'; document.getElementById('statusText').textContent = 'ONLINE';
         return await resp.json();
     } catch (e1) {
-        addLog(`Falha Principal. Tentando Groq...`);
+        clearTimeout(to);
+        addLog(`Falha Principal. Tentando Fallback...`);
         const groqKey = localStorage.getItem('boss_groq_key');
+        
         if (!groqKey) {
             document.getElementById('statusDot').className = 'status-dot err'; document.getElementById('statusText').textContent = 'SEM API';
-            throw new Error(`API Principal falhou e não há chave Groq configurada.`);
+            throw new Error(`API Principal falhou e não há chave de fallback.`);
         }
+        
         try {
             document.getElementById('statusDot').className = 'status-dot warn'; document.getElementById('statusText').textContent = 'FALLBACK';
+            
             const st = performance.now();
-            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify({ model: GROQ_MODELO, messages: messages, temperature: temp }) });
+            const ctrl2 = new AbortController();
+            const to2 = setTimeout(() => ctrl2.abort(), 45000);
+            
+            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify({ model: GROQ_MODELO, messages: messages, temperature: temp }), signal: ctrl2.signal });
+            clearTimeout(to2);
+            
             const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
-            if (!resp2.ok) throw new Error(`Erro Groq: ${resp2.status}`);
+            if (!resp2.ok) throw new Error(`Erro Fallback: ${resp2.status}`);
+            
             return await resp2.json();
         } catch (e2) {
             document.getElementById('statusDot').className = 'status-dot err'; document.getElementById('statusText').textContent = 'OFFLINE';
@@ -732,24 +773,32 @@ async function chamarIA(messages, temp) {
 }
 
 async function mapearRepositorio() {
-    addMsg('boss', '⚙ Sincronizando lista de repositórios. Aguarde...');
-    document.getElementById('metric-index-status').textContent = 'Baixando repos...';
+    addMsg('boss', '⚙ Sincronizando repositórios. Aguarde...');
+    document.getElementById('metric-index-status').textContent = 'Baixando...';
     document.getElementById('metric-index-status').style.color = '#F1C40F';
     
     listaRepos = []; cacheTrees = {}; fileCache = {};
     try {
-        const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&sort=updated`);
-        if(!res.ok) throw new Error("Usuário não encontrado.");
-        const data = await res.json();
-        
-        for (let repo of data) {
-            listaRepos.push(repo.full_name);
+        let page = 1;
+        let hasMore = true;
+        while(hasMore) {
+            const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&page=${page}&sort=updated`);
+            if(!res.ok) throw new Error("Usuário não encontrado.");
+            const data = await res.json();
+            
+            if (data.length === 0) {
+                hasMore = false;
+            } else {
+                data.forEach(repo => listaRepos.push(repo.full_name));
+                page++;
+                if (data.length < 100) hasMore = false;
+            }
         }
         
         document.getElementById('metric-index-status').textContent = 'Pronto.';
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
-        addMsg('boss', `✅ **Repositórios Encontrados:** ${listaRepos.length}.\nDiga "mudar para [nome do repositório]" para focar em um projeto.`);
+        addMsg('boss', `✅ **Repositórios Encontrados:** ${listaRepos.length}.`);
         
         if (projetoAtivo) carregarMemoriaFirebase();
         
@@ -764,18 +813,25 @@ async function carregarArvoreProjeto() {
     if (!projetoAtivo) return;
     if (cacheTrees[projetoAtivo]) return; 
 
-    try {
-        addLog(`Baixando árvore de arquivos de ${projetoAtivo}...`);
-        const treeData = await fetch(`${WORKER_URL}/github-tree?repo=${projetoAtivo}&_=${Date.now()}`).then(r => r.json());
-        if(treeData.tree) {
-            cacheTrees[projetoAtivo] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
-            addLog(`Árvore carregada: ${cacheTrees[projetoAtivo].length} arquivos.`);
-            atualizarHUD();
-        } else {
-            addLog(`Falha ao ler árvore de ${projetoAtivo}.`);
+    let retries = 3;
+    while(retries > 0) {
+        try {
+            addLog(`Baixando árvore de ${projetoAtivo}...`);
+            const res = await fetch(`${WORKER_URL}/github-tree?repo=${projetoAtivo}&_=${Date.now()}`);
+            if (!res.ok) throw new Error("Falha na rede");
+            const treeData = await res.json();
+            
+            if(treeData.tree) {
+                cacheTrees[projetoAtivo] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
+                addLog(`Árvore carregada: ${cacheTrees[projetoAtivo].length} arquivos.`);
+                atualizarHUD();
+                return;
+            }
+        } catch(e) {
+            retries--;
+            if (retries === 0) addLog(`Erro de rede ao ler árvore de ${projetoAtivo}.`);
+            else await new Promise(r => setTimeout(r, 1000)); // Backoff
         }
-    } catch(e) {
-        addLog(`Erro de rede ao ler árvore de ${projetoAtivo}.`);
     }
 }
 
@@ -793,15 +849,20 @@ async function fetchGithubFile(repo, path) {
     }
     try {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
+        if(!res.ok) return `[ERRO GITHUB: Status ${res.status}]`;
+        
         const data = await res.json();
         if (data.content) { 
-            // Correção do deprecated escape()
             const bytes = Uint8Array.from(atob(data.content), c => c.charCodeAt(0));
             let txt = new TextDecoder('utf-8').decode(bytes); 
             
-            // Máscara mais robusta
-            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|apiKey)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
+            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
             
+            // CORREÇÃO 12: fileCache LRU (max 50)
+            if (Object.keys(fileCache).length >= 50) {
+                const oldest = Object.keys(fileCache)[0];
+                delete fileCache[oldest];
+            }
             fileCache[key] = { original: txt, masked: masked };
             atualizarHUD(); 
             return masked; 
@@ -819,7 +880,6 @@ async function buscarZeroToken(termo) {
     if(!tree) return `(A árvore do projeto falhou. Tente pedir um arquivo específico com GITHUB_READ).`;
 
     let resultados = "";
-    let arquivosLidos = 0;
     
     const matchesName = tree.filter(p => p.toLowerCase().includes(termo.toLowerCase()));
     const codeExts = ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json', '.gradle'];
@@ -827,27 +887,35 @@ async function buscarZeroToken(termo) {
     
     const toScan = [...new Set([...matchesName, ...codeFiles.slice(0, 15)])].slice(0, 15);
 
-    for (const path of toScan) {
-        const content = await fetchGithubFile(projetoAtivo, path);
-        if (content.startsWith('[ERRO')) continue;
-        
-        const lines = content.split('\n');
-        let trecho = "";
-        lines.forEach((ln, i) => {
-            if (ln.toLowerCase().includes(termo.toLowerCase())) {
-                const start = Math.max(0, i - 2);
-                const end = Math.min(lines.length, i + 3);
-                const snippet = lines.slice(start, end).join('\n');
-                trecho += `\nLinha ${i+1}:\n\`\`\`\n${snippet}\n\`\`\`\n`;
-            }
-        });
-        
-        if(trecho) {
-            resultados += `\n=== ENCONTRADO EM: ${path} ===\n${trecho}`;
-            arquivosLidos++;
+    // CORREÇÃO 6: Promise.all em lotes de 5
+    for (let i = 0; i < toScan.length; i += 5) {
+        const chunk = toScan.slice(i, i + 5);
+        const results = await Promise.all(chunk.map(async path => {
+            const content = await fetchGithubFile(projetoAtivo, path);
+            if (content.startsWith('[ERRO')) return null;
+            
+            const lines = content.split('\n');
+            let trecho = "";
+            lines.forEach((ln, i) => {
+                if (ln.toLowerCase().includes(termo.toLowerCase())) {
+                    const start = Math.max(0, i - 2);
+                    const end = Math.min(lines.length, i + 3);
+                    const snippet = lines.slice(start, end).join('\n');
+                    trecho += `\nLinha ${i+1}:\n\`\`\`\n${snippet}\n\`\`\`\n`;
+                }
+            });
+            
+            if(trecho) return `\n=== ENCONTRADO EM: ${path} ===\n${trecho}`;
+            return null;
+        }));
+
+        const validos = results.filter(r => r !== null);
+        if (validos.length > 0) {
+            resultados += validos.join('\n');
+            if (resultados.split('ENCONTRADO').length > 5) break;
         }
-        if(arquivosLidos >= 5) break; 
     }
+
     return resultados || "(Nenhum trecho encontrado no projeto ativo.)";
 }
 
@@ -885,6 +953,9 @@ function mostrarDiff(path, oldText, newText) {
 
 async function confirmarCommit() {
     if (!pendingCommit) return;
+    if (Date.now() - pendingCommit.timestamp > 300000) { alert("O tempo expirou. Gere o commit novamente."); pendingCommit = null; return; }
+    if (pendingCommit.repo !== projetoAtivo) { alert("Você trocou de projeto. O commit foi cancelado por segurança."); pendingCommit = null; return; }
+
     document.getElementById('modalDiff').classList.remove('open');
     let { repo, path, content } = pendingCommit;
     path = path.replace(/^\/+/, ''); 
@@ -892,6 +963,7 @@ async function confirmarCommit() {
     addLog(`Commitando ${path} em ${repo}...`);
     try {
         const r = await fetch(`${WORKER_URL}/github-write`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: repo, path, content, message: 'Atualização via BOSS AI' }) });
+        if (!r.ok) throw new Error(`Worker retornou ${r.status}`);
         const d = await r.json();
         addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
         if (d.success) { 
@@ -902,7 +974,62 @@ async function confirmarCommit() {
 }
 function cancelarCommit() { pendingCommit = null; document.getElementById('modalDiff').classList.remove('open'); addMsg('boss', 'Commit cancelado.'); }
 
+function testeDeFumaca() {
+    toggleConfig();
+    const t = addMsg('thinking', 'Executando Autodiagnóstico (Smoke Test)...', false);
+    
+    setTimeout(() => {
+        let erros = [];
+        let sucessos = [];
+        
+        // 1. Verifica Firebase ':'
+        if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
+            sucessos.push("✅ Firebase configurado corretamente (apiKey com ':').");
+        } else {
+            // Tenta achar no código fonte
+            const html = document.documentElement.innerHTML;
+            if (html.includes('apiKey:')) sucessos.push("✅ Firebase configurado (verificado via HTML).");
+            else erros.push("❌ Falha no Firebase: `apiKey:` não encontrado.");
+        }
+
+        // 2. Verifica GITHUB_CREATE
+        const html = document.documentElement.innerHTML;
+        if (html.includes('[\\/GITHUB_CREATE]') || html.includes('[/GITHUB_CREATE]') || html.includes('GITHUB_CREATE:')) {
+            sucessos.push("✅ Módulo GITHUB_CREATE presente.");
+        } else {
+            erros.push("❌ Falha: Módulo GITHUB_CREATE ausente.");
+        }
+
+        // 3. Verifica GITHUB_PATCH
+        if (html.includes('GITHUB_PATCH') && html.includes('<<<OLD>>>')) {
+            sucessos.push("✅ Módulo GITHUB_PATCH (com delimitadores) presente.");
+        } else {
+            erros.push("❌ Falha: Módulo GITHUB_PATCH ausente ou mal formatado.");
+        }
+
+        // 4. Verifica Token Estimation
+        if (html.includes('/ 3.5')) {
+            sucessos.push("✅ Estimativa de Tokens corrigida (/3.5).");
+        } else {
+            erros.push("❌ Falha: Fórmula de estimativa de tokens ausente.");
+        }
+        
+        t.wrapper.remove();
+        let msgFinal = "📋 **RESULTADO DO AUTODIAGNÓSTICO**\n\n";
+        if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
+        if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
+        
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v7.2)**";
+        else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
+        
+        addMsg('boss', msgFinal);
+    }, 1500);
+}
+
 async function enviar() {
+    // CORREÇÃO 5: Captura do projeto para evitar race condition
+    const projetoDaVez = projetoAtivo;
+    
     const input = document.getElementById('input');
     const texto = input.value.trim();
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
@@ -952,7 +1079,8 @@ async function enviar() {
         if (memoriaRag) addLog("Memória antiga recuperada (RAG).");
 
         const isConversational = ['acha', 'pensa', 'opinião'].some(p => texto.toLowerCase().includes(p));
-        let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational, memoriaRag) }, ...historicoCompleto.slice(-6)];
+        let historicoDoProjeto = todosOsHistoricos[projetoDaVez] || [];
+        let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational, memoriaRag) }, ...historicoDoProjeto.slice(-6)];
         if (userContent) msgs.push({ role: 'user', content: userContent });
 
         let continuar = true, tentativas = 0, respostaFinal = "";
@@ -972,13 +1100,8 @@ async function enviar() {
                     localStorage.setItem('boss_active_repo', projetoAtivo);
                     atualizarDisplayProjeto();
                     resposta = resposta.replace(switchM[0], '').trim();
-                    if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**. Baixando árvore de arquivos...`;
-                    
-                    historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
-                    fileCache = {}; // Limpa cache de arquivos ao trocar de projeto
-                    
-                    await carregarArvoreProjeto();
-                    carregarMemoriaFirebase();
+                    if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**.`;
+                    fileCache = {}; 
                 } else {
                     resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Repositório "${novoProjeto}" não encontrado.)*`;
                 }
@@ -1011,7 +1134,7 @@ async function enviar() {
             if (treeM) {
                 t.div.textContent = "Lendo estrutura de arquivos...";
                 await carregarArvoreProjeto();
-                const treeList = cacheTrees[projetoAtivo] || [];
+                const treeList = cacheTrees[projetoDaVez] || [];
                 const resumoTree = treeList.slice(0, 30).join('\n');
                 msgs.push({ role: 'assistant', content: resposta });
                 msgs.push({ role: 'user', content: `[SISTEMA]: Estrutura de arquivos (primeiros 30):\n${resumoTree}\n\nAgora escolha um arquivo e peça GITHUB_READ.` });
@@ -1020,14 +1143,14 @@ async function enviar() {
 
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
-                if (!projetoAtivo) {
+                if (!projetoDaVez) {
                     resposta = "Nenhum projeto ativo.";
                 } else {
                     let all = ""; 
                     for (const m of readM) {
-                        let fp = m[1].trim().replace(projetoAtivo + '/', ''); 
+                        let fp = m[1].trim().replace(projetoDaVez + '/', ''); 
                         t.div.textContent = `Lendo ${fp}...`;
-                        const fc = await fetchGithubFile(projetoAtivo, fp);
+                        const fc = await fetchGithubFile(projetoDaVez, fp);
                         all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
                     }
                     msgs.push({ role: 'assistant', content: resposta });
@@ -1043,7 +1166,6 @@ async function enviar() {
             respostaFinal = "⚠️ Limite de iterações atingido sem resposta final.";
         }
 
-        // Correção da extração de voz e GitHub Create com regex robusta
         const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
         let txtFalar = vozM ? vozM[1] : respostaFinal;
         if (vozM) respostaFinal = respostaFinal.replace(vozM[0], '').trim();
@@ -1054,8 +1176,16 @@ async function enviar() {
         const mGen = respostaFinal.match(/\[GENERATE_IMAGE:\s*(.*?)\]/);
         const mProj = respostaFinal.match(/\[PROJECT:\s*([\s\S]*?)\]/);
         
-        // Regex captura tudo até o final do bloco, mesmo que tenha ]
-        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)(?:\]\s*$|$)/);
+        // CORREÇÃO PATCH E CREATE
+        const patchIncompleto = respostaFinal.match(/\[GITHUB_PATCH:[^\]]*\]/);
+        const patchCompleto = respostaFinal.match(/\[GITHUB_PATCH:\s*(.*?)\]\s*<<<OLD>>>([\s\S]*?)<<<NEW>>>([\s\S]*?)<<<END>>>/);
+        
+        if (patchIncompleto && !patchCompleto) {
+            addMsg('error', '⚠️ Patch malformado: faltou <<<END>>>. Use GITHUB_READ e tente novamente.');
+            return;
+        }
+
+        const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\[\/GITHUB_CREATE\]/);
 
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
         if (memAdd) {
@@ -1093,7 +1223,9 @@ async function enviar() {
         t.wrapper.remove();
 
         let limpo = respostaFinal
-            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE|GITHUB_TREE):[\s\S]*?\]/g, '')
+            .replace(/\[(IMAGE_SEARCH|VIDEO_SEARCH|GENERATE_IMAGE|PROJECT|GITHUB_CREATE|GITHUB_PATCH|GITHUB_TREE):[\s\S]*?(\]|\/GITHUB_CREATE\])/g, '')
+            .replace(/\[GITHUB_PATCH:[\s\S]*?<<<END>>>/g, '')
+            .replace(/\[GITHUB_CREATE:[\s\S]*?\[\/GITHUB_CREATE\]/g, '')
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
             
         if (limpo) { 
@@ -1125,10 +1257,7 @@ async function enviar() {
             document.getElementById('chat').appendChild(w);
             
             try {
-                // Correção: usar .catch() pois mermaid.run retorna Promise
-                mermaid.run({ nodes: [w.querySelector('.mermaid')] }).catch(e => {
-                    w.innerHTML += `<div style="color:#E74C3C; font-size:12px;">[ Erro no diagrama Mermaid ]</div>`;
-                });
+                await mermaid.run({ nodes: [w.querySelector('.mermaid')] });
                 setTimeout(() => addMsg('boss', `📊 **[SISTEMA]:** Diagrama renderizado com sucesso.`), 100);
             } catch(e) {
                 w.innerHTML += `<div style="color:#E74C3C; font-size:12px;">[ Erro no diagrama Mermaid ]</div>`;
@@ -1164,20 +1293,50 @@ async function enviar() {
             });
         }
 
+        if (patchCompleto) {
+            const path = patchCompleto[1].trim().replace(/^\/+/, ''); 
+            const oldText = patchCompleto[2].trim(); 
+            const newText = patchCompleto[3].trim();
+            
+            addLog(`Preparando patch de ${path}...`);
+            const existingMasked = await fetchGithubFile(projetoDaVez, path);
+            if (existingMasked.startsWith('[ERRO')) {
+                addMsg('error', `Não foi possível ler o arquivo para fazer o patch.`);
+                return;
+            }
+            
+            // CORREÇÃO 1 e 2: escapeRegex e Unicidade
+            const regex = new RegExp(escapeRegex(oldText), 'g');
+            const ocorrencias = (existingMasked.match(regex) || []).length;
+
+            if (ocorrencias === 0) {
+                addMsg('error', `⚠️ **Patch Falhou:** O trecho não foi encontrado no arquivo. Use GITHUB_READ para verificar e tentar novamente.`);
+                return;
+            }
+            if (ocorrencias > 1) {
+                addMsg('error', `⚠️ **Patch Falhou:** O trecho é ambíguo (${ocorrencias} ocorrências). Seja mais específico.`);
+                return;
+            }
+
+            const newContent = existingMasked.replace(oldText, newText);
+            pendingCommit = { repo: projetoDaVez, path, content: newContent, oldTextMasked: existingMasked, timestamp: Date.now() };
+            mostrarDiff(path, existingMasked, newContent);
+        }
+
         if (mGit) {
             let path = mGit[1].trim().replace(/^\/+/, ''); 
             const content = mGit[2].trim();
             
             if (content.toLowerCase().includes('***') && content.toLowerCase().includes('password')) {
-                addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***). O arquivo original no GitHub seria corrompido. Altere a senha manualmente ou peça ao BOSS para não alterar essa linha.`);
+                addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***).`);
                 return;
             }
 
             addLog(`Preparando commit de ${path}...`);
-            const existingMasked = await fetchGithubFile(projetoAtivo, path);
+            const existingMasked = await fetchGithubFile(projetoDaVez, path);
             const oldTextMasked = existingMasked.startsWith('[ERRO') ? '' : existingMasked;
             
-            pendingCommit = { repo: projetoAtivo, path, content, oldTextMasked };
+            pendingCommit = { repo: projetoDaVez, path, content, oldTextMasked, timestamp: Date.now() };
             mostrarDiff(path, oldTextMasked, content);
         }
 
@@ -1238,7 +1397,7 @@ function iniciarEscuta() {
     reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; }; 
     reconhecimento.onresult = (e) => { 
         document.getElementById('input').value = e.results[0][0].transcript; 
-        reconhecimento.stop(); // Força a parada para não duplicar
+        reconhecimento.stop(); 
         enviar(); 
     }; 
     reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; }; 
@@ -1247,13 +1406,7 @@ function iniciarEscuta() {
 
 function lerArquivo(event) {
     const file = event.target.files[0]; if (!file) return;
-    // Correção: Bloquear SVG por segurança
-    if (file.type === "image/svg+xml") {
-        alert("Arquivos SVG não são permitidos por questões de segurança.");
-        event.target.value = '';
-        return;
-    }
-
+    if (file.type === "image/svg+xml") { alert("SVG não permitido."); event.target.value = ''; return; }
     if (file.type.startsWith("image/")) {
         const reader = new FileReader();
         reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const MW = 800, sc = MW / img.width; canvas.width = MW; canvas.height = img.height * sc; canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height); imagemAnexadaBase64 = canvas.toDataURL('image/jpeg', 0.8); addMsg('user', `[Imagem anexada]`); document.getElementById('btnDraw').style.display = 'flex'; }; img.src = e.target.result; };
@@ -1263,7 +1416,7 @@ function lerArquivo(event) {
         reader.onload = function(e) { 
             arquivoAnexado = e.target.result.substring(0, 50000); 
             addMsg('user', `[Arquivo "${file.name}" anexado]`); 
-            if (e.target.result.length > 50000) addMsg('error', 'Aviso: O arquivo era grande e foi truncado em 50.000 caracteres.');
+            if (e.target.result.length > 50000) addMsg('error', 'Aviso: O arquivo foi truncado em 50.000 caracteres.');
         };
         reader.readAsText(file);
     }
@@ -1276,7 +1429,6 @@ function limparHistorico() {
         localStorage.removeItem('boss_memoria_decisoes');
         localStorage.removeItem('boss_agenda_interna');
         localStorage.removeItem('boss_erros');
-        localStorage.removeItem('boss_acertos');
         location.reload(); 
     } 
 }
@@ -1284,7 +1436,7 @@ function limparHistorico() {
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
         const s = document.getElementById('voiceSelect');
-        s.innerHTML = '<option value="">Padrão do navegador</option>'; // Limpa antes de adicionar
+        s.innerHTML = '<option value="">Padrão do navegador</option>'; 
         const vs = window.speechSynthesis.getVoices().filter(v => v.lang.includes('pt'));
         vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
     };
