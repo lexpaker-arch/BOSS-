@@ -219,7 +219,6 @@
 
             <div class="divider"></div>
 
-            <!-- CAMPO DEEPSEEK (GARANTIDO) -->
             <label class="config-label" style="color:#60a5fa;">🧠 API DEEPSEEK V4.1 FLASH</label>
             <input type="password" id="deepseekKeyInput" class="config-input" placeholder="sk-...">
             <button class="btn-config-action" onclick="salvarDeepseekKey()">SALVAR CHAVE DEEPSEEK</button>
@@ -1077,7 +1076,7 @@ function testeDeFumaca() {
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.2)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.3)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1104,7 +1103,15 @@ async function enviar() {
         if (imagemAnexadaBase64) {
             t.div.textContent = "Processando visão...";
             try {
-                const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64 }) });
+                // AQUI ESTÁ A CORREÇÃO DO PROMPT DE VISÃO
+                const vr = await fetch(`${WORKER_URL}/analyze-image`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        imageBase64: imagemAnexadaBase64,
+                        prompt: "Descreva APENAS o que você vê nesta imagem. Seja literal e detalhado. NÃO use contexto de conversas anteriores. Se for uma foto de carro, diga o que está vendo no carro, na rua e no ambiente."
+                    }) 
+                });
                 if (!vr.ok) throw new Error("Falha no Worker principal");
                 const vd = await vr.json();
                 contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
@@ -1118,7 +1125,13 @@ async function enviar() {
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
                             body: JSON.stringify({
                                 model: GROQ_VISION_MODELO,
-                                messages: [{ role: "user", content: [{ type: "text", text: "Analise esta imagem." }, { type: "image_url", image_url: { url: imagemAnexadaBase64 } }] }],
+                                messages: [{ 
+                                    role: "user", 
+                                    content: [
+                                        { type: "text", text: "Descreva APENAS o que você vê nesta imagem. Seja literal e detalhado. NÃO use contexto de conversas anteriores." }, 
+                                        { type: "image_url", image_url: { url: imagemAnexadaBase64 } }
+                                    ] 
+                                }],
                                 temperature: 0.2
                             })
                         });
