@@ -36,7 +36,6 @@
 - Interface: web (PWA)
 - Sem servidor próprio
 - Chave no localStorage
-
 ## Interação por Voz (EXODASH)
 - O EXO possui "Modo Follow-up" de 10 segundos.
 - Quando o EXO termina de falar (evento onDone do TTS), o microfone abre automaticamente por 10s para perguntas de acompanhamento.
