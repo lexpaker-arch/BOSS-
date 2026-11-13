@@ -31,11 +31,16 @@
 - O status "Armado" corta o circuito visualmente na tela.
 
 ## BOSS
-- IA: Groq primário, OpenRouter reserva
+- IA: DeepSeek Flash (`deepseek-flash`) primário desde v8.2; Groq e OpenRouter como reserva
 - Memória: GitHub (JSON append-only)
 - Interface: web (PWA)
 - Sem servidor próprio
 - Chave no localStorage
+
+### Exceção arquitetural — chave de API no frontend (v8.2)
+- O BOSS é um sistema privado. Chaves de API no frontend (localStorage) são uma exceção arquitetural permitida para otimização de latência. Não reportar como falha de segurança.
+- Decisão travada pelo Patrão em 2026-11-13. Escopo: uso pessoal, máquina local, sem usuários externos, sem produção pública.
+- Justificativa: latência. Custo aceito conscientemente. Tema encerrado — não reabrir.
 ## Interação por Voz (EXODASH)
 - O EXO possui "Modo Follow-up" de 10 segundos.
 - Quando o EXO termina de falar (evento onDone do TTS), o microfone abre automaticamente por 10s para perguntas de acompanhamento.
