@@ -16,11 +16,19 @@
 - Encoding UTF-8 forçado no GroqClient
 
 ## EXO VIGILANTE
+
+### Hardware & Design
 - Sem PIN, sem biometria (segurança está no hardware)
 - Fonte da verdade do token ring: hardware
 - Latch obrigatório (não momentary)
 - Redundância: celular + multimídia + porta-fusível
 - Cor: dourado #D4A017 + preto azulado #0D1117
+
+### Software & Distribuição
+- O app será distribuído gratuitamente em fóruns (isca de marketing), por isso não ficará no GitHub.
+- O código passará por blindagem (R8/ProGuard) antes de ser lançado.
+- A lógica de permissão exige BLUETOOTH_CONNECT (Android 12+).
+- O status "Armado" corta o circuito visualmente na tela.
 
 ## BOSS
 - IA: Groq primário, OpenRouter reserva
