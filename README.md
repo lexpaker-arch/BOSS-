@@ -1,85 +1,92 @@
-# BOSS- — Assistente de Engenharia da EXODRIVE
+# BOSS-
 
-Assistente de IA e consultor técnico do ecossistema **EXODRIVE Sistemas Automotivos**. Opera sobre os projetos **EXODASH** e **EXO VIGILANTE**, com memória persistida no GitHub.
+> Inteligência de engenharia da EXODRIVE. Assistente técnico do Patrão.
 
 ---
 
-## 📚 Índice de Contexto
+## 📁 Estrutura do repositório
 
-Toda a base de conhecimento do BOSS vive em `contexto/`:
+O cérebro do BOSS vive em `contexto/`. É de lá que ele lê as regras, decisões e o mapa de código dos projetos.
 
 | Arquivo | Função |
 |---|---|
-| `contexto/diretrizes_ia.md` | Regras de engenharia, arquitetura travada, gerador de prompts |
-| `contexto/decisoes.md` | Decisões técnicas já tomadas (ExoDash, Vigilante, BOSS) |
-| `contexto/memoria_codigo.md` | Mapa completo de arquivos do ExoDash |
-| `contexto/projetos.md` | Descrição dos projetos + manuais de instalação/operação |
-| `contexto/memorias/chefe.md` | Diário de bordo do operador |
-| `contexto/memorias/backup/` | Histórico e relatórios anteriores |
-
-Base de conhecimento adicional em `conhecimento/` (elétrica automotiva, veículos).
+| `contexto/diretrizes_ia.md` | Regras de operação e personalidade do BOSS |
+| `contexto/decisoes.md` | Decisões técnicas travadas (não reabrir sem motivo) |
+| `contexto/projetos.md` | Estado atual de cada projeto da EXODRIVE |
+| `contexto/memoria_codigo.md` | Mapa de código do ExoDash (arquivos, classes, fluxos) |
+| `contexto/memorias/` | Diário de bordo e memórias auxiliares |
 
 ---
 
-## 🚗 Projetos do Ecossistema
+## 🚗 Projetos
 
-### 1. EXODASH
-HUD automotivo Android para Ford Focus MK1 2001 (1.8 Zetec).
+### 1. ExoDash
 
-- **Stack:** Kotlin + Android XML puro (sem Compose, sem OpenGL/SurfaceView/Canvas).
-- **Comunicação OBD:** USB Serial (`usb-serial-for-android`).
+App Android de dashboard automotivo.
+
+- **Stack:** Kotlin + XML puro. Sem Compose, sem OpenGL.
+- **OBD:** via USB Serial (`usb-serial-for-android`).
 - **Voz:** `MainVoiceInteractionService` → `BossService` → `BossBrain` → `GroqClient`.
-- **Funcionalidades confirmadas:** telemetria OBD-II, leitura de DTCs (Mode 03), assistente de voz com follow-up de 10s, auto-update via GitHub Releases.
-- **Mapa de código completo:** ver `contexto/memoria_codigo.md`.
+- **Decisões travadas:**
+  - Nome do carro: manual, via `Prefs`.
+  - Bateria: leitura via comando `AT RV`.
+  - DTC: via Mode 03 + regex.
+  - Follow-up de voz: 10s após `TTS onDone`.
+  - Tela: `FLAG_KEEP_SCREEN_ON` ativo.
 
-### 2. EXO VIGILANTE
-Módulo de segurança veicular (imobilizador invisível via relé Bluetooth oculto no circuito do fusível).
+### 2. Vigilante
 
-- **Stack:** Kotlin, minSdk 24.
-- **Comunicação:** Bluetooth SPP com módulo HC-05 (UUID SPP padrão).
-- **Hardware:** relé Bluetooth 4 canais, falso fusível.
-- **Comandos hex:** `A0 01 01 A2` (Armar) / `A0 01 00 A1` (Desarmar). Senha padrão: `1234`.
-- **Tema:** `#0D1117` (fundo) + `#D4A017` (dourado).
-- **Status do hardware:** *A definir* — aguardando placa de relé (última informação registrada em `contexto/projetos.md`).
+Sistema de alarme veicular com relé Bluetooth.
+
+- **Stack:** Kotlin, `minSdk 24`.
+- **Comunicação:** Bluetooth SPP (HC-05, UUID SPP padrão).
+- **Relé:** 4 canais.
+- **Comandos hex:**
+  - Armar: `A0 01 01 A2`
+  - Desarmar: `A0 01 00 A1`
+- **Senha padrão:** `1234`.
+- **Cores:** `#D4A017` (destaque) / `#0D1117` (fundo).
+- **Status do hardware:** *A definir* — último registro indicava "aguardando placa de relé Bluetooth 4 canais". Confirmar se já chegou.
 
 ### 3. BOSS
-Este assistente.
 
-- **IA:** Groq (primário), OpenRouter (reserva).
-- **Memória:** GitHub (JSON append-only).
+Assistente de engenharia (este repositório).
+
+- **LLM:** Groq (primário), OpenRouter (reserva).
+- **Memória de longo prazo:** Firebase Firestore.
+- **Infraestrutura:** Cloudflare Worker faz proxy da Groq — a chave principal fica protegida no Worker. Fallback: cliente chama a Groq direta usando a chave do `localStorage`.
+- **Chave da Groq no cliente:** `localStorage`.
 - **Interface:** PWA.
-- **Infra:** sem servidor próprio; chave no `localStorage`.
 
 ---
 
-## ⚠️ Regras de Operação do BOSS
+## ⚙️ Regras de operação
 
-1. **Regra de Ouro:** nunca gerar prompt de engenharia sem ter o código em mãos. Sem arquivo lido → pedir leitura primeiro.
-2. **Modo Estrito:** prompt para Codespace = texto puro, começando com o aviso de `cd /workspaces/NOME && code -r .` seguido de `@workspace`.
-3. **Arquitetura travada:** UI em XML puro, lógica em Kotlin, OBD via USB, Vigilante via Bluetooth SPP. Mudanças exigem decisão explícita registrada em `contexto/decisoes.md`.
+Extraídas de `contexto/diretrizes_ia.md`:
+
+- Tratar o usuário como **Patrão**. Nunca "Chefe".
+- Ser técnico e direto. Sem enrolação.
+- Não inventar arquitetura. Se não há fonte, marcar como **"A definir"**.
+- Toda edição em arquivo grande: `GITHUB_PATCH` com trecho `OLD` único.
+- Toda resposta termina com `` (resumo ≤ 180 caracteres).
 
 ---
 
-## 🧩 Estado do Repositório
+## 📊 Estado do repositório
 
-| Item | Status |
+| Item | Estado |
 |---|---|
-| Base de contexto (`contexto/`) | ✅ Populada |
-| Mapa de código ExoDash | ✅ Completo |
-| Manuais de instalação/operação | ✅ Em `contexto/projetos.md` |
-| Memória do operador (`chefe.md`) | ⚠️ Placeholder — a popular |
-| Config Firebase / RAG | ❓ A definir — sem fonte no repositório |
-| Versão atual do ExoDash | ❓ A definir — sem tag/versão nos arquivos |
-| Status real do hardware Vigilante | ❓ A definir — última info pode estar desatualizada |
+| Estrutura `contexto/` | ✅ Definida |
+| Regras de operação | ✅ Documentadas |
+| Mapa de código ExoDash | ✅ Documentado |
+| Versão atual do ExoDash | ⚠️ **A definir** (sem tag/versão nos arquivos) |
+| Status do hardware Vigilante | ⚠️ **A definir** (confirmar placa de relé) |
+| Config Firebase / Firestore | ⚠️ **A definir** (sem arquivo de config neste repo) |
 
 ---
 
 ## 🛠️ Desenvolvimento
 
-- **Ambiente:** GitHub Codespaces (`.devcontainer/` no repo do ExoDash).
-- **Build ExoDash:** Gradle Kotlin DSL (`build.gradle.kts`, `gradlew`).
-- **CI:** `.github/workflows/release.yml` no repo do ExoDash.
+Este repositório é **documentação viva** do BOSS. Não há build, não há deploy — o conteúdo de `contexto/` é lido pelo BOSS em tempo de execução.
 
----
-
-*Documento mantido pelo BOSS. Toda alteração de arquitetura deve ser registrada em `contexto/decisoes.md` antes de refletir aqui.*
+Para alterar comportamento: editar os arquivos em `contexto/` e commitar. O BOSS recarrega no próximo ciclo.
