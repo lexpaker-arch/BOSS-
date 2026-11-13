@@ -125,6 +125,7 @@
     .btn-danger:hover { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
     .btn-test { border-color: #3b82f6; color: #60a5fa; }
     .btn-test:hover { background: #1e3a8a; color: #fff; border-color: #1e3a8a; }
+    .divider { height: 1px; background: var(--border-color); margin: 15px 0; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 10px; }
     .modal-overlay.open { display: flex; }
@@ -216,11 +217,16 @@
             <input type="range" id="pitchSlider" min="0.5" max="1.6" step="0.05" value="1.05" onchange="mudarPitch(this.value)" style="width:100%;">
             <button class="btn-config-action" onclick="testarVoz()">🔊 TESTAR VOZ</button>
 
-            <label class="config-label" style="color:#60a5fa; margin-top: 20px;">🧠 API DEEPSEEK V4.1 FLASH</label>
+            <div class="divider"></div>
+
+            <!-- CAMPO DEEPSEEK (GARANTIDO) -->
+            <label class="config-label" style="color:#60a5fa;">🧠 API DEEPSEEK V4.1 FLASH</label>
             <input type="password" id="deepseekKeyInput" class="config-input" placeholder="sk-...">
             <button class="btn-config-action" onclick="salvarDeepseekKey()">SALVAR CHAVE DEEPSEEK</button>
 
-            <label class="config-label" style="color:var(--accent); margin-top: 20px;">⚡ API RESERVA (GROQ)</label>
+            <div class="divider"></div>
+
+            <label class="config-label" style="color:var(--accent);">⚡ API RESERVA (GROQ)</label>
             <input type="password" id="groqKeyInput" class="config-input" placeholder="gsk_...">
             <button class="btn-config-action" onclick="salvarGroqKey()">SALVAR CHAVE</button>
 
@@ -1071,7 +1077,7 @@ function testeDeFumaca() {
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.1)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.2)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1356,7 +1362,6 @@ async function enviar() {
               });
         }
 
-        // CORREÇÃO MERMAID AQUI
         if (mProj || mMer) {
             const mCode = mProj ? mProj[1] : mMer[1];
             const w = document.createElement('div'); w.className = 'mermaid-container';
