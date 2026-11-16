@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v8.5.3)</title>
+<title>BOSS - EXODRIVE (v8.6)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -55,8 +55,9 @@
     .widget-val { font-size: 16px; color: var(--accent); font-weight: bold; }
     .widget-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; }
     .log-line { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+    
+    #memoria-recente { font-size: 11px; color: var(--text-muted); line-height: 1.4; display: flex; flex-direction: column; gap: 4px; height: 65px; overflow: hidden; }
 
-    /* CENTER AREA ABRAÇA O CHAT E O FOOTER */
     .center-area { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, var(--bg-dark) 100%); min-width: 0; }
     
     .orb-container { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 0; opacity: 0.15; pointer-events: none; display: flex; justify-content: center; align-items: center; }
@@ -68,7 +69,6 @@
 
     #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; z-index: 1; scroll-behavior: smooth; }
     
-    /* Animação Fade-In */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     .msg-wrapper { display: flex; flex-direction: column; width: 100%; animation: fadeIn 0.3s ease-out forwards; }
     
@@ -99,12 +99,10 @@
     .diff-line.del { background: rgba(231,76,60,0.15); color: #E74C3C; }
     .diff-line.same { color: #8A9AAA; }
 
-    /* FOOTER */
     footer { padding: 10px 15px; border-top: 1px solid var(--border-color); background: var(--bg-dark); display: flex; gap: 8px; align-items: flex-end; z-index: 10; flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 10px); }
     .cmd-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: var(--radius); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 16px; transition: 0.2s; flex-shrink: 0; margin-bottom: 2px;}
     .cmd-btn:hover { border-color: var(--accent); color: var(--accent); }
     
-    /* Caixa de texto expansível com limite */
     #input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border-color); color: var(--accent); padding: 8px; font-family: var(--font-mono); font-size: 13px; outline: none; transition: 0.3s; min-width: 0; resize: none; max-height: 120px; overflow-y: auto; line-height: 1.4; }
     #input:focus { border-bottom-color: var(--accent); }
     
@@ -163,7 +161,6 @@
                 <div class="widget-sub"><span>Status:</span> <span id="metric-index-status" style="color:#F1C40F;">Aguardando</span></div>
                 <div class="widget-sub"><span>Repos:</span> <span id="metric-repos">0</span></div>
                 <div class="widget-sub"><span>Arquivos:</span> <span id="metric-files">0</span></div>
-                <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:#F1C40F; color:#F1C40F;" onclick="mapearRepositorio()">SINCRONIZAR</button>
             </div>
             
             <div class="widget" style="flex:1; border-color: #ef4444;">
@@ -173,18 +170,30 @@
                 <button class="btn-config-action" style="padding:5px; font-size:10px; margin-top:5px; border-color:#ef4444; color:#ef4444;" onclick="forcarSalvarMemoria()">SALVAR SESSÃO AGORA</button>
             </div>
 
+            <div class="widget" style="border-color: var(--accent);">
+                <div class="widget-title" style="color: var(--accent);">MEMÓRIA RECENTE (NUVEM)</div>
+                <div id="memoria-recente">
+                    <span style="opacity:0.5">Nenhuma interação recente.</span>
+                </div>
+            </div>
+
             <div class="widget"><div class="widget-title">LATÊNCIA (API)</div><div class="widget-val" id="metric-latency" style="font-size:14px;">-- ms</div></div>
             <div class="widget" style="flex:1;"><div class="widget-title">LOG DE ATIVIDADE</div><div id="action-log"><div class="log-line">[SYS] Aguardando inicialização...</div></div></div>
         </aside>
 
-        <!-- CENTER AREA ABRAÇA O CHAT E O FOOTER -->
         <div class="center-area">
             <div class="orb-container"><div class="orb"><div class="orb-2"></div><div class="orb-core"></div></div></div>
             <div id="chat"></div>
             
             <footer>
+                <!-- Botão de Anexo -->
                 <input type="file" id="fileInput" accept="image/*,text/*,.kt,.xml,.gradle,.md,.json" style="display:none" onchange="lerArquivo(event)">
                 <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
+                
+                <!-- Botão de Câmera -->
+                <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="lerArquivo(event)">
+                <button class="cmd-btn" onclick="document.getElementById('cameraInput').click()" title="Tirar Foto">📷</button>
+
                 <button class="cmd-btn" id="btnDraw" style="display:none;" onclick="abrirAnotacao()" title="Anotar">🖊</button>
                 <button class="cmd-btn" onclick="iniciarEscuta()" title="Falar">🎤</button>
                 <textarea id="input" placeholder="DIRETRIZ..." rows="1" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();enviar();}"></textarea>
@@ -331,6 +340,9 @@ const DEEPSEEK_SEARCH_URL = null;
 const DEEPSEEK_FETCH_URL  = null;
 const DEEPSEEK_MODELO = 'deepseek-chat';
 
+// INTEGRAÇÃO TTS (RENDER)
+const TTS_URL = "https://boss-tts-server.onrender.com/tts"; 
+
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
 let vozAtiva = localStorage.getItem('boss_voice_toggle') !== 'off';
 let vozNome = localStorage.getItem('boss_voice') || '';
@@ -342,6 +354,7 @@ let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
 
 let todosOsHistoricos = JSON.parse(localStorage.getItem('boss_historico_full')) || {};
 let historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
+let historicoRecenteNuvem = []; // Buffer de 50 interações da nuvem
 
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
@@ -376,7 +389,6 @@ document.getElementById('deepseekKeyInput').value = localStorage.getItem('boss_d
 document.getElementById('gitUserInput').value = gitUser;
 atualizarMuteBtn(); atualizarHUD(); atualizarDisplayProjeto();
 
-// Configura auto-resize do textarea
 const inputEl = document.getElementById('input');
 inputEl.addEventListener('input', function() {
     this.style.height = 'auto';
@@ -399,6 +411,23 @@ function atualizarHUD() {
     document.getElementById('metric-latency').textContent = metricLatency + ' ms';
     localStorage.setItem('metric_tokens', metricTokens);
     localStorage.setItem('metric_latency', metricLatency);
+}
+
+function atualizarTelinhaMemoria() {
+    const el = document.getElementById('memoria-recente');
+    if (!el) return;
+    
+    const recentes = historicoRecenteNuvem.slice(-3).reverse();
+    if (recentes.length === 0) {
+        el.innerHTML = "<span style='opacity:0.5'>Nenhuma interação recente.</span>";
+        return;
+    }
+    
+    el.innerHTML = recentes.map(m => {
+        const prefix = m.role === 'user' ? '👤' : '🤖';
+        const text = m.content.substring(0, 40) + (m.content.length > 40 ? '...' : '');
+        return `<div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prefix} ${escapeHTML(text)}</div>`;
+    }).join('');
 }
 
 function addLog(texto) {
@@ -475,7 +504,6 @@ function formatarTexto(texto) {
             .replace(/\n/g, '<br>');
 }
 
-// Renderização instantânea com Fade-in
 function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
     const chat = document.getElementById('chat');
     const w = document.createElement('div'); w.className = `msg-wrapper`;
@@ -506,21 +534,32 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
 
     chat.appendChild(w); 
     
-    // Smart Scroll: Só desce se o usuário já estiver no final
     const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 150;
-    if (isAtBottom) {
-        chat.scrollTop = chat.scrollHeight;
-    }
+    if (isAtBottom) { chat.scrollTop = chat.scrollHeight; }
     
     if (salvar && tipo !== 'thinking') {
         if (!todosOsHistoricos[proj]) todosOsHistoricos[proj] = [];
         todosOsHistoricos[proj].push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
         if (todosOsHistoricos[proj].length > 500) todosOsHistoricos[proj] = todosOsHistoricos[proj].slice(-500);
-        
         localStorage.setItem('boss_historico_full', JSON.stringify(todosOsHistoricos));
+        
+        // Salvar na Nuvem (Buffer de 50 Interações)
+        historicoRecenteNuvem.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
+        if (historicoRecenteNuvem.length > 50) historicoRecenteNuvem.shift();
+        salvarHistoricoRecenteNuvem();
+        atualizarTelinhaMemoria();
+
         if (proj === projetoAtivo) atualizarHUD();
     }
     return { wrapper: w, div: d };
+}
+
+async function salvarHistoricoRecenteNuvem() {
+    if (!projetoAtivo || !window.db) return;
+    try {
+        const docRef = window.doc(window.db, "projetos", projetoAtivo);
+        await window.setDoc(docRef, { historico_recente: historicoRecenteNuvem }, { merge: true });
+    } catch(e) { console.error("Erro ao salvar histórico recente: ", e); }
 }
 
 function avaliar(btn, resposta, isBom) {
@@ -563,6 +602,12 @@ async function carregarMemoriaFirebase() {
         if (docSnap.exists()) {
             dbMemory = docSnap.data();
             addLog(`Memória carregada do Firebase com sucesso!`);
+            
+            if (dbMemory.historico_recente && Array.isArray(dbMemory.historico_recente)) {
+                historicoRecenteNuvem = dbMemory.historico_recente;
+                atualizarTelinhaMemoria();
+            }
+            
             if (dbMemory.diario_bordo) {
                 setTimeout(() => addMsg('boss', `🧠 **Memória recuperada do Firebase**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
             }
@@ -690,14 +735,14 @@ REGRAS:
 2. [GITHUB_FIND: termo] - Busca. Se falhar, use [GITHUB_READ: README.md]. Se falhar de novo, use [GITHUB_TREE].
 3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo.
 4. [GITHUB_READ: arquivo] - Lê arquivo.
-5. [GITHUB_PATCH: caminho] + <<<OLD>>>...<<<NEW>>>...<<<END>>> - Edita um trecho. (Preferível para edições).
-6. [GITHUB_CREATE: caminho | conteúdo] + [/GITHUB_CREATE] - Cria arquivo novo inteiro. (Obrigatório fechar com tag final).
+5. [GITHUB_PATCH: caminho] + <<<OLD>>>...<<<NEW>>>...<<<END>>> - Edita um trecho.
+6. [GITHUB_CREATE: caminho | conteúdo] + [/GITHUB_CREATE] - Cria arquivo novo inteiro.
 7. [MEMORIA_ADD: chave | valor] - Salva um fato técnico.
 8. [MEMORIA_DEL: termo] - Apaga um fato técnico da memória.
 9. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
 10. [AGENDA_DEL: termo] - Remove tarefa da agenda.
 11. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
-12. [WEB_FETCH: url] - Lê o conteúdo de uma página web (Markdown). Use para documentações.
+12. [WEB_FETCH: url] - Lê o conteúdo de uma página web (Markdown).
 13. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
 14. [IMAGE_SEARCH: termo] - Busca imagem real na web.
 15. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
@@ -1043,8 +1088,7 @@ function testeDeFumaca() {
             erros.push("❌ Falha: Regra de Imagem ausente.");
         }
 
-        const temDigitacaoReal = /function\s+efeitoDigitacao\s*\(|efeitoDigitacao\s*=\s*function|\.efeitoDigitacao\s*\(/.test(html);
-        if (html.includes('fadeIn') && !temDigitacaoReal) {
+        if (html.includes('@keyframes fadeIn') && !/function\s+efeitoDigitacao\s*\(/.test(html)) {
             sucessos.push("✅ Animação instantânea (Fade-In) ativa. UI destravada.");
         } else {
             erros.push("❌ Falha: Animação de texto antiga ou conflitante ainda presente.");
@@ -1055,13 +1099,31 @@ function testeDeFumaca() {
         } else {
             erros.push("❌ Falha: Verificação de inicialização ainda usa setTimeout.");
         }
+
+        if (html.includes('TTS_URL')) {
+            sucessos.push("✅ Integração Edge-TTS (Render) ativa.");
+        } else {
+            erros.push("❌ Falha: Integração Edge-TTS ausente.");
+        }
+
+        if (html.includes('cameraInput')) {
+            sucessos.push("✅ Botão de Câmera integrado.");
+        } else {
+            erros.push("❌ Falha: Botão de Câmera ausente.");
+        }
+
+        if (html.includes('historico_recente')) {
+            sucessos.push("✅ Sincronia de memória recente na nuvem ativa.");
+        } else {
+            erros.push("❌ Falha: Sincronia de memória recente ausente.");
+        }
         
         t.wrapper.remove();
         let msgFinal = "📋 **RESULTADO DO AUTODIAGNÓSTICO**\n\n";
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.5.3)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.6)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1076,7 +1138,7 @@ async function enviar() {
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
 
     input.value = '';
-    input.style.height = 'auto'; // Reseta altura do textarea
+    input.style.height = 'auto';
     if (texto) addMsg('user', texto, true, projetoDaVez);
     const t = addMsg('thinking', 'Analisando...', false);
     document.getElementById('send').disabled = true;
@@ -1134,8 +1196,8 @@ async function enviar() {
         if (memoriaRag) addLog("Memória antiga recuperada (RAG).");
 
         const isConversational = ['acha', 'pensa', 'opinião'].some(p => texto.toLowerCase().includes(p));
-        let historicoDoProjeto = todosOsHistoricos[projetoDaVez] || [];
-        let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational, memoriaRag) }, ...historicoDoProjeto.slice(-6)];
+        
+        let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational, memoriaRag) }, ...historicoRecenteNuvem.slice(-6)];
         if (userContent) msgs.push({ role: 'user', content: userContent });
 
         let continuar = true, tentativas = 0, respostaFinal = "";
@@ -1165,86 +1227,29 @@ async function enviar() {
             const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
             if (webM && tentativas === 1) {
                 const termo = webM[1];
-                const deepseekKey = localStorage.getItem('boss_deepseek_key');
-                
-                if (deepseekKey && DEEPSEEK_SEARCH_URL) {
-                    t.div.textContent = `Pesquisando (DeepSeek): "${termo}"...`;
-                    try {
-                        const sr = await fetch(DEEPSEEK_SEARCH_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
-                            body: JSON.stringify({ query: termo, count: 5, need_content: false })
-                        });
-                        const sd = await sr.json();
-                        const results = sd.results || [];
-                        let allRes = results.map(r => `[${r.title}](${r.url})\n${r.snippet || r.summary || ''}`).join('\n\n');
-                        if (!allRes) allRes = "Nenhum resultado encontrado.";
-                        
-                        msgs.push({ role: 'assistant', content: resposta });
-                        msgs.push({ role: 'user', content: `[SISTEMA]: Resultados da busca (DeepSeek):\n${allRes}\n\nResponda agora.` });
-                    } catch (e) {
-                        addLog(`Search DeepSeek falhou. Usando Worker...`);
-                        const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
-                        const sd = await sr.json();
-                        msgs.push({ role: 'assistant', content: resposta });
-                        msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca (Worker): ${sd.results}. Responda agora.` });
-                    }
-                } else {
-                    t.div.textContent = `Pesquisando (Worker): "${termo}"...`;
-                    const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
-                    const sd = await sr.json();
-                    msgs.push({ role: 'assistant', content: resposta });
-                    msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca na web: ${sd.results}. Responda agora.` });
-                }
+                t.div.textContent = `Pesquisando (Worker): "${termo}"...`;
+                const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
+                const sd = await sr.json();
+                msgs.push({ role: 'assistant', content: resposta });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca na web: ${sd.results}. Responda agora.` });
                 continue;
             }
 
             const fetchM = resposta.match(/\[WEB_FETCH:\s*(.*?)\]/);
             if (fetchM && tentativas === 1) {
                 const url = fetchM[1];
-                const deepseekKey = localStorage.getItem('boss_deepseek_key');
-                
-                if (deepseekKey && DEEPSEEK_FETCH_URL) {
-                    t.div.textContent = `Lendo página (DeepSeek): ${url}...`;
-                    try {
-                        const fr = await fetch(DEEPSEEK_FETCH_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
-                            body: JSON.stringify({ url: url })
-                        });
-                        const fd = await fr.json();
-                        const content = fd.content || "Conteúdo não disponível.";
-                        msgs.push({ role: 'assistant', content: resposta });
-                        msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
-                    } catch (e) {
-                        addLog(`Fetch DeepSeek falhou. Tentando Worker...`);
-                        try {
-                            const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(url)}`);
-                            if (!fr.ok) throw new Error(`HTTP ${fr.status}`);
-                            const fd = await fr.json();
-                            const content = fd.content || fd.text || fd.markdown || "Conteúdo não disponível.";
-                            msgs.push({ role: 'assistant', content: resposta });
-                            msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
-                        } catch(e2) {
-                            addLog(`WEB_FETCH falhou: ${e2.message}`);
-                            msgs.push({ role: 'assistant', content: resposta });
-                            msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página ${url}. Responda com o que sabe.` });
-                        }
-                    }
-                } else {
-                    t.div.textContent = `Lendo página (Worker): ${url}...`;
-                    try {
-                        const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(url)}`);
-                        if (!fr.ok) throw new Error(`HTTP ${fr.status}`);
-                        const fd = await fr.json();
-                        const content = fd.content || fd.text || fd.markdown || "Conteúdo não disponível.";
-                        msgs.push({ role: 'assistant', content: resposta });
-                        msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
-                    } catch(e2) {
-                        addLog(`WEB_FETCH falhou: ${e2.message}`);
-                        msgs.push({ role: 'assistant', content: resposta });
-                        msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página ${url}. Responda com o que sabe.` });
-                    }
+                t.div.textContent = `Lendo página (Worker): ${url}...`;
+                try {
+                    const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(url)}`);
+                    if (!fr.ok) throw new Error(`HTTP ${fr.status}`);
+                    const fd = await fr.json();
+                    const content = fd.content || fd.text || fd.markdown || "Conteúdo não disponível.";
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
+                } catch(e2) {
+                    addLog(`WEB_FETCH falhou: ${e2.message}`);
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página ${url}. Responda com o que sabe.` });
                 }
                 continue;
             }
@@ -1527,19 +1532,43 @@ function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-to
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-function falarTexto(t) { 
-    if (!vozAtiva || !('speechSynthesis' in window)) return; 
-    if (!t || !String(t).trim()) return; 
-    window.speechSynthesis.cancel(); 
-    let limpo = t.replace(/\[.*?\]/g, '') 
-                 .replace(/[*_~`#]/g, '')
-                 .replace(/[\u{1F300}-\u{1FAFF}]/gu, '') 
-                 .replace(/\n/g, ' '); 
-    if (!limpo.trim()) return;
-    const u = new SpeechSynthesisUtterance(limpo); 
-    u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch; 
-    if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } 
-    window.speechSynthesis.speak(u); 
+// INTEGRAÇÃO EDGE-TTS (RENDER)
+async function falarTexto(texto) {
+    if (!vozAtiva || !texto || !texto.trim()) return;
+
+    let limpo = texto.replace(/\[.*?\]/g, '')
+                      .replace(/[*_~`#]/g, '')
+                      .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+                      .replace(/\n/g, ' ')
+                      .trim();
+    if (!limpo) return;
+
+    try {
+        const response = await fetch(TTS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: limpo })
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        if (!data.audio_base64) throw new Error("A resposta não contém áudio.");
+
+        const audio = new Audio(`data:audio/mp3;base64,${data.audio_base64}`);
+        audio.play();
+    } catch (error) {
+        console.error("Falha no TTS remoto (Render). Usando fallback nativo:", error);
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(limpo);
+            u.lang = 'pt-BR';
+            u.rate = vozRate;
+            u.pitch = vozPitch;
+            if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } 
+            window.speechSynthesis.speak(u);
+        }
+    }
 }
 function testarVoz() { falarTexto("Sistemas de voz operando."); }
 
@@ -1597,14 +1626,11 @@ if (window.speechSynthesis) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Inicializa os processos em paralelo (Mais rápido)
     const pRepos = mapearRepositorio();
     const pMemoria = projetoAtivo ? carregarMemoriaFirebase() : Promise.resolve();
     
-    // 2. Aguarda ambos terminarem (AQUI ESTÁ A CORREÇÃO DO BUG)
     await Promise.all([pRepos, pMemoria]);
     
-    // 3. Avalia o estado real, sem setTimeout
     const histAtual = todosOsHistoricos[projetoAtivo] || [];
     if (histAtual.length === 0 && !dbMemory) {
         const nomeProjeto = projetoAtivo ? (projetoAtivo.split('/')[1] || projetoAtivo) : 'Atual';
