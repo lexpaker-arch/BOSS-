@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v8.6)</title>
+<title>BOSS - EXODRIVE (v8.7)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -132,9 +132,36 @@
     .draw-tool { background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 10px; border-radius: var(--radius); cursor: pointer; font-size: 12px; }
     .draw-tool.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
     #drawCanvas { max-width: 100%; border: 1px solid var(--border-color); cursor: crosshair; touch-action: none; }
+
+    /* ESTILOS DO MODO VOZ */
+    #voiceModeOverlay {
+        display: none; position: fixed; inset: 0; background: #000;
+        z-index: 9999; flex-direction: column; align-items: center; justify-content: center;
+        color: var(--accent); font-family: var(--font-ui); transition: 0.3s;
+    }
+    .voice-orb {
+        width: 100px; height: 100px; border-radius: 50%; background: #222;
+        transition: 0.3s; display: flex; justify-content: center; align-items: center;
+    }
+    .voice-status { margin-top: 20px; font-size: 14px; letter-spacing: 2px; opacity: 0.7; text-transform: uppercase; }
+    .voice-exit-btn { position: absolute; bottom: 30px; background: transparent; border: 1px solid #333; color: #555; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-family: var(--font-mono); font-size: 12px; transition: 0.2s; }
+    .voice-exit-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+    /* Animações dos estados do Modo Voz */
+    .orb-idle { width: 80px; height: 80px; background: #222; box-shadow: 0 0 10px #000; }
+    .orb-listening { width: 120px; height: 120px; background: #10b981; box-shadow: 0 0 40px #10b981; animation: pulse 1.5s infinite; }
+    .orb-thinking { width: 100px; height: 100px; background: #f59e0b; box-shadow: 0 0 30px #f59e0b; border: 4px solid transparent; border-top-color: #fff; animation: spin 1s linear infinite; }
+    .orb-speaking { width: 110px; height: 110px; background: var(--accent); box-shadow: 0 0 50px var(--accent); animation: pulse 0.8s infinite; }
 </style>
 </head>
 <body>
+
+<!-- OVERLAY DO MODO VOZ -->
+<div id="voiceModeOverlay">
+    <div id="voiceOrb" class="voice-orb orb-idle"></div>
+    <div id="voiceStatusText" class="voice-status">Tocando para iniciar</div>
+    <button class="voice-exit-btn" onclick="toggleVoiceMode()">Sair do Modo Voz</button>
+</div>
 
 <div class="hud-container">
     <header>
@@ -143,6 +170,7 @@
         <div class="header-status">
             <div class="status-box"><div id="statusDot" class="status-dot ok"></div><span id="statusText">ONLINE</span></div>
             <button class="icon-btn" onclick="toggleMute()" id="btnMute" title="Voz">🔊</button>
+            <button class="icon-btn" onclick="toggleVoiceMode()" title="Modo Voz (Mãos Livres)">🎧</button>
             <button class="icon-btn" onclick="toggleConfig()" title="Configurações">⚙</button>
         </div>
     </header>
@@ -186,11 +214,9 @@
             <div id="chat"></div>
             
             <footer>
-                <!-- Botão de Anexo -->
                 <input type="file" id="fileInput" accept="image/*,text/*,.kt,.xml,.gradle,.md,.json" style="display:none" onchange="lerArquivo(event)">
                 <button class="cmd-btn" onclick="document.getElementById('fileInput').click()" title="Anexar">📎</button>
                 
-                <!-- Botão de Câmera -->
                 <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="lerArquivo(event)">
                 <button class="cmd-btn" onclick="document.getElementById('cameraInput').click()" title="Tirar Foto">📷</button>
 
@@ -379,6 +405,11 @@ if (lastTokenReset !== today) {
 }
 let metricLatency = localStorage.getItem('metric_latency') || '--';
 
+// Variáveis do Modo Voz
+let isVoiceModeActive = false;
+let wakeLock = null;
+let currentAudioObj = null;
+
 document.body.className = temaAtual;
 document.getElementById('themeSelect').value = temaAtual;
 document.getElementById('userSelect').value = userRole;
@@ -396,6 +427,55 @@ inputEl.addEventListener('input', function() {
     if(this.scrollHeight > 120) this.style.overflowY = 'auto';
     else this.style.overflowY = 'hidden';
 });
+
+// LÓGICA DO MODO VOZ
+async function toggleVoiceMode() {
+    isVoiceModeActive = !isVoiceModeActive;
+    const overlay = document.getElementById('voiceModeOverlay');
+    
+    if (isVoiceModeActive) {
+        overlay.style.display = 'flex';
+        // Ativa Wake Lock (Tela ligada)
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+        } catch (e) { 
+            console.warn("Wake Lock não suportado ou falhou:", e); 
+            addLog("Aviso: Tela pode apagar sozinha.");
+        }
+        updateVoiceOrb('listening');
+        iniciarEscuta();
+    } else {
+        overlay.style.display = 'none';
+        // Libera Wake Lock
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => { wakeLock = null; });
+        }
+        if (reconhecimento) { try { reconhecimento.abort(); } catch(e){} }
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (currentAudioObj) { currentAudioObj.pause(); currentAudioObj = null; }
+        document.getElementById('input').focus();
+    }
+}
+
+function updateVoiceOrb(state) {
+    const orb = document.getElementById('voiceOrb');
+    const text = document.getElementById('voiceStatusText');
+    
+    orb.className = 'voice-orb';
+    if (state === 'idle') {
+        orb.classList.add('orb-idle');
+        text.textContent = 'Aguardando';
+    } else if (state === 'listening') {
+        orb.classList.add('orb-listening');
+        text.textContent = 'Ouvindo...';
+    } else if (state === 'thinking') {
+        orb.classList.add('orb-thinking');
+        text.textContent = 'Processando...';
+    } else if (state === 'speaking') {
+        orb.classList.add('orb-speaking');
+        text.textContent = 'Falando...';
+    }
+}
 
 function atualizarDisplayProjeto() {
     const el = document.getElementById('displayActiveProject');
@@ -1088,6 +1168,7 @@ function testeDeFumaca() {
             erros.push("❌ Falha: Regra de Imagem ausente.");
         }
 
+        // CORREÇÃO DO FALSO POSITIVO DO TESTE DE ANIMAÇÃO
         if (html.includes('@keyframes fadeIn') && !/function\s+efeitoDigitacao\s*\(/.test(html)) {
             sucessos.push("✅ Animação instantânea (Fade-In) ativa. UI destravada.");
         } else {
@@ -1117,13 +1198,19 @@ function testeDeFumaca() {
         } else {
             erros.push("❌ Falha: Sincronia de memória recente ausente.");
         }
+
+        if (html.includes('voiceModeOverlay')) {
+            sucessos.push("✅ Módulo de Modo Voz (Tela Preta / Hands-Free) ativo.");
+        } else {
+            erros.push("❌ Falha: Módulo de Modo Voz ausente.");
+        }
         
         t.wrapper.remove();
         let msgFinal = "📋 **RESULTADO DO AUTODIAGNÓSTICO**\n\n";
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.6)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.7)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1136,6 +1223,8 @@ async function enviar() {
     const input = document.getElementById('input');
     const texto = input.value.trim();
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
+
+    if (isVoiceModeActive) updateVoiceOrb('thinking');
 
     input.value = '';
     input.style.height = 'auto';
@@ -1501,6 +1590,7 @@ async function enviar() {
 
     } catch (e) {
         t.wrapper.remove(); addMsg('error', `Deu ruim: ${e.message}`);
+        if (isVoiceModeActive) updateVoiceOrb('idle');
     } finally {
         document.getElementById('send').disabled = false; input.focus();
     }
@@ -1532,7 +1622,7 @@ function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-to
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-// INTEGRAÇÃO EDGE-TTS (RENDER)
+// INTEGRAÇÃO EDGE-TTS (RENDER) COM HALF-DUPLEX
 async function falarTexto(texto) {
     if (!vozAtiva || !texto || !texto.trim()) return;
 
@@ -1542,6 +1632,13 @@ async function falarTexto(texto) {
                       .replace(/\n/g, ' ')
                       .trim();
     if (!limpo) return;
+
+    if (isVoiceModeActive) updateVoiceOrb('speaking');
+    
+    // Corta o microfone fisicamente antes de falar (Half-Duplex)
+    if (reconhecimento) { 
+        try { reconhecimento.abort(); } catch(e){} 
+    }
 
     try {
         const response = await fetch(TTS_URL, {
@@ -1556,6 +1653,14 @@ async function falarTexto(texto) {
         if (!data.audio_base64) throw new Error("A resposta não contém áudio.");
 
         const audio = new Audio(`data:audio/mp3;base64,${data.audio_base64}`);
+        currentAudioObj = audio;
+        audio.onended = () => {
+            currentAudioObj = null;
+            if (isVoiceModeActive) {
+                updateVoiceOrb('listening');
+                iniciarEscuta(); // Reativa o microfone após terminar de falar
+            }
+        };
         audio.play();
     } catch (error) {
         console.error("Falha no TTS remoto (Render). Usando fallback nativo:", error);
@@ -1566,6 +1671,12 @@ async function falarTexto(texto) {
             u.rate = vozRate;
             u.pitch = vozPitch;
             if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } 
+            u.onend = () => {
+                if (isVoiceModeActive) {
+                    updateVoiceOrb('listening');
+                    iniciarEscuta(); // Reativa o microfone após terminar de falar
+                }
+            };
             window.speechSynthesis.speak(u);
         }
     }
@@ -1575,16 +1686,37 @@ function testarVoz() { falarTexto("Sistemas de voz operando."); }
 let reconhecimento;
 function iniciarEscuta() { 
     if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte."); 
+    
+    if (reconhecimento) { try { reconhecimento.abort(); } catch(e){} }
+    
     reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); 
     reconhecimento.lang = 'pt-BR'; 
-    reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; }; 
+    
+    reconhecimento.onstart = () => { 
+        document.getElementById('input').placeholder = "OUVINDO..."; 
+        if (isVoiceModeActive) updateVoiceOrb('listening');
+    }; 
+    
     reconhecimento.onresult = (e) => { 
         document.getElementById('input').value = e.results[0][0].transcript; 
         reconhecimento.stop(); 
+        if (isVoiceModeActive) updateVoiceOrb('thinking');
         enviar(); 
     }; 
-    reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; }; 
-    reconhecimento.start(); 
+    
+    reconhecimento.onend = () => { 
+        document.getElementById('input').placeholder = "DIRETRIZ..."; 
+    }; 
+    
+    reconhecimento.onerror = (e) => {
+        console.warn("Erro no STT: ", e);
+        // Se estiver no modo voz e não for silêncio, tenta ouvir de novo após 1s
+        if (isVoiceModeActive && e.error !== 'no-speech') {
+            setTimeout(() => { if(isVoiceModeActive) iniciarEscuta(); }, 1000);
+        }
+    };
+
+    try { reconhecimento.start(); } catch(e) { console.warn("Reconhecimento já ativo"); }
 }
 
 function lerArquivo(event) {
