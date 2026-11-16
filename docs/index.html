@@ -1043,7 +1043,8 @@ function testeDeFumaca() {
             erros.push("❌ Falha: Regra de Imagem ausente.");
         }
 
-        if (html.includes('fadeIn') && !html.includes('efeitoDigitacao')) {
+        const temDigitacaoReal = /function\s+efeitoDigitacao\s*\(|efeitoDigitacao\s*=\s*function|\.efeitoDigitacao\s*\(/.test(html);
+        if (html.includes('fadeIn') && !temDigitacaoReal) {
             sucessos.push("✅ Animação instantânea (Fade-In) ativa. UI destravada.");
         } else {
             erros.push("❌ Falha: Animação de texto antiga ou conflitante ainda presente.");
