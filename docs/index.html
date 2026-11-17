@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v8.8)</title>
+<title>BOSS - EXODRIVE (v8.9)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -93,7 +93,7 @@
     .mermaid-container { background: var(--bg-dark); padding: 15px; border-radius: 6px; border: 1px solid var(--accent); margin-top: 10px; text-align: center; overflow-x: auto; min-height: 100px; display: flex; justify-content: center; align-items: center; }
     .mermaid-container svg { max-width: 100%; height: auto; }
 
-    /* CSS DO BLOCO DE CÓDIGO (CORRIGIDO PARA NÃO VAZAR) */
+    /* CSS DO BLOCO DE CÓDIGO */
     pre { background: #0d1117; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 10px; overflow-x: auto; margin: 10px 0; white-space: pre-wrap; word-break: break-all; }
     pre code { font-family: var(--font-mono); font-size: 12px; }
 
@@ -855,6 +855,11 @@ ${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 === AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
+=== REGRA DE EXECUÇÃO (CRÍTICO) ===
+NUNCA peça permissão ao usuário para usar uma ferramenta (ex: "Quer que eu verifique?"). 
+Se você precisa de um dado, use a ferramenta imediatamente. 
+Se uma ferramenta falhar 2 vezes seguidas, PARE de tentar a mesma ferramenta e peça ajuda ao usuário, informando o erro exato.
+
 === REGRA DE IMAGEM (CRÍTICA) ===
 Se a mensagem do usuário contiver [ANÁLISE DA IMAGEM], trate-a como verdade absoluta sobre a imagem atual. Ignore QUALQUER descrição de imagem que apareça em mensagens anteriores do histórico. NÃO misture com OBD-II, DTC, diagnósticos ou fotos antigas. Se a análise da imagem parecer incoerente com a pergunta do usuário, avise, mas NUNCA invente uma descrição que não esteja no bloco [ANÁLISE DA IMAGEM] atual.
 
@@ -880,7 +885,7 @@ REGRAS:
 === FERRAMENTAS DISPONÍVEIS ===
 1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir.
 2. [GITHUB_FIND: termo] - Busca. Se falhar, use [GITHUB_READ: README.md]. Se falhar de novo, use [GITHUB_TREE].
-3. [GITHUB_TREE] - Lista os primeiros 30 arquivos do projeto ativo.
+3. [GITHUB_TREE] - Lista a estrutura hierárquica de pastas do projeto ativo.
 4. [GITHUB_READ: arquivo] - Lê arquivo.
 5. [GITHUB_PATCH: caminho] + <<<OLD>>>...<<<NEW>>>...<<<END>>> - Edita um trecho.
 6. [GITHUB_CREATE: caminho | conteúdo] + [/GITHUB_CREATE] - Cria arquivo novo inteiro.
@@ -1282,13 +1287,19 @@ function testeDeFumaca() {
         } else {
             erros.push("❌ Falha: Suporte para colar imagens ausente.");
         }
+
+        if (html.includes("treeM") && html.includes("ignoreDirs")) {
+            sucessos.push("✅ Visão profunda de Workspace (Smart Tree) ativa.");
+        } else {
+            erros.push("❌ Falha: Visão de Workspace ausente.");
+        }
         
         t.wrapper.remove();
         let msgFinal = "📋 **RESULTADO DO AUTODIAGNÓSTICO**\n\n";
         if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
         if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
         
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.8)**";
+        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.9)**";
         else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
         
         addMsg('boss', msgFinal);
@@ -1297,6 +1308,7 @@ function testeDeFumaca() {
 
 async function enviar() {
     const projetoDaVez = projetoAtivo;
+    window.lastReadError = null; // Reseta o bloqueio de leitura repetida
     
     const input = document.getElementById('input');
     const texto = input.value.trim();
@@ -1368,15 +1380,15 @@ async function enviar() {
         if (userContent) msgs.push({ role: 'user', content: userContent });
 
         let continuar = true, tentativas = 0, respostaFinal = "";
-        let ultimaRespostaRecebida = ""; // Variável nova para guardar o rascunho
+        let ultimaRespostaRecebida = "";
 
-        while (continuar && tentativas < 10) { // <--- AUMENTADO PARA 10
+        while (continuar && tentativas < 10) {
             tentativas++;
             const data = await chamarIA(msgs, isConversational ? 0.65 : 0.2);
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "";
             
-            if (resposta) ultimaRespostaRecebida = resposta; // Salva a última resposta válida
+            if (resposta) ultimaRespostaRecebida = resposta;
 
             const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
             if (switchM) {
@@ -1439,12 +1451,41 @@ async function enviar() {
 
             const treeM = resposta.match(/\[GITHUB_TREE\]/);
             if (treeM) {
-                t.div.textContent = "Lendo estrutura de arquivos...";
+                t.div.textContent = "Mapeando a estrutura do workspace...";
                 await carregarArvoreProjeto();
                 const treeList = cacheTrees[projetoDaVez] || [];
-                const resumoTree = treeList.slice(0, 30).join('\n');
+                
+                // VISÃO PROFUNDA DE WORKSPACE (Filtra lixo e constrói hierarquia)
+                const ignoreDirs = ['node_modules', '.git', 'build/', 'dist/', '.idea', '.gradle', '__pycache__', '.venv', 'venv'];
+                const ignoreExts = ['.png', '.jpg', '.jpeg', '.gif', '.mp4', '.mp3', '.wav', '.ttf', '.apk', '.jar', '.zip', '.ico'];
+                
+                const arquivosLimpios = treeList.filter(path => {
+                    if (ignoreDirs.some(dir => path.includes(dir))) return false;
+                    if (ignoreExts.some(ext => path.toLowerCase().endsWith(ext))) return false;
+                    return true;
+                });
+
+                let resumoTree = "=== ESTRUTURA DO WORKSPACE ===\n";
+                let pastasVistas = new Set();
+                
+                arquivosLimpios.forEach(path => {
+                    const partes = path.split('/');
+                    const nomeArquivo = partes.pop();
+                    const caminhoPasta = partes.join('/');
+                    
+                    if (caminhoPasta && !pastasVistas.has(caminhoPasta)) {
+                        resumoTree += `\n📁 ${caminhoPasta}/\n`;
+                        pastasVistas.add(caminhoPasta);
+                    }
+                    resumoTree += `  📄 ${nomeArquivo}\n`;
+                });
+
+                if (resumoTree.length > 4000) {
+                    resumoTree = resumoTree.substring(0, 4000) + "\n... (árvore truncada por tamanho. Use GITHUB_FIND para buscar arquivos específicos).";
+                }
+
                 msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Estrutura de arquivos (primeiros 30):\n${resumoTree}\n\nAgora escolha um arquivo e peça GITHUB_READ.` });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Aqui está o mapa do workspace:\n${resumoTree}\n\nAgora que você entendeu a arquitetura, escolha o arquivo correto e use GITHUB_READ.` });
                 continue;
             }
 
@@ -1456,8 +1497,21 @@ async function enviar() {
                     let all = ""; 
                     for (const m of readM) {
                         let fp = m[1].trim().replace(projetoDaVez + '/', ''); 
+                        
+                        if (window.lastReadError === fp) {
+                            all += `\n[ERRO DO SISTEMA: O arquivo ${fp} já falhou na tentativa anterior. Não tente lê-lo novamente.]\n`;
+                            continue;
+                        }
+
                         t.div.textContent = `Lendo ${fp}...`;
                         const fc = await fetchGithubFile(projetoDaVez, fp);
+                        
+                        if (fc.startsWith('[ERRO')) {
+                            window.lastReadError = fp; 
+                        } else {
+                            window.lastReadError = null;
+                        }
+                        
                         all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
                     }
                     msgs.push({ role: 'assistant', content: resposta });
@@ -1469,7 +1523,6 @@ async function enviar() {
             respostaFinal = resposta; continuar = false;
         }
         
-        // CORREÇÃO DO ERRO DE LIMITE
         if (!respostaFinal) {
             if (ultimaRespostaRecebida) {
                 respostaFinal = ultimaRespostaRecebida + "\n\n*(⚠️ Aviso do Sistema: Limite de ferramentas atingido. A resposta acima é a última parcial que consegui gerar).*";
@@ -1721,7 +1774,6 @@ async function falarTexto(texto) {
 
     if (isVoiceModeActive) updateVoiceOrb('speaking');
     
-    // Corta o microfone fisicamente antes de falar (Half-Duplex)
     if (reconhecimento) { 
         try { reconhecimento.abort(); } catch(e){} 
     }
@@ -1744,7 +1796,7 @@ async function falarTexto(texto) {
             currentAudioObj = null;
             if (isVoiceModeActive) {
                 updateVoiceOrb('listening');
-                iniciarEscuta(); // Reativa o microfone após terminar de falar
+                iniciarEscuta(); 
             }
         };
         audio.play();
@@ -1760,7 +1812,7 @@ async function falarTexto(texto) {
             u.onend = () => {
                 if (isVoiceModeActive) {
                     updateVoiceOrb('listening');
-                    iniciarEscuta(); // Reativa o microfone após terminar de falar
+                    iniciarEscuta(); 
                 }
             };
             window.speechSynthesis.speak(u);
@@ -1796,7 +1848,6 @@ function iniciarEscuta() {
     
     reconhecimento.onerror = (e) => {
         console.warn("Erro no STT: ", e);
-        // Se estiver no modo voz e não for silêncio, tenta ouvir de novo após 1s
         if (isVoiceModeActive && e.error !== 'no-speech') {
             setTimeout(() => { if(isVoiceModeActive) iniciarEscuta(); }, 1000);
         }
