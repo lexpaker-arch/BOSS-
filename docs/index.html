@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v9.0)</title>
+<title>BOSS - EXODRIVE (v9.1)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -241,6 +241,11 @@
             <input type="text" id="gitUserInput" class="config-input" placeholder="Ex: lexpaker-arch">
             <button class="btn-config-action" onclick="salvarGitUser()">SALVAR E SINCRONIZAR</button>
 
+            <label class="config-label" style="color:var(--accent);">FOCO ATUAL (MANUAL)</label>
+            <select id="projectSelect" class="config-select" onchange="mudarProjetoManual(this.value)">
+                <option value="">Carregando repositórios...</option>
+            </select>
+
             <label class="config-label">OPERATOR PROFILE</label>
             <select id="userSelect" class="config-select" onchange="mudarUsuario()">
                 <option value="Patrão">PATRÃO (Engenheiro)</option>
@@ -362,7 +367,6 @@ const DEEPSEEK_SEARCH_URL = null;
 const DEEPSEEK_FETCH_URL  = null;
 const DEEPSEEK_MODELO = 'deepseek-chat';
 
-// INTEGRAÇÃO TTS (RENDER)
 const TTS_URL = "https://boss-tts-server.onrender.com/tts"; 
 
 let userRole = localStorage.getItem('boss_role') || 'Patrão';
@@ -632,10 +636,9 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
         if (todosOsHistoricos[proj].length > 500) todosOsHistoricos[proj] = todosOsHistoricos[proj].slice(-500);
         localStorage.setItem('boss_historico_full', JSON.stringify(todosOsHistoricos));
         
-        // Salvar na Nuvem (Buffer de 50 Interações) - COM LIMITE DE TAMANHO POR MENSAGEM PARA NÃO ESTOURAR O FIREBASE
         const textoCurto = texto.length > 300 ? texto.substring(0, 300) + '...' : texto;
         historicoRecenteNuvem.push({ role: tipo === 'user' ? 'user' : 'assistant', content: textoCurto, time: Date.now() });
-        if (historicoRecenteNuvem.length > 20) historicoRecenteNuvem.shift(); // 20 é seguro para não estourar o doc
+        if (historicoRecenteNuvem.length > 20) historicoRecenteNuvem.shift();
         salvarHistoricoRecenteNuvem();
         atualizarTelinhaMemoria();
         if (proj === projetoAtivo) atualizarHUD();
@@ -646,7 +649,6 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
 async function salvarHistoricoRecenteNuvem() {
     if (!projetoAtivo || !window.db) return;
     try {
-        // FIX: Salva o histórico em um DOCUMENTO SEPARADO no Firebase para evitar o erro de 1MB
         const docRef = window.doc(window.db, "historico", projetoAtivo);
         await window.setDoc(docRef, { mensagens: historicoRecenteNuvem }, { merge: true });
     } catch(e) { console.error("Erro ao salvar histórico recente: ", e); }
@@ -686,7 +688,6 @@ async function carregarMemoriaFirebase() {
     try {
         addLog(`Buscando memória no Firebase...`);
         
-        // 1. Carrega o Diário de Bordo
         const docRef = window.doc(window.db, "projetos", projetoAtivo);
         const docSnap = await window.getDoc(docRef);
         if (docSnap.exists()) {
@@ -698,7 +699,6 @@ async function carregarMemoriaFirebase() {
             dbMemory = null;
         }
 
-        // 2. Carrega o Histórico Recente (Documento Separado)
         const histRef = window.doc(window.db, "historico", projetoAtivo);
         const histSnap = await window.getDoc(histRef);
         if (histSnap.exists() && histSnap.data().mensagens) {
@@ -892,11 +892,36 @@ async function mapearRepositorio() {
         document.getElementById('metric-index-status').textContent = 'Pronto.';
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
+        
+        // Popula o Seletor Manual de Projetos
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = '<option value="">-- Selecione um Repositório --</option>';
+        listaRepos.forEach(repo => {
+            const opt = document.createElement('option');
+            opt.value = repo;
+            opt.textContent = repo.split('/')[1];
+            select.appendChild(opt);
+        });
+        select.value = projetoAtivo; // Marca o atual
+
         if (projetoAtivo) carregarMemoriaFirebase();
     } catch(e) {
         document.getElementById('metric-index-status').textContent = 'Erro';
         addMsg('error', `Erro ao puxar repos: ${e.message}`);
     }
+}
+
+function mudarProjetoManual(novoRepo) {
+    if (!novoRepo || novoRepo === projetoAtivo) return;
+    projetoAtivo = novoRepo;
+    localStorage.setItem('boss_active_repo', projetoAtivo);
+    atualizarDisplayProjeto();
+    document.getElementById('chat').innerHTML = ''; // Limpa a tela
+    historicoRecenteNuvem = []; // Limpa a memória recente atual
+    dbMemory = null;
+    addLog(`Foco alterado manualmente para ${projetoAtivo}`);
+    carregarMemoriaFirebase();
+    addMsg('boss', `Foco alterado para **${projetoAtivo.split('/')[1]}**. Pronto para trabalhar.`);
 }
 
 async function carregarArvoreProjeto() {
@@ -1013,8 +1038,9 @@ function testeDeFumaca() {
         if (html.includes('DEEPSEEK_URL')) sucessos.push("✅ DeepSeek OK");
         if (html.includes('VIN_DECODE')) sucessos.push("✅ Ferramenta VIN_DECODE OK");
         if (html.includes('DTC_LOOKUP')) sucessos.push("✅ Ferramenta DTC_LOOKUP OK");
-        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.0) OK");
+        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.1) OK");
         if (html.includes('voiceModeOverlay')) sucessos.push("✅ Modo Voz OK");
+        if (html.includes('mudarProjetoManual')) sucessos.push("✅ Seletor Manual de Foco OK");
         
         t.wrapper.remove();
         let msgFinal = "📋 **DIAGNÓSTICO**\n\n**OK:**\n" + sucessos.join('\n') + "\n\n**Falhas:**\n" + (erros.length ? erros.join('\n') : 'Nenhuma.');
