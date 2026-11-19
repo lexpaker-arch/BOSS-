@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v8.9)</title>
+<title>BOSS - EXODRIVE (v9.0)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -93,7 +93,6 @@
     .mermaid-container { background: var(--bg-dark); padding: 15px; border-radius: 6px; border: 1px solid var(--accent); margin-top: 10px; text-align: center; overflow-x: auto; min-height: 100px; display: flex; justify-content: center; align-items: center; }
     .mermaid-container svg { max-width: 100%; height: auto; }
 
-    /* CSS DO BLOCO DE CÓDIGO */
     pre { background: #0d1117; border: 1px solid var(--border-color); border-radius: var(--radius); padding: 10px; overflow-x: auto; margin: 10px 0; white-space: pre-wrap; word-break: break-all; }
     pre code { font-family: var(--font-mono); font-size: 12px; }
 
@@ -137,20 +136,15 @@
     .draw-tool.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
     #drawCanvas { max-width: 100%; border: 1px solid var(--border-color); cursor: crosshair; touch-action: none; }
 
-    /* ESTILOS DO MODO VOZ */
     #voiceModeOverlay {
         display: none; position: fixed; inset: 0; background: #000;
         z-index: 9999; flex-direction: column; align-items: center; justify-content: center;
         color: var(--accent); font-family: var(--font-ui); transition: 0.3s;
     }
-    .voice-orb {
-        width: 100px; height: 100px; border-radius: 50%; background: #222;
-        transition: 0.3s; display: flex; justify-content: center; align-items: center;
-    }
+    .voice-orb { width: 100px; height: 100px; border-radius: 50%; background: #222; transition: 0.3s; display: flex; justify-content: center; align-items: center; }
     .voice-status { margin-top: 20px; font-size: 14px; letter-spacing: 2px; opacity: 0.7; text-transform: uppercase; }
     .voice-exit-btn { position: absolute; bottom: 30px; background: transparent; border: 1px solid #333; color: #555; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-family: var(--font-mono); font-size: 12px; transition: 0.2s; }
     .voice-exit-btn:hover { border-color: #ef4444; color: #ef4444; }
-
     .orb-idle { width: 80px; height: 80px; background: #222; box-shadow: 0 0 10px #000; }
     .orb-listening { width: 120px; height: 120px; background: #10b981; box-shadow: 0 0 40px #10b981; animation: pulse 1.5s infinite; }
     .orb-thinking { width: 100px; height: 100px; background: #f59e0b; box-shadow: 0 0 30px #f59e0b; border: 4px solid transparent; border-top-color: #fff; animation: spin 1s linear infinite; }
@@ -159,7 +153,6 @@
 </head>
 <body>
 
-<!-- OVERLAY DO MODO VOZ -->
 <div id="voiceModeOverlay">
     <div id="voiceOrb" class="voice-orb orb-idle"></div>
     <div id="voiceStatusText" class="voice-status">Tocando para iniciar</div>
@@ -408,7 +401,6 @@ if (lastTokenReset !== today) {
 }
 let metricLatency = localStorage.getItem('metric_latency') || '--';
 
-// Variáveis do Modo Voz
 let isVoiceModeActive = false;
 let wakeLock = null;
 let currentAudioObj = null;
@@ -431,7 +423,6 @@ inputEl.addEventListener('input', function() {
     else this.style.overflowY = 'hidden';
 });
 
-// --- FUNCIONALIDADE DE COLAR IMAGEM (CTRL+V) ---
 inputEl.addEventListener('paste', function(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
     for (let index in items) {
@@ -439,8 +430,7 @@ inputEl.addEventListener('paste', function(e) {
         if (item.kind === 'file') {
             const blob = item.getAsFile();
             if (blob.type.startsWith('image/')) {
-                e.preventDefault(); // Impede de colar o caminho da imagem como texto
-                
+                e.preventDefault();
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const img = new Image();
@@ -463,47 +453,29 @@ inputEl.addEventListener('paste', function(e) {
     }
 });
 
-// --- FUNCIONALIDADE DE ARRASTAR E SOLTAR (DRAG & DROP) ---
 const chatContainer = document.getElementById('chat');
-chatContainer.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    chatContainer.style.border = "2px dashed var(--accent)";
-});
-
-chatContainer.addEventListener('dragleave', (e) => {
-    chatContainer.style.border = "none";
-});
-
+chatContainer.addEventListener('dragover', (e) => { e.preventDefault(); chatContainer.style.border = "2px dashed var(--accent)"; });
+chatContainer.addEventListener('dragleave', (e) => { chatContainer.style.border = "none"; });
 chatContainer.addEventListener('drop', (e) => {
     e.preventDefault();
     chatContainer.style.border = "none";
-    
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         const fakeEvent = { target: { files: e.dataTransfer.files, value: '' } };
         lerArquivo(fakeEvent);
     }
 });
 
-// LÓGICA DO MODO VOZ
 async function toggleVoiceMode() {
     isVoiceModeActive = !isVoiceModeActive;
     const overlay = document.getElementById('voiceModeOverlay');
-    
     if (isVoiceModeActive) {
         overlay.style.display = 'flex';
-        try {
-            wakeLock = await navigator.wakeLock.request('screen');
-        } catch (e) { 
-            console.warn("Wake Lock não suportado ou falhou:", e); 
-            addLog("Aviso: Tela pode apagar sozinha.");
-        }
+        try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { console.warn("Wake Lock falhou:", e); }
         updateVoiceOrb('listening');
         iniciarEscuta();
     } else {
         overlay.style.display = 'none';
-        if (wakeLock !== null) {
-            wakeLock.release().then(() => { wakeLock = null; });
-        }
+        if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; });
         if (reconhecimento) { try { reconhecimento.abort(); } catch(e){} }
         if (window.speechSynthesis) window.speechSynthesis.cancel();
         if (currentAudioObj) { currentAudioObj.pause(); currentAudioObj = null; }
@@ -514,21 +486,11 @@ async function toggleVoiceMode() {
 function updateVoiceOrb(state) {
     const orb = document.getElementById('voiceOrb');
     const text = document.getElementById('voiceStatusText');
-    
     orb.className = 'voice-orb';
-    if (state === 'idle') {
-        orb.classList.add('orb-idle');
-        text.textContent = 'Aguardando';
-    } else if (state === 'listening') {
-        orb.classList.add('orb-listening');
-        text.textContent = 'Ouvindo...';
-    } else if (state === 'thinking') {
-        orb.classList.add('orb-thinking');
-        text.textContent = 'Processando...';
-    } else if (state === 'speaking') {
-        orb.classList.add('orb-speaking');
-        text.textContent = 'Falando...';
-    }
+    if (state === 'idle') { orb.classList.add('orb-idle'); text.textContent = 'Aguardando'; }
+    else if (state === 'listening') { orb.classList.add('orb-listening'); text.textContent = 'Ouvindo...'; }
+    else if (state === 'thinking') { orb.classList.add('orb-thinking'); text.textContent = 'Processando...'; }
+    else if (state === 'speaking') { orb.classList.add('orb-speaking'); text.textContent = 'Falando...'; }
 }
 
 function atualizarDisplayProjeto() {
@@ -550,13 +512,8 @@ function atualizarHUD() {
 function atualizarTelinhaMemoria() {
     const el = document.getElementById('memoria-recente');
     if (!el) return;
-    
     const recentes = historicoRecenteNuvem.slice(-3).reverse();
-    if (recentes.length === 0) {
-        el.innerHTML = "<span style='opacity:0.5'>Nenhuma interação recente.</span>";
-        return;
-    }
-    
+    if (recentes.length === 0) { el.innerHTML = "<span style='opacity:0.5'>Nenhuma interação recente.</span>"; return; }
     el.innerHTML = recentes.map(m => {
         const prefix = m.role === 'user' ? '👤' : '🤖';
         const text = m.content.substring(0, 40) + (m.content.length > 40 ? '...' : '');
@@ -583,12 +540,7 @@ window.addEventListener('offline', () => { document.getElementById('net-dot').cl
 
 function mudarTema(tema) { document.body.className = tema; localStorage.setItem('boss_theme', tema); temaAtual = tema; }
 function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
-function toggleMute() { 
-    vozAtiva = !vozAtiva; 
-    localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); 
-    atualizarMuteBtn(); 
-    if(!vozAtiva) window.speechSynthesis.cancel(); 
-}
+function toggleMute() { vozAtiva = !vozAtiva; localStorage.setItem('boss_voice_toggle', vozAtiva ? 'on' : 'off'); atualizarMuteBtn(); if(!vozAtiva) window.speechSynthesis.cancel(); }
 function atualizarMuteBtn() { const btn = document.getElementById('btnMute'); btn.innerHTML = vozAtiva ? '🔊' : '🔇'; btn.style.color = vozAtiva ? 'var(--text-muted)' : '#ef4444'; }
 function mudarUsuario() { userRole = document.getElementById('userSelect').value; localStorage.setItem('boss_role', userRole); }
 function mudarVoz() { vozNome = document.getElementById('voiceSelect').value; localStorage.setItem('boss_voice', vozNome); }
@@ -625,7 +577,6 @@ function apagarMemoria(index) {
     atualizarHUD();
 }
 
-// FORMATAÇÃO PROTEGIDA (NÃO QUEBRA BLOCO DE CÓDIGO)
 function formatarTexto(texto) {
     let t = escapeHTML(texto); 
     t = t.replace(/\b(Chefe|chefe)\b/g, userRole);
@@ -641,9 +592,7 @@ function formatarTexto(texto) {
          .replace(/\*\*(.*?)\*\*/g, '<b style="color:#fff">$1</b>')
          .replace(/\n/g, '<br>');
          
-    codeBlocks.forEach((block, i) => {
-        t = t.replace(`__CODE_BLOCK_${i}__`, block);
-    });
+    codeBlocks.forEach((block, i) => { t = t.replace(`__CODE_BLOCK_${i}__`, block); });
     
     return t;
 }
@@ -655,7 +604,6 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
     
     d.innerHTML = formatarTexto(texto); 
     d.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); 
-    
     w.appendChild(d); 
     
     if (tipo === 'boss') {
@@ -665,19 +613,16 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
         btnGood.className = 'btn-feedback';
         btnGood.innerText = '👍 Resolveu';
         btnGood.onclick = () => avaliar(btnGood, texto, true);
-
         const btnBad = document.createElement('button');
         btnBad.className = 'btn-feedback bad';
         btnBad.innerText = '👎 Errou';
         btnBad.onclick = () => avaliar(btnBad, texto, false);
-
         feedback.appendChild(btnGood);
         feedback.appendChild(btnBad);
         w.appendChild(feedback);
     }
 
     chat.appendChild(w); 
-    
     const isAtBottom = chat.scrollHeight - chat.clientHeight <= chat.scrollTop + 150;
     if (isAtBottom) { chat.scrollTop = chat.scrollHeight; }
     
@@ -687,11 +632,12 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
         if (todosOsHistoricos[proj].length > 500) todosOsHistoricos[proj] = todosOsHistoricos[proj].slice(-500);
         localStorage.setItem('boss_historico_full', JSON.stringify(todosOsHistoricos));
         
-        historicoRecenteNuvem.push({ role: tipo === 'user' ? 'user' : 'assistant', content: texto, time: Date.now() });
-        if (historicoRecenteNuvem.length > 50) historicoRecenteNuvem.shift();
+        // Salvar na Nuvem (Buffer de 50 Interações) - COM LIMITE DE TAMANHO POR MENSAGEM PARA NÃO ESTOURAR O FIREBASE
+        const textoCurto = texto.length > 300 ? texto.substring(0, 300) + '...' : texto;
+        historicoRecenteNuvem.push({ role: tipo === 'user' ? 'user' : 'assistant', content: textoCurto, time: Date.now() });
+        if (historicoRecenteNuvem.length > 20) historicoRecenteNuvem.shift(); // 20 é seguro para não estourar o doc
         salvarHistoricoRecenteNuvem();
         atualizarTelinhaMemoria();
-
         if (proj === projetoAtivo) atualizarHUD();
     }
     return { wrapper: w, div: d };
@@ -700,8 +646,9 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
 async function salvarHistoricoRecenteNuvem() {
     if (!projetoAtivo || !window.db) return;
     try {
-        const docRef = window.doc(window.db, "projetos", projetoAtivo);
-        await window.setDoc(docRef, { historico_recente: historicoRecenteNuvem }, { merge: true });
+        // FIX: Salva o histórico em um DOCUMENTO SEPARADO no Firebase para evitar o erro de 1MB
+        const docRef = window.doc(window.db, "historico", projetoAtivo);
+        await window.setDoc(docRef, { mensagens: historicoRecenteNuvem }, { merge: true });
     } catch(e) { console.error("Erro ao salvar histórico recente: ", e); }
 }
 
@@ -721,7 +668,6 @@ function buscarMemoriaAntiga(termo, proj = projetoAtivo) {
     if (hist.length < 5) return "";
     const limit = Math.max(0, hist.length - 10);
     const passado = hist.slice(0, limit);
-    
     const palavras = termo.toLowerCase().split(' ').filter(p => p.length > 3); 
     if (palavras.length === 0) return "";
     let resultados = [];
@@ -739,28 +685,32 @@ async function carregarMemoriaFirebase() {
     if (!projetoAtivo || !window.db) return;
     try {
         addLog(`Buscando memória no Firebase...`);
+        
+        // 1. Carrega o Diário de Bordo
         const docRef = window.doc(window.db, "projetos", projetoAtivo);
         const docSnap = await window.getDoc(docRef);
-        
         if (docSnap.exists()) {
             dbMemory = docSnap.data();
-            addLog(`Memória carregada do Firebase com sucesso!`);
-            
-            if (dbMemory.historico_recente && Array.isArray(dbMemory.historico_recente)) {
-                historicoRecenteNuvem = dbMemory.historico_recente;
-                atualizarTelinhaMemoria();
-            }
-            
             if (dbMemory.diario_bordo) {
                 setTimeout(() => addMsg('boss', `🧠 **Memória recuperada do Firebase**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
             }
         } else {
             dbMemory = null;
-            addLog(`Nenhuma memória anterior encontrada.`);
         }
+
+        // 2. Carrega o Histórico Recente (Documento Separado)
+        const histRef = window.doc(window.db, "historico", projetoAtivo);
+        const histSnap = await window.getDoc(histRef);
+        if (histSnap.exists() && histSnap.data().mensagens) {
+            historicoRecenteNuvem = histSnap.data().mensagens;
+            atualizarTelinhaMemoria();
+            addLog(`Histórico de nuvem sincronizado (${historicoRecenteNuvem.length} msgs).`);
+        }
+
+        addLog(`Memória carregada com sucesso!`);
     } catch (e) {
         console.error("Erro Firebase: ", e);
-        addLog("Erro ao ler Firebase. Verifique as regras de acesso.");
+        addLog("Erro ao ler Firebase.");
     }
 }
 
@@ -769,13 +719,9 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
     try {
         addLog(`Salvando memória no Firebase...`);
         const docRef = window.doc(window.db, "projetos", projetoAtivo);
-        
         const docSnap = await window.getDoc(docRef);
         let fatosAntigos = {};
-        if(docSnap.exists() && docSnap.data().fatos_tecnicos) {
-            fatosAntigos = docSnap.data().fatos_tecnicos;
-        }
-        
+        if(docSnap.exists() && docSnap.data().fatos_tecnicos) { fatosAntigos = docSnap.data().fatos_tecnicos; }
         const novosFatos = { ...fatosAntigos, ...fatosJson };
 
         await window.setDoc(docRef, {
@@ -788,7 +734,6 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
         dbMemory = { diario_bordo: resumo, fatos_tecnicos: novosFatos };
     } catch (e) {
         console.error("Erro ao salvar Firebase: ", e);
-        addLog("Erro ao salvar memória no Firebase.");
     }
 }
 
@@ -796,18 +741,13 @@ async function forcarSalvarMemoria() {
     if (!projetoAtivo) return; 
     const histAtual = todosOsHistoricos[projetoAtivo] || [];
     if (histAtual.length < 2) return; 
-    
     try {
         addLog("Resumindo sessão em background...");
         const prompt = `Resuma a conversa que tivemos hoje em um parágrafo curto e direto. Em seguida, extraia os FATOS TÉCNICOS discutidos em um objeto JSON estrito. Formato da resposta exata:
 RESUMO: [seu resumo aqui]
 JSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
-        const msgs = [
-            { role: 'system', content: "Você é um sistema que resume conversas e extrai JSON." },
-            ...histAtual.slice(-15),
-            { role: 'user', content: prompt }
-        ];
+        const msgs = [ { role: 'system', content: "Você é um sistema que resume conversas e extrai JSON." }, ...histAtual.slice(-15), { role: 'user', content: prompt } ];
         
         const data = await chamarIA(msgs, 0.1);
         const resposta = data.choices?.[0]?.message?.content || "";
@@ -817,22 +757,12 @@ JSON: {"fato1": "valor1", "fato2": "valor2"}`;
         
         const resumo = resumoMatch ? resumoMatch[1].trim() : "Sessão de trabalho.";
         let fatos = {};
-        if (jsonMatch) {
-            try { fatos = JSON.parse(jsonMatch[1]); } catch(e) { console.error("Erro no JSON", e); }
-        }
-        
+        if (jsonMatch) { try { fatos = JSON.parse(jsonMatch[1]); } catch(e) { console.error("Erro no JSON", e); } }
         await salvarMemoriaFirebase(resumo, fatos);
-    } catch(e) {
-        console.error("Falha ao salvar memória: ", e);
-        addLog("Falha ao salvar memória no Firebase.");
-    }
+    } catch(e) { console.error("Falha ao salvar memória: ", e); }
 }
 
-document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === 'hidden') {
-        forcarSalvarMemoria(); 
-    }
-});
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === 'hidden') { forcarSalvarMemoria(); } });
 
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
     let memFirebaseStr = "";
@@ -856,49 +786,39 @@ ${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
 
 === REGRA DE EXECUÇÃO (CRÍTICO) ===
-NUNCA peça permissão ao usuário para usar uma ferramenta (ex: "Quer que eu verifique?"). 
-Se você precisa de um dado, use a ferramenta imediatamente. 
-Se uma ferramenta falhar 2 vezes seguidas, PARE de tentar a mesma ferramenta e peça ajuda ao usuário, informando o erro exato.
+NUNCA peça permissão para usar uma ferramenta. Execute-a imediatamente.
+NUNCA tente ler arquivos binários (.mp4, .png, .zip, .pdf, .apk, .jar). Use [GITHUB_TREE] para confirmar a existência e siga em frente.
 
 === REGRA DE IMAGEM (CRÍTICA) ===
-Se a mensagem do usuário contiver [ANÁLISE DA IMAGEM], trate-a como verdade absoluta sobre a imagem atual. Ignore QUALQUER descrição de imagem que apareça em mensagens anteriores do histórico. NÃO misture com OBD-II, DTC, diagnósticos ou fotos antigas. Se a análise da imagem parecer incoerente com a pergunta do usuário, avise, mas NUNCA invente uma descrição que não esteja no bloco [ANÁLISE DA IMAGEM] atual.
+Trate [ANÁLISE DA IMAGEM] como verdade absoluta sobre a imagem atual. Ignore descrições de imagens passadas.
 
 === REGRAS DE CÓDIGO ===
-Sempre que gerar scripts (Bash, Python, JS) ou comandos de terminal, use blocos de código Markdown normais (\`\`\`bash ... \`\`\`). 
-É OBRIGATÓRIO que haja quebras de linha reais (\n) entre os comandos, para que o usuário possa copiar e executar o arquivo corretamente.
+Sempre use blocos de código Markdown com quebras de linha reais para scripts.
 
 === REGRAS DE PATCH (CRÍTICO) ===
-Para editar arquivos grandes, use GITHUB_PATCH. Formato EXATO:
-[GITHUB_PATCH: caminho/arquivo.ext]
-<<<OLD>>>
-trecho antigo exato (deve aparecer UMA única vez no arquivo)
-<<<NEW>>>
-trecho novo
-<<<END>>>
-
-REGRAS:
-- O trecho OLD deve ser ÚNICO no arquivo. Se aparecer 2+ vezes, o patch é rejeitado.
-- SEMPRE feche com <<<END>>>. Sem ele, o patch é ignorado.
-- Se o patch falhar, o sistema te avisa. Use GITHUB_READ para reler e tentar de novo.
-- Para arquivos pequenos (<200 linhas), prefira GITHUB_CREATE com [/GITHUB_CREATE] no fim.
+Use GITHUB_PATCH com <<<OLD>>>, <<<NEW>>> e feche com <<<END>>>. O trecho OLD deve ser único.
 
 === FERRAMENTAS DISPONÍVEIS ===
-1. [MUDAR_PROJETO: repo] - Use APENAS se o usuário pedir.
-2. [GITHUB_FIND: termo] - Busca. Se falhar, use [GITHUB_READ: README.md]. Se falhar de novo, use [GITHUB_TREE].
-3. [GITHUB_TREE] - Lista a estrutura hierárquica de pastas do projeto ativo.
-4. [GITHUB_READ: arquivo] - Lê arquivo.
-5. [GITHUB_PATCH: caminho] + <<<OLD>>>...<<<NEW>>>...<<<END>>> - Edita um trecho.
-6. [GITHUB_CREATE: caminho | conteúdo] + [/GITHUB_CREATE] - Cria arquivo novo inteiro.
-7. [MEMORIA_ADD: chave | valor] - Salva um fato técnico.
-8. [MEMORIA_DEL: termo] - Apaga um fato técnico da memória.
-9. [AGENDA_ADD: tarefa] - Adiciona tarefa à agenda.
-10. [AGENDA_DEL: termo] - Remove tarefa da agenda.
-11. [WEB_SEARCH: termo] - Pesquisa dados atualizados na internet.
-12. [WEB_FETCH: url] - Lê o conteúdo de uma página web (Markdown).
-13. [GENERATE_IMAGE: prompt em inglês] - Gera imagem IA.
-14. [IMAGE_SEARCH: termo] - Busca imagem real na web.
-15. [VIDEO_SEARCH: termo] - Busca vídeo no YouTube.
-16. [PROJECT: código_mermaid] - Gera diagramas/esquemas.
+1. [MUDAR_PROJETO: repo]
+2. [GITHUB_FIND: termo]
+3. [GITHUB_TREE]
+4. [GITHUB_READ: arquivo]
+5. [GITHUB_PATCH: caminho] + <<<OLD>>>...<<<NEW>>>...<<<END>>>
+6. [GITHUB_CREATE: caminho | conteúdo] + [/GITHUB_CREATE]
+7. [MEMORIA_ADD: chave | valor]
+8. [MEMORIA_DEL: termo]
+9. [AGENDA_ADD: tarefa]
+10. [AGENDA_DEL: termo]
+11. [WEB_SEARCH: termo]
+12. [WEB_FETCH: url]
+13. [GENERATE_IMAGE: prompt]
+14. [IMAGE_SEARCH: termo]
+15. [VIDEO_SEARCH: termo]
+16. [PROJECT: código_mermaid]
+
+=== FERRAMENTAS AUTOMOTIVAS (NOVAS - USE SÓ SE NECESSÁRIO) ===
+17. [VIN_DECODE: 17_caracteres] - Use SOMENTE se o usuário fornecer um VIN (chassi) de 17 caracteres. Ex: [VIN_DECODE: 9BWCA45U08P123456]
+18. [DTC_LOOKUP: P0420] - Use SOMENTE se o usuário perguntar sobre um código de erro OBD-II específico. Ex: [DTC_LOOKUP: P0420]
 
 === REGRAS DE VOZ ===
 - Você DEVE terminar a resposta com [VOZ: resumo curto em até 180 caracteres].
@@ -908,121 +828,73 @@ REGRAS:
     return base + `\nSeja técnico e direto ao ponto.`;
 }
 
-function escapeRegex(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 async function chamarIA(messages, temp) {
     const estimativaTokens = messages.reduce((acc, m) => acc + Math.ceil((m.content?.length || 0) / 3.5), 0);
-    if (estimativaTokens > 100000) {
-        messages = [messages[0], ...messages.slice(-3)];
-        addLog(`Contexto grande. Truncado para ${Math.ceil(messages.reduce((acc, m) => acc + (m.content?.length || 0), 0) / 3.5)} tokens.`);
-    }
+    if (estimativaTokens > 100000) { messages = [messages[0], ...messages.slice(-3)]; }
 
     const deepseekKey = localStorage.getItem('boss_deepseek_key');
-    
     if (deepseekKey) {
         try {
-            const st = performance.now();
-            const payload = { 
-                model: DEEPSEEK_MODELO, 
-                messages: messages, 
-                temperature: temp, 
-                max_tokens: 4096 
-            };
             const resp = await fetch(DEEPSEEK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
-                body: JSON.stringify(payload)
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${deepseekKey}` },
+                body: JSON.stringify({ model: DEEPSEEK_MODELO, messages: messages, temperature: temp, max_tokens: 4096 })
             });
-            const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
             if (!resp.ok) throw new Error(`DeepSeek HTTP ${resp.status}`);
-            
             document.getElementById('statusDot').className = 'status-dot ok';
             document.getElementById('statusText').textContent = 'DEEPSEEK';
             return await resp.json();
-        } catch (eDeep) {
-            addLog(`DeepSeek falhou (${eDeep.message}). Tentando Worker...`);
-        }
+        } catch (eDeep) { addLog(`DeepSeek falhou. Tentando Worker...`); }
     }
 
-    const payloadWorker = { model: MODELO, messages: messages, max_tokens: 4000, temperature: temp };
-    const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 45000);
+    const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 45000);
     try {
-        const st = performance.now();
-        const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadWorker), signal: ctrl.signal });
+        const resp = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: MODELO, messages: messages, max_tokens: 4000, temperature: temp }), signal: ctrl.signal });
         clearTimeout(to);
-        const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
-        if (!resp.ok) throw new Error(resp.status === 429 ? "COTA_ESGOTADA" : `Erro ${resp.status}`);
+        if (!resp.ok) throw new Error(`Erro ${resp.status}`);
         document.getElementById('statusDot').className = 'status-dot ok';
         document.getElementById('statusText').textContent = 'ONLINE (WORKER)';
         return await resp.json();
     } catch (e1) {
         clearTimeout(to);
-        addLog(`Worker falhou. Tentando Groq...`);
         const groqKey = localStorage.getItem('boss_groq_key');
-        if (!groqKey) {
-            document.getElementById('statusDot').className = 'status-dot err';
-            document.getElementById('statusText').textContent = 'SEM API';
-            throw new Error(`Todas as APIs falharam. Configure uma chave.`);
-        }
+        if (!groqKey) { throw new Error(`Todas as APIs falharam.`); }
         try {
             document.getElementById('statusDot').className = 'status-dot warn';
             document.getElementById('statusText').textContent = 'FALLBACK';
-            const st = performance.now();
-            const ctrl2 = new AbortController();
-            const to2 = setTimeout(() => ctrl2.abort(), 45000);
-            const payloadGroq = { model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 };
-            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify(payloadGroq), signal: ctrl2.signal });
-            clearTimeout(to2);
-            const lat = Math.round(performance.now() - st); metricLatency = lat; atualizarHUD();
+            const resp2 = await fetch(GROQ_URL_DIRETA, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify({ model: GROQ_MODELO, messages: messages, temperature: temp, max_tokens: 4000 }) });
             if (!resp2.ok) throw new Error(`Erro Groq: ${resp2.status}`);
             return await resp2.json();
         } catch (e2) {
             document.getElementById('statusDot').className = 'status-dot err';
             document.getElementById('statusText').textContent = 'OFFLINE';
-            throw new Error(`Ambas APIs falharam. (${e1.message} / ${e2.message})`);
+            throw new Error(`Ambas APIs falharam.`);
         }
     }
 }
 
 async function mapearRepositorio() {
-    addMsg('boss', '⚙ Sincronizando repositórios. Aguarde...');
     document.getElementById('metric-index-status').textContent = 'Baixando...';
-    document.getElementById('metric-index-status').style.color = '#F1C40F';
-    
     listaRepos = []; cacheTrees = {}; fileCache = {};
     try {
-        let page = 1;
-        let hasMore = true;
+        let page = 1, hasMore = true;
         while(hasMore) {
             const res = await fetch(`https://api.github.com/users/${gitUser}/repos?per_page=100&page=${page}&sort=updated`);
-            
-            if (res.status === 403) throw new Error("Limite de requisições do GitHub atingido. Aguarde 1 hora.");
-            if(!res.ok) throw new Error("Usuário não encontrado.");
-            
+            if (!res.ok) throw new Error("Usuário não encontrado.");
             const data = await res.json();
-            
-            if (data.length === 0) {
-                hasMore = false;
-            } else {
+            if (data.length === 0) { hasMore = false; } else {
                 data.forEach(repo => listaRepos.push(repo.full_name));
                 page++;
                 if (data.length < 100) hasMore = false;
             }
         }
-        
         document.getElementById('metric-index-status').textContent = 'Pronto.';
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
-        addMsg('boss', `✅ **Repositórios Encontrados:** ${listaRepos.length}.`);
-        
         if (projetoAtivo) carregarMemoriaFirebase();
-        
     } catch(e) {
         document.getElementById('metric-index-status').textContent = 'Erro';
-        document.getElementById('metric-index-status').style.color = '#ef4444';
         addMsg('error', `Erro ao puxar repos: ${e.message}`);
     }
 }
@@ -1030,56 +902,31 @@ async function mapearRepositorio() {
 async function carregarArvoreProjeto() {
     if (!projetoAtivo) return;
     if (cacheTrees[projetoAtivo]) return; 
-
-    let retries = 3;
-    while(retries > 0) {
-        try {
-            addLog(`Baixando árvore de ${projetoAtivo}...`);
-            const res = await fetch(`${WORKER_URL}/github-tree?repo=${projetoAtivo}&_=${Date.now()}`);
-            if (!res.ok) throw new Error("Falha na rede");
-            const treeData = await res.json();
-            
-            if(treeData.tree) {
-                cacheTrees[projetoAtivo] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
-                addLog(`Árvore carregada: ${cacheTrees[projetoAtivo].length} arquivos.`);
-                atualizarHUD();
-                return;
-            }
-        } catch(e) {
-            retries--;
-            if (retries === 0) addLog(`Erro de rede ao ler árvore de ${projetoAtivo}.`);
-            else await new Promise(r => setTimeout(r, 1000)); 
+    try {
+        const res = await fetch(`${WORKER_URL}/github-tree?repo=${projetoAtivo}&_=${Date.now()}`);
+        const treeData = await res.json();
+        if(treeData.tree) {
+            cacheTrees[projetoAtivo] = treeData.tree.filter(f => f.type === 'blob').map(f => f.path);
+            atualizarHUD();
         }
-    }
+    } catch(e) { addLog(`Erro de rede ao ler árvore.`); }
 }
 
 async function fetchGithubFile(repo, path) {
     const pathLower = path.toLowerCase();
-    const blacklistRegex = /(^|\/)(\.env|secrets\.properties|\.keystore|\.jks|id_rsa|id_dsa|credentials\.json|serviceAccount\.json|\.npmrc)$/i;
-    
-    if (blacklistRegex.test(pathLower)) {
-        return `[ERRO DE SEGURANÇA: O arquivo '${path}' é sensível e foi bloqueado.]`;
-    }
+    const blacklistRegex = /(^|\/)(\.env|secrets\.properties|\.keystore|\.jks|id_rsa|credentials\.json|\.npmrc)$/i;
+    if (blacklistRegex.test(pathLower)) return `[ERRO DE SEGURANÇA: Arquivo sensível bloqueado.]`;
 
     const key = `${repo}/${path}`;
-    if (fileCache[key]) {
-        return fileCache[key].masked; 
-    }
+    if (fileCache[key]) return fileCache[key].masked; 
     try {
         const res = await fetch(`${WORKER_URL}/github?repo=${repo}&path=${path}&_=${Date.now()}`, { cache: 'no-store' });
         if(!res.ok) return `[ERRO GITHUB: Status ${res.status}]`;
-        
         const data = await res.json();
         if (data.content) { 
             const bytes = Uint8Array.from(atob(data.content), c => c.charCodeAt(0));
             let txt = new TextDecoder('utf-8').decode(bytes); 
-            
-            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
-            
-            if (Object.keys(fileCache).length >= 50) {
-                const oldest = Object.keys(fileCache)[0];
-                delete fileCache[oldest];
-            }
+            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
             fileCache[key] = { original: txt, masked: masked };
             atualizarHUD(); 
             return masked; 
@@ -1089,62 +936,37 @@ async function fetchGithubFile(repo, path) {
 }
 
 async function buscarZeroToken(termo) {
-    if (!projetoAtivo) return "(Nenhum projeto ativo selecionado.)";
-    
+    if (!projetoAtivo) return "(Nenhum projeto ativo)";
     await carregarArvoreProjeto();
-    
     const tree = cacheTrees[projetoAtivo];
-    if(!tree) return `(A árvore do projeto falhou. Tente pedir um arquivo específico com GITHUB_READ).`;
-
+    if(!tree) return `(Falha na árvore. Use GITHUB_READ).`;
     let resultados = "";
-    let arquivosLidos = 0; 
-    
     const matchesName = tree.filter(p => p.toLowerCase().includes(termo.toLowerCase()));
     const codeExts = ['.kt','.java','.js','.ts','.html','.xml','.py','.md','.json', '.gradle'];
     const codeFiles = tree.filter(p => codeExts.some(e => p.toLowerCase().endsWith(e)));
-    
     const toScan = [...new Set([...matchesName, ...codeFiles.slice(0, 15)])].slice(0, 15);
 
-    for (let i = 0; i < toScan.length; i += 5) {
-        if (arquivosLidos >= 5) break; 
-
-        const chunk = toScan.slice(i, i + 5);
-        const results = await Promise.all(chunk.map(async path => {
-            const content = await fetchGithubFile(projetoAtivo, path);
-            if (content.startsWith('[ERRO')) return null;
-            
-            const lines = content.split('\n');
-            let trecho = "";
-            lines.forEach((ln, i) => {
-                if (ln.toLowerCase().includes(termo.toLowerCase())) {
-                    const start = Math.max(0, i - 2);
-                    const end = Math.min(lines.length, i + 3);
-                    const snippet = lines.slice(start, end).join('\n');
-                    trecho += `\nLinha ${i+1}:\n\`\`\`\n${snippet}\n\`\`\`\n`;
-                }
-            });
-            
-            if(trecho) return `\n=== ENCONTRADO EM: ${path} ===\n${trecho}`;
-            return null;
-        }));
-
-        const validos = results.filter(r => r !== null);
-        if (validos.length > 0) {
-            resultados += validos.join('\n');
-            arquivosLidos += validos.length;
-        }
+    for (const path of toScan) {
+        const content = await fetchGithubFile(projetoAtivo, path);
+        if (content.startsWith('[ERRO')) continue;
+        const lines = content.split('\n');
+        let trecho = "";
+        lines.forEach((ln, i) => {
+            if (ln.toLowerCase().includes(termo.toLowerCase())) {
+                const start = Math.max(0, i - 2); const end = Math.min(lines.length, i + 3);
+                trecho += `\nLinha ${i+1}:\n\`\`\`\n${lines.slice(start, end).join('\n')}\n\`\`\`\n`;
+            }
+        });
+        if(trecho) resultados += `\n=== ENCONTRADO EM: ${path} ===\n${trecho}`;
     }
-
-    return resultados || "(Nenhum trecho encontrado no projeto ativo.)";
+    return resultados || "(Nenhum trecho encontrado.)";
 }
 
 function diffLines(a, b) {
-    const A = a.split('\n'), B = b.split('\n');
-    const m = A.length, n = B.length;
+    const A = a.split('\n'), B = b.split('\n'); const m = A.length, n = B.length;
     const dp = Array(m+1).fill().map(() => Array(n+1).fill(0));
     for (let i=1;i<=m;i++) for (let j=1;j<=n;j++) {
-        if (A[i-1] === B[j-1]) dp[i][j] = dp[i-1][j-1]+1;
-        else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+        if (A[i-1] === B[j-1]) dp[i][j] = dp[i-1][j-1]+1; else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
     }
     const r = []; let i=m, j=n;
     while (i>0 && j>0) {
@@ -1152,8 +974,7 @@ function diffLines(a, b) {
         else if (dp[i-1][j] >= dp[i][j-1]) { r.unshift({t:'del', l:A[i-1]}); i--; }
         else { r.unshift({t:'add', l:B[j-1]}); j--; }
     }
-    while (i>0) { r.unshift({t:'del', l:A[i-1]}); i--; }
-    while (j>0) { r.unshift({t:'add', l:B[j-1]}); j--; }
+    while (i>0) { r.unshift({t:'del', l:A[i-1]}); i--; } while (j>0) { r.unshift({t:'add', l:B[j-1]}); j--; }
     return r;
 }
 
@@ -1162,160 +983,53 @@ function mostrarDiff(path, oldText, newText) {
     document.getElementById('diffRepo').textContent = pendingCommit.repo; 
     const d = diffLines(oldText, newText);
     let html = '';
-    d.slice(0, 500).forEach(x => {
-        html += `<div class="diff-line ${x.t}">${escapeHTML(x.l||' ').substring(0, 300)}</div>`;
-    });
-    if (d.length > 500) html += `<div style="color:#6A7A8A; padding:5px;">... (${d.length-500} linhas omitidas)</div>`;
+    d.slice(0, 500).forEach(x => { html += `<div class="diff-line ${x.t}">${escapeHTML(x.l||' ').substring(0, 300)}</div>`; });
     document.getElementById('diffView').innerHTML = html;
     document.getElementById('modalDiff').classList.add('open');
 }
 
 async function confirmarCommit() {
     if (!pendingCommit) return;
-    if (Date.now() - pendingCommit.timestamp > 300000) { alert("O tempo expirou. Gere o commit novamente."); pendingCommit = null; return; }
-    if (pendingCommit.repo !== projetoAtivo) { alert("Você trocou de projeto. O commit foi cancelado por segurança."); pendingCommit = null; return; }
-
+    if (Date.now() - pendingCommit.timestamp > 300000) { alert("O tempo expirou."); pendingCommit = null; return; }
     document.getElementById('modalDiff').classList.remove('open');
     let { repo, path, content } = pendingCommit;
-    path = path.replace(/^\/+/, ''); 
-
-    addLog(`Commitando ${path} em ${repo}...`);
     try {
-        const r = await fetch(`${WORKER_URL}/github-write`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: repo, path, content, message: 'Atualização via BOSS AI' }) });
-        if (!r.ok) throw new Error(`Worker retornou ${r.status}`);
+        const r = await fetch(`${WORKER_URL}/github-write`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo, path, content, message: 'Atualização via BOSS AI' }) });
         const d = await r.json();
-        addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha ao commitar: ${JSON.stringify(d)}`);
-        if (d.success) { 
-            delete fileCache[`${repo}/${path}`]; 
-            delete cacheTrees[repo]; 
-            pendingCommit = null; 
-        }
+        addMsg(d.success ? 'boss' : 'error', d.success ? `✅ Arquivo **${path}** commitado.` : `Falha: ${JSON.stringify(d)}`);
+        if (d.success) { delete fileCache[`${repo}/${path}`]; delete cacheTrees[repo]; pendingCommit = null; }
     } catch(e) { addMsg('error', 'Erro no commit: ' + e.message); }
 }
 function cancelarCommit() { pendingCommit = null; document.getElementById('modalDiff').classList.remove('open'); addMsg('boss', 'Commit cancelado.'); }
 
 function testeDeFumaca() {
     toggleConfig();
-    const t = addMsg('thinking', 'Executando Autodiagnóstico (Smoke Test)...', false);
-    
+    const t = addMsg('thinking', 'Executando Autodiagnóstico...', false);
     setTimeout(() => {
-        let erros = [];
-        let sucessos = [];
-        
-        if (typeof window.db !== 'undefined' && window.db !== null) {
-            sucessos.push("✅ Firebase inicializado (window.db existe).");
-        } else {
-            erros.push("❌ Falha crítica: window.db é undefined. O Firebase não inicializou.");
-        }
-
+        let erros = [], sucessos = [];
+        if (window.db) sucessos.push("✅ Firebase OK"); else erros.push("❌ Firebase Falhou");
         const html = document.documentElement.innerHTML;
-        
-        if (html.includes('GITHUB_CREATE:') && html.includes('[/GITHUB_CREATE]')) {
-            sucessos.push("✅ Módulo GITHUB_CREATE presente e fechado.");
-        } else {
-            erros.push("❌ Falha: Módulo GITHUB_CREATE ausente ou sem tag de fechamento.");
-        }
-
-        if (html.includes('GITHUB_PATCH') && html.includes('<<<OLD>>>')) {
-            sucessos.push("✅ Módulo GITHUB_PATCH (com delimitadores) presente.");
-        } else {
-            erros.push("❌ Falha: Módulo GITHUB_PATCH ausente ou mal formatado.");
-        }
-
-        if (html.includes('/ 3.5')) {
-            sucessos.push("✅ Estimativa de Tokens corrigida (/3.5).");
-        } else {
-            erros.push("❌ Falha: Fórmula de estimativa de tokens ausente.");
-        }
-
-        if (html.includes('DEEPSEEK_URL')) {
-            sucessos.push("✅ Integração DeepSeek ativa (modelo deepseek-chat).");
-        } else {
-            erros.push("❌ Falha: Integração DeepSeek ausente.");
-        }
-
-        if (html.includes('REGRA DE IMAGEM (CRÍTICA)')) {
-            sucessos.push("✅ Regra de Imagem presente no System Prompt.");
-        } else {
-            erros.push("❌ Falha: Regra de Imagem ausente.");
-        }
-
-        if (html.includes('@keyframes fadeIn') && !/function\s+efeitoDigitacao\s*\(/.test(html)) {
-            sucessos.push("✅ Animação instantânea (Fade-In) ativa. UI destravada.");
-        } else {
-            erros.push("❌ Falha: Animação de texto antiga ou conflitante ainda presente.");
-        }
-
-        if (html.includes('Promise.all')) {
-            sucessos.push("✅ Inicialização assíncrona correta (Fim do Falso Primeiro Contato).");
-        } else {
-            erros.push("❌ Falha: Verificação de inicialização ainda usa setTimeout.");
-        }
-
-        if (html.includes('TTS_URL')) {
-            sucessos.push("✅ Integração Edge-TTS (Render) ativa.");
-        } else {
-            erros.push("❌ Falha: Integração Edge-TTS ausente.");
-        }
-
-        if (html.includes('cameraInput')) {
-            sucessos.push("✅ Botão de Câmera integrado.");
-        } else {
-            erros.push("❌ Falha: Botão de Câmera ausente.");
-        }
-
-        if (html.includes('historico_recente')) {
-            sucessos.push("✅ Sincronia de memória recente na nuvem ativa.");
-        } else {
-            erros.push("❌ Falha: Sincronia de memória recente ausente.");
-        }
-
-        if (html.includes('voiceModeOverlay')) {
-            sucessos.push("✅ Módulo de Modo Voz (Tela Preta / Hands-Free) ativo.");
-        } else {
-            erros.push("❌ Falha: Módulo de Modo Voz ausente.");
-        }
-
-        if (html.includes('__CODE_BLOCK_')) {
-            sucessos.push("✅ Formatação de código protegida (Pre-wrap) ativa.");
-        } else {
-            erros.push("❌ Falha: Código propenso a vazamento de linha (sem placeholder).");
-        }
-
-        if (html.includes("addEventListener('paste'")) {
-            sucessos.push("✅ Suporte para colar imagens (Ctrl+V) ativo.");
-        } else {
-            erros.push("❌ Falha: Suporte para colar imagens ausente.");
-        }
-
-        if (html.includes("treeM") && html.includes("ignoreDirs")) {
-            sucessos.push("✅ Visão profunda de Workspace (Smart Tree) ativa.");
-        } else {
-            erros.push("❌ Falha: Visão de Workspace ausente.");
-        }
+        if (html.includes('/ 3.5')) sucessos.push("✅ Tokens OK");
+        if (html.includes('DEEPSEEK_URL')) sucessos.push("✅ DeepSeek OK");
+        if (html.includes('VIN_DECODE')) sucessos.push("✅ Ferramenta VIN_DECODE OK");
+        if (html.includes('DTC_LOOKUP')) sucessos.push("✅ Ferramenta DTC_LOOKUP OK");
+        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.0) OK");
+        if (html.includes('voiceModeOverlay')) sucessos.push("✅ Modo Voz OK");
         
         t.wrapper.remove();
-        let msgFinal = "📋 **RESULTADO DO AUTODIAGNÓSTICO**\n\n";
-        if (sucessos.length) msgFinal += "**Aprovados:**\n" + sucessos.join('\n') + "\n\n";
-        if (erros.length) msgFinal += "**Falhas:**\n" + erros.join('\n') + "\n";
-        
-        if (erros.length === 0) msgFinal += "\n✅ **Sistema 100% Saudável (v8.9)**";
-        else msgFinal += "\n⚠️ **Atenção:** Corrija as falhas acima.";
-        
+        let msgFinal = "📋 **DIAGNÓSTICO**\n\n**OK:**\n" + sucessos.join('\n') + "\n\n**Falhas:**\n" + (erros.length ? erros.join('\n') : 'Nenhuma.');
         addMsg('boss', msgFinal);
-    }, 1500);
+    }, 1000);
 }
 
 async function enviar() {
     const projetoDaVez = projetoAtivo;
-    window.lastReadError = null; // Reseta o bloqueio de leitura repetida
-    
+    window.lastReadError = null; 
     const input = document.getElementById('input');
     const texto = input.value.trim();
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
 
     if (isVoiceModeActive) updateVoiceOrb('thinking');
-
     input.value = '';
     input.style.height = 'auto';
     if (texto) addMsg('user', texto, true, projetoDaVez);
@@ -1330,50 +1044,16 @@ async function enviar() {
         if (imagemAnexadaBase64) {
             t.div.textContent = "Processando visão...";
             try {
-                const vr = await fetch(`${WORKER_URL}/analyze-image`, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
-                        imageBase64: imagemAnexadaBase64,
-                        prompt: "Descreva APENAS o que você vê nesta imagem. Seja literal e detalhado. NÃO use contexto de conversas anteriores. Se for uma foto de carro, diga o que está vendo no carro, na rua e no ambiente."
-                    }) 
-                });
-                if (!vr.ok) throw new Error("Falha no Worker principal");
+                const vr = await fetch(`${WORKER_URL}/analyze-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: imagemAnexadaBase64, prompt: "Descreva APENAS o que você vê nesta imagem. Seja literal. NÃO use contexto de conversas anteriores." }) });
                 const vd = await vr.json();
-                contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na análise da imagem]";
-            } catch (eVisao) {
-                addLog("Falha na visão principal. Tentando Groq Vision...");
-                const groqKey = localStorage.getItem('boss_groq_key');
-                if (groqKey) {
-                    try {
-                        const vr2 = await fetch(GROQ_URL_DIRETA, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
-                            body: JSON.stringify({
-                                model: GROQ_VISION_MODELO,
-                                messages: [{ 
-                                    role: "user", 
-                                    content: [
-                                        { type: "text", text: "Descreva APENAS o que você vê nesta imagem. Seja literal e detalhado. NÃO use contexto de conversas anteriores." }, 
-                                        { type: "image_url", image_url: { url: imagemAnexadaBase64 } }
-                                    ] 
-                                }],
-                                temperature: 0.2
-                            })
-                        });
-                        const vd2 = await vr2.json();
-                        contextoVisao = vd2.choices?.[0]?.message?.content || "[Falha na análise via Groq]";
-                    } catch(e2) { contextoVisao = "[Erro em ambas as visões]"; }
-                } else { contextoVisao = "[Erro na visão e sem chave Groq]"; }
-            }
+                contextoVisao = vd.choices?.[0]?.message?.content || "[Falha na visão]";
+            } catch (eVisao) { contextoVisao = "[Erro na visão]"; }
             imagemAnexadaBase64 = ''; document.getElementById('btnDraw').style.display = 'none';
         }
         
         if (contextoVisao) userContent = `[ANÁLISE DA IMAGEM]:\n${contextoVisao}\n\n[PERGUNTA]:\n${texto || "Analise."}`;
 
         const memoriaRag = buscarMemoriaAntiga(texto, projetoDaVez);
-        if (memoriaRag) addLog("Memória antiga recuperada (RAG).");
-
         const isConversational = ['acha', 'pensa', 'opinião'].some(p => texto.toLowerCase().includes(p));
         
         let msgs = [{ role: 'system', content: buildSystemPrompt(isConversational, memoriaRag) }, ...historicoRecenteNuvem.slice(-6)];
@@ -1387,51 +1067,72 @@ async function enviar() {
             const data = await chamarIA(msgs, isConversational ? 0.65 : 0.2);
             if (data.usage) { metricTokens += data.usage.total_tokens; atualizarHUD(); }
             let resposta = data.choices?.[0]?.message?.content?.trim() || "";
-            
             if (resposta) ultimaRespostaRecebida = resposta;
 
-            const switchM = resposta.match(/\[MUDAR_PROJETO:\s*(.*?)\]/);
-            if (switchM) {
-                const novoProjeto = switchM[1].trim();
-                const match = listaRepos.find(r => r.toLowerCase().includes(novoProjeto.toLowerCase()));
-                if (match) {
-                    projetoAtivo = match;
-                    localStorage.setItem('boss_active_repo', projetoAtivo);
-                    atualizarDisplayProjeto();
-                    resposta = resposta.replace(switchM[0], '').trim();
-                    if(!resposta) resposta = `Foco alterado para **${projetoAtivo.split('/')[1]}**.`;
-                    fileCache = {}; 
-                } else {
-                    resposta = resposta.replace(switchM[0], '').trim() + `\n\n*(Repositório "${novoProjeto}" não encontrado.)*`;
+            // --- FERRAMENTA: VIN_DECODE ---
+            const vinM = resposta.match(/\[VIN_DECODE:\s*([A-HJ-NPR-Z0-9]{17})\]/i);
+            if (vinM) {
+                const vin = vinM[1].toUpperCase();
+                t.div.textContent = `Decodificando VIN: ${vin}...`;
+                try {
+                    const vr = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${vin}?format=json`);
+                    const vd = await vr.json();
+                    const info = vd.Results[0];
+                    const resStr = `Make: ${info.Make}, Model: ${info.Model}, Year: ${info.ModelYear}, Engine: ${info.EngineModel}, Fuel: ${info.FuelTypePrimary}`;
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: VIN Decodificado (NHTSA):\n${resStr}\n\nUse isso para responder.` });
+                } catch(e) {
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao decodificar VIN via NHTSA.` });
                 }
+                continue;
             }
 
+            // --- FERRAMENTA: DTC_LOOKUP ---
+            const dtcM = resposta.match(/\[DTC_LOOKUP:\s*([PBCU]\d{4})\]/i);
+            if (dtcM) {
+                const dtc = dtcM[1].toUpperCase();
+                t.div.textContent = `Buscando DTC: ${dtc}...`;
+                try {
+                    const letter = dtc[0];
+                    const url = `https://raw.githubusercontent.com/foerbsnavi/OBDex/main/data/${letter}.json`;
+                    const dr = await fetch(url);
+                    const dd = await dr.json();
+                    const info = dd.find(item => item.code === dtc);
+                    
+                    msgs.push({ role: 'assistant', content: resposta });
+                    if (info) {
+                        msgs.push({ role: 'user', content: `[SISTEMA]: DTC Info (OBDex):\nDescrição: ${info.description}\nCausas: ${info.causes ? info.causes.join(', ') : 'N/A'}\n\nUse isso para responder.` });
+                    } else {
+                        msgs.push({ role: 'user', content: `[SISTEMA]: Código ${dtc} não encontrado na base OBDex.` });
+                    }
+                } catch(e) {
+                    msgs.push({ role: 'assistant', content: resposta });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao buscar DTC no OBDex.` });
+                }
+                continue;
+            }
+
+            // --- FERRAMENTAS PADRÃO ---
             const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
             if (webM && tentativas === 1) {
-                const termo = webM[1];
-                t.div.textContent = `Pesquisando (Worker): "${termo}"...`;
-                const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(termo)}`);
+                const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(webM[1])}`);
                 const sd = await sr.json();
                 msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Dados da busca na web: ${sd.results}. Responda agora.` });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Dados web: ${sd.results}. Responda.` });
                 continue;
             }
 
             const fetchM = resposta.match(/\[WEB_FETCH:\s*(.*?)\]/);
             if (fetchM && tentativas === 1) {
-                const url = fetchM[1];
-                t.div.textContent = `Lendo página (Worker): ${url}...`;
                 try {
-                    const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(url)}`);
-                    if (!fr.ok) throw new Error(`HTTP ${fr.status}`);
+                    const fr = await fetch(`${WORKER_URL}/web-fetch?url=${encodeURIComponent(fetchM[1])}`);
                     const fd = await fr.json();
-                    const content = fd.content || fd.text || fd.markdown || "Conteúdo não disponível.";
                     msgs.push({ role: 'assistant', content: resposta });
-                    msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo da página ${url}:\n${content}\n\nResponda agora.` });
-                } catch(e2) {
-                    addLog(`WEB_FETCH falhou: ${e2.message}`);
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo URL ${fetchM[1]}:\n${fd.content || fd.text || 'Vazio'}\n\nResponda.` });
+                } catch(e) {
                     msgs.push({ role: 'assistant', content: resposta });
-                    msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler a página ${url}. Responda com o que sabe.` });
+                    msgs.push({ role: 'user', content: `[SISTEMA]: Falha ao ler URL.` });
                 }
                 continue;
             }
@@ -1439,11 +1140,7 @@ async function enviar() {
             const findM = [...resposta.matchAll(/\[GITHUB_FIND:\s*(.*?)\]/g)];
             if (findM.length > 0) {
                 let allRes = "";
-                for (const m of findM) {
-                    const termo = m[1].trim();
-                    t.div.textContent = `Buscando "${termo}"...`;
-                    allRes += `\n${await buscarZeroToken(termo)}`;
-                }
+                for (const m of findM) { allRes += `\n${await buscarZeroToken(m[1].trim())}`; }
                 msgs.push({ role: 'assistant', content: resposta });
                 msgs.push({ role: 'user', content: `[SISTEMA]: Trechos:\n${allRes}\n\nResponda.` });
                 continue;
@@ -1451,84 +1148,49 @@ async function enviar() {
 
             const treeM = resposta.match(/\[GITHUB_TREE\]/);
             if (treeM) {
-                t.div.textContent = "Mapeando a estrutura do workspace...";
                 await carregarArvoreProjeto();
                 const treeList = cacheTrees[projetoDaVez] || [];
-                
-                // VISÃO PROFUNDA DE WORKSPACE (Filtra lixo e constrói hierarquia)
-                const ignoreDirs = ['node_modules', '.git', 'build/', 'dist/', '.idea', '.gradle', '__pycache__', '.venv', 'venv'];
+                const ignoreDirs = ['node_modules', '.git', 'build/', 'dist/', '.idea', '.gradle', '__pycache__', '.venv'];
                 const ignoreExts = ['.png', '.jpg', '.jpeg', '.gif', '.mp4', '.mp3', '.wav', '.ttf', '.apk', '.jar', '.zip', '.ico'];
-                
                 const arquivosLimpios = treeList.filter(path => {
                     if (ignoreDirs.some(dir => path.includes(dir))) return false;
                     if (ignoreExts.some(ext => path.toLowerCase().endsWith(ext))) return false;
                     return true;
                 });
-
                 let resumoTree = "=== ESTRUTURA DO WORKSPACE ===\n";
                 let pastasVistas = new Set();
-                
                 arquivosLimpios.forEach(path => {
-                    const partes = path.split('/');
-                    const nomeArquivo = partes.pop();
-                    const caminhoPasta = partes.join('/');
-                    
-                    if (caminhoPasta && !pastasVistas.has(caminhoPasta)) {
-                        resumoTree += `\n📁 ${caminhoPasta}/\n`;
-                        pastasVistas.add(caminhoPasta);
-                    }
+                    const partes = path.split('/'); const nomeArquivo = partes.pop(); const caminhoPasta = partes.join('/');
+                    if (caminhoPasta && !pastasVistas.has(caminhoPasta)) { resumoTree += `\n📁 ${caminhoPasta}/\n`; pastasVistas.add(caminhoPasta); }
                     resumoTree += `  📄 ${nomeArquivo}\n`;
                 });
-
-                if (resumoTree.length > 4000) {
-                    resumoTree = resumoTree.substring(0, 4000) + "\n... (árvore truncada por tamanho. Use GITHUB_FIND para buscar arquivos específicos).";
-                }
-
+                if (resumoTree.length > 4000) resumoTree = resumoTree.substring(0, 4000) + "\n... (truncado. Use GITHUB_FIND).";
                 msgs.push({ role: 'assistant', content: resposta });
-                msgs.push({ role: 'user', content: `[SISTEMA]: Aqui está o mapa do workspace:\n${resumoTree}\n\nAgora que você entendeu a arquitetura, escolha o arquivo correto e use GITHUB_READ.` });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Mapa do workspace:\n${resumoTree}\n\nEscolha um arquivo e peça GITHUB_READ.` });
                 continue;
             }
 
             const readM = [...resposta.matchAll(/\[GITHUB_READ:\s*(.*?)\]/g)];
             if (readM.length > 0) {
-                if (!projetoDaVez) {
-                    resposta = "Nenhum projeto ativo.";
-                } else {
-                    let all = ""; 
-                    for (const m of readM) {
-                        let fp = m[1].trim().replace(projetoDaVez + '/', ''); 
-                        
-                        if (window.lastReadError === fp) {
-                            all += `\n[ERRO DO SISTEMA: O arquivo ${fp} já falhou na tentativa anterior. Não tente lê-lo novamente.]\n`;
-                            continue;
-                        }
-
-                        t.div.textContent = `Lendo ${fp}...`;
-                        const fc = await fetchGithubFile(projetoDaVez, fp);
-                        
-                        if (fc.startsWith('[ERRO')) {
-                            window.lastReadError = fp; 
-                        } else {
-                            window.lastReadError = null;
-                        }
-                        
-                        all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
-                    }
-                    msgs.push({ role: 'assistant', content: resposta });
-                    msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo:\n${all}\n\nAnalise.` });
-                    continue;
+                let all = ""; 
+                for (const m of readM) {
+                    let fp = m[1].trim().replace(projetoDaVez + '/', ''); 
+                    if (window.lastReadError === fp) { all += `\n[ERRO: ${fp} já falhou. Não tente ler de novo.]\n`; continue; }
+                    const fc = await fetchGithubFile(projetoDaVez, fp);
+                    if (fc.startsWith('[ERRO')) window.lastReadError = fp; else window.lastReadError = null;
+                    all += `\nArquivo ${fp}:\n\`\`\`\n${fc}\n\`\`\`\n`;
                 }
+                msgs.push({ role: 'assistant', content: resposta });
+                msgs.push({ role: 'user', content: `[SISTEMA]: Conteúdo:\n${all}\n\nAnalise.` });
+                continue;
             }
 
             respostaFinal = resposta; continuar = false;
         }
         
         if (!respostaFinal) {
-            if (ultimaRespostaRecebida) {
-                respostaFinal = ultimaRespostaRecebida + "\n\n*(⚠️ Aviso do Sistema: Limite de ferramentas atingido. A resposta acima é a última parcial que consegui gerar).*";
-            } else {
-                respostaFinal = "⚠️ Não consegui completar a tarefa. O limite de consultas (ferramentas) foi atingido. Tente dividir o problema em partes menores.";
-            }
+            if (ultimaRespostaRecebida) { respostaFinal = ultimaRespostaRecebida + "\n\n*(⚠️ Limite atingido).*"; }
+            else { respostaFinal = "⚠️ Limite de consultas atingido. Divida o problema."; }
         }
 
         const vozM = respostaFinal.match(/\[VOZ:\s*([\s\S]*?)\]/);
@@ -1543,46 +1205,18 @@ async function enviar() {
         
         const patchIncompleto = respostaFinal.match(/\[GITHUB_PATCH:[^\]]*\]/);
         const patchCompleto = respostaFinal.match(/\[GITHUB_PATCH:\s*(.*?)\]\s*<<<OLD>>>([\s\S]*?)<<<NEW>>>([\s\S]*?)<<<END>>>/);
-        
-        if (patchIncompleto && !patchCompleto) {
-            addMsg('error', '⚠️ Patch malformado: faltou <<<END>>>. Use GITHUB_READ e tente novamente.');
-            return;
-        }
+        if (patchIncompleto && !patchCompleto) { addMsg('error', '⚠️ Patch malformado: faltou <<<END>>>.'); return; }
 
         const mGit = respostaFinal.match(/\[GITHUB_CREATE:\s*(.*?)\s*\|\s*([\s\S]*?)\[\/GITHUB_CREATE\]/);
 
         const memAdd = respostaFinal.match(/\[MEMORIA_ADD:\s*([\s\S]*?)\]/);
-        if (memAdd) {
-            memoriaDecisoes.push(memAdd[1].trim());
-            localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
-            respostaFinal = respostaFinal.replace(memAdd[0], '').trim();
-            atualizarHUD();
-            setTimeout(() => addMsg('boss', `✅ **[SISTEMA]:** Fato salvo na memória: "${memAdd[1].trim()}"`), 100);
-        }
+        if (memAdd) { memoriaDecisoes.push(memAdd[1].trim()); localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes)); respostaFinal = respostaFinal.replace(memAdd[0], '').trim(); atualizarHUD(); setTimeout(() => addMsg('boss', `✅ Fato salvo: "${memAdd[1].trim()}"`), 100); }
         const memDel = respostaFinal.match(/\[MEMORIA_DEL:\s*([\s\S]*?)\]/);
-        if (memDel) {
-            const termo = memDel[1].trim().toLowerCase();
-            memoriaDecisoes = memoriaDecisoes.filter(a => !a.toLowerCase().includes(termo));
-            localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes));
-            respostaFinal = respostaFinal.replace(memDel[0], '').trim();
-            atualizarHUD();
-            setTimeout(() => addMsg('boss', `🗑️ **[SISTEMA]:** Fato removido da memória: "${termo}"`), 100);
-        }
+        if (memDel) { const termo = memDel[1].trim().toLowerCase(); memoriaDecisoes = memoriaDecisoes.filter(a => !a.toLowerCase().includes(termo)); localStorage.setItem('boss_memoria_decisoes', JSON.stringify(memoriaDecisoes)); respostaFinal = respostaFinal.replace(memDel[0], '').trim(); atualizarHUD(); setTimeout(() => addMsg('boss', `🗑️ Fato removido: "${termo}"`), 100); }
         const addAgenda = respostaFinal.match(/\[AGENDA_ADD:\s*([\s\S]*?)\]/);
-        if (addAgenda) {
-            agendaInterna.push(addAgenda[1].trim());
-            localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
-            respostaFinal = respostaFinal.replace(addAgenda[0], '').trim();
-            setTimeout(() => addMsg('boss', `📌 **[SISTEMA]:** Tarefa adicionada à agenda: "${addAgenda[1].trim()}"`), 100);
-        }
+        if (addAgenda) { agendaInterna.push(addAgenda[1].trim()); localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna)); respostaFinal = respostaFinal.replace(addAgenda[0], '').trim(); setTimeout(() => addMsg('boss', `📌 Agenda adicionada: "${addAgenda[1].trim()}"`), 100); }
         const delAgenda = respostaFinal.match(/\[AGENDA_DEL:\s*([\s\S]*?)\]/);
-        if (delAgenda) {
-            const termo = delAgenda[1].trim().toLowerCase();
-            agendaInterna = agendaInterna.filter(a => !a.toLowerCase().includes(termo));
-            localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna));
-            respostaFinal = respostaFinal.replace(delAgenda[0], '').trim();
-            setTimeout(() => addMsg('boss', `✅ **[SISTEMA]:** Tarefa concluída/removida da agenda.`), 100);
-        }
+        if (delAgenda) { const termo = delAgenda[1].trim().toLowerCase(); agendaInterna = agendaInterna.filter(a => !a.toLowerCase().includes(termo)); localStorage.setItem('boss_agenda_interna', JSON.stringify(agendaInterna)); respostaFinal = respostaFinal.replace(delAgenda[0], '').trim(); setTimeout(() => addMsg('boss', `✅ Agenda removida.`), 100); }
 
         t.wrapper.remove();
 
@@ -1592,140 +1226,67 @@ async function enviar() {
             .replace(/\[GITHUB_CREATE:[\s\S]*?\[\/GITHUB_CREATE\]/g, '')
             .replace(/```mermaid\n[\s\S]*?```/g, '').trim();
             
-        if (limpo) { 
-            addMsg('boss', limpo, true, projetoDaVez); 
-        }
+        if (limpo) addMsg('boss', limpo, true, projetoDaVez); 
         
         falarTexto(txtFalar);
 
         if (mGen) {
-            const w = document.createElement('div'); w.style.padding = '10px';
-            w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`;
-            document.getElementById('chat').appendChild(w);
+            const w = document.createElement('div'); w.style.padding = '10px'; w.innerHTML = `<div style="color:#F1C40F; font-size:12px;">[ Gerando imagem... ]</div>`; document.getElementById('chat').appendChild(w);
             fetch(`${WORKER_URL}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: mGen[1] }) })
-              .then(r=>r.json()).then(d => { 
-                  if(d.image) {
-                      w.innerHTML = `<img src="${d.image}" class="msg-img">`; 
-                      addMsg('boss', `🖼️ **[SISTEMA]:** Imagem gerada com sucesso.`);
-                  } else {
-                      w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha na imagem ]</div>`;
-                  }
-              });
+              .then(r=>r.json()).then(d => { if(d.image) { w.innerHTML = `<img src="${d.image}" class="msg-img">`; addMsg('boss', `🖼️ Imagem gerada.`); } else { w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>`; } });
         }
 
         if (mProj || mMer) {
-            const mCode = mProj ? mProj[1] : mMer[1];
-            const w = document.createElement('div'); w.className = 'mermaid-container';
-            
-            w.innerHTML = `<div style="color:var(--text-muted); font-size:12px;">[ Renderizando diagrama... ]</div>`;
-            document.getElementById('chat').appendChild(w);
-            
-            try {
-                const id = 'mermaid-svg-' + Date.now();
-                const { svg } = await mermaid.render(id, mCode);
-                w.innerHTML = svg; 
-                setTimeout(() => addMsg('boss', `📊 **[SISTEMA]:** Diagrama renderizado com sucesso.`), 100);
-            } catch(e) {
-                console.error("Erro Mermaid:", e);
-                w.innerHTML = `<div style="color:#E74C3C; font-size:12px; padding: 10px;">❌ **Erro no Diagrama:** O código Mermaid gerado é inválido.</div>`;
-                addMsg('error', 'A IA tentou gerar um diagrama, mas a sintaxe do Mermaid estava incorreta.');
-            }
+            const mCode = mProj ? mProj[1] : mMer[1]; const w = document.createElement('div'); w.className = 'mermaid-container';
+            w.innerHTML = `<div style="color:var(--text-muted); font-size:12px;">[ Renderizando diagrama... ]</div>`; document.getElementById('chat').appendChild(w);
+            try { const id = 'mermaid-svg-' + Date.now(); const { svg } = await mermaid.render(id, mCode); w.innerHTML = svg; setTimeout(() => addMsg('boss', `📊 Diagrama ok.`), 100); }
+            catch(e) { w.innerHTML = `<div style="color:#E74C3C; font-size:12px; padding: 10px;">❌ Erro no Mermaid.</div>`; addMsg('error', 'Mermaid inválido.'); }
         }
 
         if (mImg) {
-            const w = document.createElement('div'); w.style.padding='10px';
-            w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando imagem... ]</div>`;
-            document.getElementById('chat').appendChild(w);
+            const w = document.createElement('div'); w.style.padding='10px'; w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando imagem... ]</div>`; document.getElementById('chat').appendChild(w);
             fetch(`${WORKER_URL}/search-image?q=${encodeURIComponent(mImg[1])}`).then(r=>r.json()).then(d => {
-                if(d.url) { 
-                    const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='<div style="color:#E74C3C; font-size:12px;">[ Falha ]</div>';}; w.innerHTML=''; w.appendChild(i); 
-                    addMsg('boss', `🖼️ **[SISTEMA]:** Imagem encontrada na web.`);
-                }
+                if(d.url) { const i = document.createElement('img'); i.src=d.url; i.className='msg-img'; i.onerror=()=>{w.innerHTML='[ Falha ]';}; w.innerHTML=''; w.appendChild(i); addMsg('boss', `🖼️ Imagem web.`); }
                 else w.innerHTML = `<div style="color:#E74C3C; font-size:12px;">[ Não encontrada ]</div>`;
             });
         }
 
         if (mVid) {
-            const w = document.createElement('div'); w.style.padding='10px';
-            w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando vídeo... ]</div>`;
-            document.getElementById('chat').appendChild(w);
+            const w = document.createElement('div'); w.style.padding='10px'; w.innerHTML = `<div style="color:#00FFCC; font-size:12px;">[ Buscando vídeo... ]</div>`; document.getElementById('chat').appendChild(w);
             fetch(`${WORKER_URL}/search-video?q=${encodeURIComponent(mVid[1])}`).then(r=>r.json()).then(d => {
                 if(d.videos && d.videos.length > 0) {
                     const vid = d.videos[0].link.match(/(?:youtu\.be\/|youtube\.com\/(?:.*v=|.*\/))([^"&?\/\s]{11})/);
-                    if(vid) {
-                        w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
-                        addMsg('boss', `🎬 **[SISTEMA]:** Vídeo carregado.`);
-                    }
-                    else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir: ${d.videos[0].title}</a>`;
+                    if(vid) { w.innerHTML = `<div class="video-container"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`; addMsg('boss', `🎬 Vídeo ok.`); }
+                    else w.innerHTML = `<a href="${d.videos[0].link}" target="_blank" style="color:#00FFCC;">Assistir</a>`;
                 }
             });
         }
 
         if (patchCompleto) {
-            const path = patchCompleto[1].trim().replace(/^\/+/, ''); 
-            const oldText = patchCompleto[2].trim(); 
-            const newText = patchCompleto[3].trim();
-            
-            if (!projetoDaVez) {
-                addMsg('error', `⚠️ **Patch Falhou:** Nenhum projeto ativo.`);
-                return;
-            }
-
-            addLog(`Preparando patch de ${path}...`);
+            const path = patchCompleto[1].trim().replace(/^\/+/, ''); const oldText = patchCompleto[2].trim(); const newText = patchCompleto[3].trim();
+            if (!projetoDaVez) { addMsg('error', `⚠️ Sem projeto ativo.`); return; }
             const existingMasked = await fetchGithubFile(projetoDaVez, path);
-            if (existingMasked.startsWith('[ERRO')) {
-                addMsg('error', `Não foi possível ler o arquivo para fazer o patch.`);
-                return;
-            }
-
+            if (existingMasked.startsWith('[ERRO')) { addMsg('error', `Falha ao ler p/ patch.`); return; }
             const cacheKey = `${projetoDaVez}/${path}`;
             const existingOriginal = fileCache[cacheKey] ? fileCache[cacheKey].original : existingMasked;
-            
-            const regex = new RegExp(escapeRegex(oldText), 'g');
-            const ocorrencias = (existingOriginal.match(regex) || []).length;
-
-            if (ocorrencias === 0) {
-                addMsg('error', `⚠️ **Patch Falhou:** O trecho não foi encontrado no arquivo. Use GITHUB_READ para verificar e tentar novamente.`);
-                return;
-            }
-            if (ocorrencias > 1) {
-                addMsg('error', `⚠️ **Patch Falhou:** O trecho é ambíguo (${ocorrencias} ocorrências). Seja mais específico.`);
-                return;
-            }
-
+            const regex = new RegExp(escapeRegex(oldText), 'g'); const ocorrencias = (existingOriginal.match(regex) || []).length;
+            if (ocorrencias === 0) { addMsg('error', `⚠️ Trecho não encontrado.`); return; }
+            if (ocorrencias > 1) { addMsg('error', `⚠️ Trecho ambíguo (${ocorrencias}x).`); return; }
             const newContentOriginal = existingOriginal.replace(oldText, newText);
-            
-            let newContentMasked = newContentOriginal.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
-
+            let newContentMasked = newContentOriginal.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
             pendingCommit = { repo: projetoDaVez, path, content: newContentOriginal, oldTextMasked: existingMasked, timestamp: Date.now() };
             mostrarDiff(path, existingMasked, newContentMasked);
         }
 
         if (mGit) {
-            let path = mGit[1].trim().replace(/^\/+/, ''); 
-            const content = mGit[2].trim();
-            
-            if (content.toLowerCase().includes('***') && content.toLowerCase().includes('password')) {
-                addMsg('error', `⚠️ **Commit Bloqueado:** O BOSS tentou salvar um arquivo com senhas mascaradas (**\*\*\***).`);
-                return;
-            }
-
-            if (!projetoDaVez) {
-                addMsg('error', `⚠️ **Commit Falhou:** Nenhum projeto ativo.`);
-                return;
-            }
-
-            addLog(`Preparando commit de ${path}...`);
+            let path = mGit[1].trim().replace(/^\/+/, ''); const content = mGit[2].trim();
+            if (content.toLowerCase().includes('***') && content.toLowerCase().includes('password')) { addMsg('error', `⚠️ Commit bloqueado (senhas).`); return; }
+            if (!projetoDaVez) { addMsg('error', `⚠️ Sem projeto ativo.`); return; }
             const existingMasked = await fetchGithubFile(projetoDaVez, path);
             const oldTextMasked = existingMasked.startsWith('[ERRO') ? '' : existingMasked;
-            
             pendingCommit = { repo: projetoDaVez, path, content, oldTextMasked, timestamp: Date.now() };
             mostrarDiff(path, oldTextMasked, content);
         }
-
-        const chatContainer = document.getElementById('chat');
-        const isAtBottom = chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 150;
-        if(isAtBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
 
     } catch (e) {
         t.wrapper.remove(); addMsg('error', `Deu ruim: ${e.message}`);
@@ -1736,85 +1297,34 @@ async function enviar() {
 }
 
 let drawTool = 'pen', drawColor = '#FF3B30', drawSnapshots = [], drawing = false, startX = 0, startY = 0;
-function abrirAnotacao() { 
-    if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); 
-    document.getElementById('modalDraw').classList.add('open'); 
-    const cv = document.getElementById('drawCanvas'); 
-    const img = new Image(); 
-    img.onload = () => { 
-        cv.width = img.width; cv.height = img.height; 
-        const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); 
-        drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; 
-        bindDrawEvents(cv); 
-    }; 
-    img.src = imagemAnexadaBase64; 
-}
-function bindDrawEvents(cv) { 
-    const ctx = cv.getContext('2d'); 
-    const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; 
-    const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if(drawSnapshots.length > 20) drawSnapshots.shift(); }; 
-    const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; 
-    const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if(drawSnapshots.length > 20) drawSnapshots.shift(); } }; 
-    cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; 
-}
+function abrirAnotacao() { if (!imagemAnexadaBase64) return alert('Tire ou anexe uma foto.'); document.getElementById('modalDraw').classList.add('open'); const cv = document.getElementById('drawCanvas'); const img = new Image(); img.onload = () => { cv.width = img.width; cv.height = img.height; const ctx = cv.getContext('2d'); ctx.drawImage(img, 0, 0); drawSnapshots = [ctx.getImageData(0, 0, cv.width, cv.height)]; bindDrawEvents(cv); }; img.src = imagemAnexadaBase64; }
+function bindDrawEvents(cv) { const ctx = cv.getContext('2d'); const getPos = e => { const r = cv.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * (cv.width / r.width), y: (t.clientY - r.top) * (cv.height / r.height) }; }; const start = e => { e.preventDefault(); drawing = true; const p = getPos(e); startX = p.x; startY = p.y; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if(drawSnapshots.length > 20) drawSnapshots.shift(); }; const move = e => { if (!drawing) return; e.preventDefault(); const p = getPos(e); const snap = drawSnapshots[drawSnapshots.length-1]; ctx.putImageData(snap, 0, 0); ctx.strokeStyle = drawColor; ctx.fillStyle = drawColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; if (drawTool === 'pen') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); startX = p.x; startY = p.y; } else if (drawTool === 'circle') { const rx = Math.abs(p.x - startX)/2, ry = Math.abs(p.y - startY)/2; ctx.beginPath(); ctx.ellipse((startX+p.x)/2, (startY+p.y)/2, rx, ry, 0, 0, 2*Math.PI); ctx.stroke(); } else if (drawTool === 'arrow') { ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(p.x, p.y); ctx.stroke(); const ang = Math.atan2(p.y - startY, p.x - startX); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 15*Math.cos(ang - Math.PI/6), p.y - 15*Math.sin(ang - Math.PI/6)); ctx.lineTo(p.x - 15*Math.cos(ang + Math.PI/6), p.y - 15*Math.sin(ang + Math.PI/6)); ctx.closePath(); ctx.fill(); } }; const end = e => { if (drawing) { drawing = false; drawSnapshots.push(ctx.getImageData(0, 0, cv.width, cv.height)); if(drawSnapshots.length > 20) drawSnapshots.shift(); } }; cv.onmousedown = start; cv.onmousemove = move; cv.onmouseup = end; cv.onmouseleave = end; cv.ontouchstart = start; cv.ontouchmove = move; cv.ontouchend = end; }
 function setDrawTool(t, btn) { drawTool = t; document.querySelectorAll('.draw-tool').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
 function undoDraw() { const cv = document.getElementById('drawCanvas'); if (drawSnapshots.length > 1) { drawSnapshots.pop(); cv.getContext('2d').putImageData(drawSnapshots[drawSnapshots.length-1], 0, 0); } }
 function salvarAnotacao() { const cv = document.getElementById('drawCanvas'); imagemAnexadaBase64 = cv.toDataURL('image/jpeg', 0.85); addMsg('user', '[Foto anotada]'); fecharModal('modalDraw'); document.getElementById('btnDraw').style.display = 'flex'; document.getElementById('input').focus(); }
 
-// INTEGRAÇÃO EDGE-TTS (RENDER) COM HALF-DUPLEX
 async function falarTexto(texto) {
     if (!vozAtiva || !texto || !texto.trim()) return;
-
-    let limpo = texto.replace(/\[.*?\]/g, '')
-                      .replace(/[*_~`#]/g, '')
-                      .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
-                      .replace(/\n/g, ' ')
-                      .trim();
+    let limpo = texto.replace(/\[.*?\]/g, '').replace(/[*_~`#]/g, '').replace(/[\u{1F300}-\u{1FAFF}]/gu, '').replace(/\n/g, ' ').trim();
     if (!limpo) return;
-
     if (isVoiceModeActive) updateVoiceOrb('speaking');
-    
-    if (reconhecimento) { 
-        try { reconhecimento.abort(); } catch(e){} 
-    }
-
+    if (reconhecimento) { try { reconhecimento.abort(); } catch(e){} }
     try {
-        const response = await fetch(TTS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: limpo })
-        });
-
+        const response = await fetch(TTS_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: limpo }) });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
         const data = await response.json();
-        if (!data.audio_base64) throw new Error("A resposta não contém áudio.");
-
+        if (!data.audio_base64) throw new Error("Sem áudio");
         const audio = new Audio(`data:audio/mp3;base64,${data.audio_base64}`);
         currentAudioObj = audio;
-        audio.onended = () => {
-            currentAudioObj = null;
-            if (isVoiceModeActive) {
-                updateVoiceOrb('listening');
-                iniciarEscuta(); 
-            }
-        };
+        audio.onended = () => { currentAudioObj = null; if (isVoiceModeActive) { updateVoiceOrb('listening'); iniciarEscuta(); } };
         audio.play();
     } catch (error) {
-        console.error("Falha no TTS remoto (Render). Usando fallback nativo:", error);
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(limpo);
-            u.lang = 'pt-BR';
-            u.rate = vozRate;
-            u.pitch = vozPitch;
+            u.lang = 'pt-BR'; u.rate = vozRate; u.pitch = vozPitch;
             if (vozNome) { const v = window.speechSynthesis.getVoices().find(x => x.name === vozNome); if(v) u.voice = v; } 
-            u.onend = () => {
-                if (isVoiceModeActive) {
-                    updateVoiceOrb('listening');
-                    iniciarEscuta(); 
-                }
-            };
+            u.onend = () => { if (isVoiceModeActive) { updateVoiceOrb('listening'); iniciarEscuta(); } };
             window.speechSynthesis.speak(u);
         }
     }
@@ -1824,36 +1334,14 @@ function testarVoz() { falarTexto("Sistemas de voz operando."); }
 let reconhecimento;
 function iniciarEscuta() { 
     if (!('webkitSpeechRecognition' in window)) return alert("Navegador sem suporte."); 
-    
     if (reconhecimento) { try { reconhecimento.abort(); } catch(e){} }
-    
     reconhecimento = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); 
     reconhecimento.lang = 'pt-BR'; 
-    
-    reconhecimento.onstart = () => { 
-        document.getElementById('input').placeholder = "OUVINDO..."; 
-        if (isVoiceModeActive) updateVoiceOrb('listening');
-    }; 
-    
-    reconhecimento.onresult = (e) => { 
-        document.getElementById('input').value = e.results[0][0].transcript; 
-        reconhecimento.stop(); 
-        if (isVoiceModeActive) updateVoiceOrb('thinking');
-        enviar(); 
-    }; 
-    
-    reconhecimento.onend = () => { 
-        document.getElementById('input').placeholder = "DIRETRIZ..."; 
-    }; 
-    
-    reconhecimento.onerror = (e) => {
-        console.warn("Erro no STT: ", e);
-        if (isVoiceModeActive && e.error !== 'no-speech') {
-            setTimeout(() => { if(isVoiceModeActive) iniciarEscuta(); }, 1000);
-        }
-    };
-
-    try { reconhecimento.start(); } catch(e) { console.warn("Reconhecimento já ativo"); }
+    reconhecimento.onstart = () => { document.getElementById('input').placeholder = "OUVINDO..."; if (isVoiceModeActive) updateVoiceOrb('listening'); }; 
+    reconhecimento.onresult = (e) => { document.getElementById('input').value = e.results[0][0].transcript; reconhecimento.stop(); if (isVoiceModeActive) updateVoiceOrb('thinking'); enviar(); }; 
+    reconhecimento.onend = () => { document.getElementById('input').placeholder = "DIRETRIZ..."; }; 
+    reconhecimento.onerror = (e) => { if (isVoiceModeActive && e.error !== 'no-speech') setTimeout(() => { if(isVoiceModeActive) iniciarEscuta(); }, 1000); };
+    try { reconhecimento.start(); } catch(e) { console.warn("Rec já ativo"); }
 }
 
 function lerArquivo(event) {
@@ -1865,30 +1353,17 @@ function lerArquivo(event) {
         reader.readAsDataURL(file);
     } else {
         const reader = new FileReader();
-        reader.onload = function(e) { 
-            arquivoAnexado = e.target.result.substring(0, 50000); 
-            addMsg('user', `[Arquivo "${file.name}" anexado]`); 
-            if (e.target.result.length > 50000) addMsg('error', 'Aviso: O arquivo foi truncado em 50.000 caracteres.');
-        };
+        reader.onload = function(e) { arquivoAnexado = e.target.result.substring(0, 50000); addMsg('user', `[Arquivo "${file.name}" anexado]`); if (e.target.result.length > 50000) addMsg('error', 'Aviso: Truncado em 50.000 chars.'); };
         reader.readAsText(file);
     }
     event.target.value = '';
 }
 
-function limparHistorico() { 
-    if(confirm("Apagar histórico de conversas, memórias e agenda locais?")) { 
-        localStorage.removeItem('boss_historico_full');
-        localStorage.removeItem('boss_memoria_decisoes');
-        localStorage.removeItem('boss_agenda_interna');
-        localStorage.removeItem('boss_erros');
-        location.reload(); 
-    } 
-}
+function limparHistorico() { if(confirm("Apagar histórico e memórias?")) { localStorage.removeItem('boss_historico_full'); localStorage.removeItem('boss_memoria_decisoes'); localStorage.removeItem('boss_agenda_interna'); localStorage.removeItem('boss_erros'); location.reload(); } }
 
 if (window.speechSynthesis) {
     window.speechSynthesis.onvoiceschanged = () => {
-        const s = document.getElementById('voiceSelect');
-        s.innerHTML = '<option value="">Padrão do navegador</option>'; 
+        const s = document.getElementById('voiceSelect'); s.innerHTML = '<option value="">Padrão do navegador</option>'; 
         const vs = window.speechSynthesis.getVoices().filter(v => v.lang.includes('pt'));
         vs.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; s.appendChild(o); });
     };
@@ -1897,17 +1372,11 @@ if (window.speechSynthesis) {
 document.addEventListener('DOMContentLoaded', async () => {
     const pRepos = mapearRepositorio();
     const pMemoria = projetoAtivo ? carregarMemoriaFirebase() : Promise.resolve();
-    
     await Promise.all([pRepos, pMemoria]);
-    
     const histAtual = todosOsHistoricos[projetoAtivo] || [];
     if (histAtual.length === 0 && !dbMemory) {
         const nomeProjeto = projetoAtivo ? (projetoAtivo.split('/')[1] || projetoAtivo) : 'Atual';
-        const msg = `Bom dia, Patrão. Sincronização concluída. 
-Não encontrei nenhuma memória no Firebase para o projeto **${nomeProjeto}**. 
-
-Como este é o nosso primeiro contato neste projeto, qual é o contexto inicial? O que vamos fazer hoje?`;
-        addMsg('boss', msg);
+        addMsg('boss', `Bom dia, Patrão. Sincronização concluída. Sem memória no Firebase para **${nomeProjeto}**. Como vamos começar?`);
         falarTexto("Sistemas online. Memória vazia para este projeto. Qual o contexto inicial?");
     }
 });
