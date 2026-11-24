@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v9.1)</title>
+<title>BOSS - EXODRIVE (v9.2)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -380,7 +380,7 @@ let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
 
 let todosOsHistoricos = JSON.parse(localStorage.getItem('boss_historico_full')) || {};
 let historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
-let historicoRecenteNuvem = []; // Buffer de 50 interações da nuvem
+let historicoRecenteNuvem = []; // Buffer de 50 interações
 
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
@@ -394,6 +394,7 @@ let listaRepos = [];
 let cacheTrees = {}; 
 let fileCache = {};  
 let pendingCommit = null;
+let isMemoryLoaded = false; // Controle de Race Condition
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let lastTokenReset = localStorage.getItem('last_token_reset') || '';
@@ -638,7 +639,7 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
         
         const textoCurto = texto.length > 300 ? texto.substring(0, 300) + '...' : texto;
         historicoRecenteNuvem.push({ role: tipo === 'user' ? 'user' : 'assistant', content: textoCurto, time: Date.now() });
-        if (historicoRecenteNuvem.length > 20) historicoRecenteNuvem.shift();
+        if (historicoRecenteNuvem.length > 50) historicoRecenteNuvem.shift(); // Restaurado para 50
         salvarHistoricoRecenteNuvem();
         atualizarTelinhaMemoria();
         if (proj === projetoAtivo) atualizarHUD();
@@ -687,6 +688,7 @@ async function carregarMemoriaFirebase() {
     if (!projetoAtivo || !window.db) return;
     try {
         addLog(`Buscando memória no Firebase...`);
+        isMemoryLoaded = false;
         
         const docRef = window.doc(window.db, "projetos", projetoAtivo);
         const docSnap = await window.getDoc(docRef);
@@ -704,12 +706,16 @@ async function carregarMemoriaFirebase() {
         if (histSnap.exists() && histSnap.data().mensagens) {
             historicoRecenteNuvem = histSnap.data().mensagens;
             atualizarTelinhaMemoria();
-            addLog(`Histórico de nuvem sincronizado (${historicoRecenteNuvem.length} msgs).`);
+            addLog(`Histórico sincronizado (${historicoRecenteNuvem.length} msgs).`);
+        } else {
+            historicoRecenteNuvem = []; // Limpa se não houver
         }
 
+        isMemoryLoaded = true;
         addLog(`Memória carregada com sucesso!`);
     } catch (e) {
         console.error("Erro Firebase: ", e);
+        isMemoryLoaded = true;
         addLog("Erro ao ler Firebase.");
     }
 }
@@ -784,6 +790,9 @@ ${memoriaRag ? `Conversas antigas relevantes:\n${memoriaRag}` : 'Nenhuma.'}
 
 === AGENDA ===
 ${agendaInterna.length > 0 ? agendaInterna.join(', ') : 'Nenhuma tarefa.'}
+
+=== REGRA DE CONTEXTO ===
+Você TEM MEMÓRIA das últimas mensagens (o histórico recente está no seu contexto). Se o usuário perguntar "do que estávamos falando", leia as mensagens anteriores e responda. NUNCA diga que não tem memória ou que é uma IA sem contexto.
 
 === REGRA DE EXECUÇÃO (CRÍTICO) ===
 NUNCA peça permissão para usar uma ferramenta. Execute-a imediatamente.
@@ -893,7 +902,6 @@ async function mapearRepositorio() {
         document.getElementById('metric-index-status').style.color = '#10b981';
         atualizarHUD();
         
-        // Popula o Seletor Manual de Projetos
         const select = document.getElementById('projectSelect');
         select.innerHTML = '<option value="">-- Selecione um Repositório --</option>';
         listaRepos.forEach(repo => {
@@ -902,7 +910,7 @@ async function mapearRepositorio() {
             opt.textContent = repo.split('/')[1];
             select.appendChild(opt);
         });
-        select.value = projetoAtivo; // Marca o atual
+        select.value = projetoAtivo; 
 
         if (projetoAtivo) carregarMemoriaFirebase();
     } catch(e) {
@@ -916,8 +924,8 @@ function mudarProjetoManual(novoRepo) {
     projetoAtivo = novoRepo;
     localStorage.setItem('boss_active_repo', projetoAtivo);
     atualizarDisplayProjeto();
-    document.getElementById('chat').innerHTML = ''; // Limpa a tela
-    historicoRecenteNuvem = []; // Limpa a memória recente atual
+    document.getElementById('chat').innerHTML = ''; 
+    historicoRecenteNuvem = []; 
     dbMemory = null;
     addLog(`Foco alterado manualmente para ${projetoAtivo}`);
     carregarMemoriaFirebase();
@@ -1036,11 +1044,11 @@ function testeDeFumaca() {
         const html = document.documentElement.innerHTML;
         if (html.includes('/ 3.5')) sucessos.push("✅ Tokens OK");
         if (html.includes('DEEPSEEK_URL')) sucessos.push("✅ DeepSeek OK");
-        if (html.includes('VIN_DECODE')) sucessos.push("✅ Ferramenta VIN_DECODE OK");
-        if (html.includes('DTC_LOOKUP')) sucessos.push("✅ Ferramenta DTC_LOOKUP OK");
-        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.1) OK");
+        if (html.includes('VIN_DECODE')) sucessos.push("✅ VIN_DECODE OK");
+        if (html.includes('DTC_LOOKUP')) sucessos.push("✅ DTC_LOOKUP OK");
+        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.2) OK");
         if (html.includes('voiceModeOverlay')) sucessos.push("✅ Modo Voz OK");
-        if (html.includes('mudarProjetoManual')) sucessos.push("✅ Seletor Manual de Foco OK");
+        if (html.includes('mudarProjetoManual')) sucessos.push("✅ Seletor Manual OK");
         
         t.wrapper.remove();
         let msgFinal = "📋 **DIAGNÓSTICO**\n\n**OK:**\n" + sucessos.join('\n') + "\n\n**Falhas:**\n" + (erros.length ? erros.join('\n') : 'Nenhuma.');
@@ -1054,6 +1062,17 @@ async function enviar() {
     const input = document.getElementById('input');
     const texto = input.value.trim();
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
+
+    // PROTEÇÃO CONTRA RACE CONDITION: Se a memória ainda não carregou, avisa.
+    if (!isMemoryLoaded && projetoDaVez) {
+        addLog("Aguarde a memória sincronizar antes de enviar.");
+        if (!dbMemory && historicoRecenteNuvem.length === 0) {
+            // Se realmente não tem nada no Firebase, deixa passar.
+        } else {
+            addMsg('error', 'Aguarde 2 segundos enquanto sincronizo a memória do Firebase...');
+            return;
+        }
+    }
 
     if (isVoiceModeActive) updateVoiceOrb('thinking');
     input.value = '';
@@ -1095,7 +1114,6 @@ async function enviar() {
             let resposta = data.choices?.[0]?.message?.content?.trim() || "";
             if (resposta) ultimaRespostaRecebida = resposta;
 
-            // --- FERRAMENTA: VIN_DECODE ---
             const vinM = resposta.match(/\[VIN_DECODE:\s*([A-HJ-NPR-Z0-9]{17})\]/i);
             if (vinM) {
                 const vin = vinM[1].toUpperCase();
@@ -1114,7 +1132,6 @@ async function enviar() {
                 continue;
             }
 
-            // --- FERRAMENTA: DTC_LOOKUP ---
             const dtcM = resposta.match(/\[DTC_LOOKUP:\s*([PBCU]\d{4})\]/i);
             if (dtcM) {
                 const dtc = dtcM[1].toUpperCase();
@@ -1139,7 +1156,6 @@ async function enviar() {
                 continue;
             }
 
-            // --- FERRAMENTAS PADRÃO ---
             const webM = resposta.match(/\[WEB_SEARCH:\s*(.*?)\]/);
             if (webM && tentativas === 1) {
                 const sr = await fetch(`${WORKER_URL}/web-search?q=${encodeURIComponent(webM[1])}`);
@@ -1399,6 +1415,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pRepos = mapearRepositorio();
     const pMemoria = projetoAtivo ? carregarMemoriaFirebase() : Promise.resolve();
     await Promise.all([pRepos, pMemoria]);
+    isMemoryLoaded = true;
+    
     const histAtual = todosOsHistoricos[projetoAtivo] || [];
     if (histAtual.length === 0 && !dbMemory) {
         const nomeProjeto = projetoAtivo ? (projetoAtivo.split('/')[1] || projetoAtivo) : 'Atual';
