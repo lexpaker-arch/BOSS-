@@ -1063,15 +1063,11 @@ async function enviar() {
     const texto = input.value.trim();
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
 
-    // PROTEÇÃO CONTRA RACE CONDITION: Se a memória ainda não carregou, avisa.
+    // PROTEÇÃO CONTRA RACE CONDITION: Se a memória ainda não carregou, bloqueia.
     if (!isMemoryLoaded && projetoDaVez) {
         addLog("Aguarde a memória sincronizar antes de enviar.");
-        if (!dbMemory && historicoRecenteNuvem.length === 0) {
-            // Se realmente não tem nada no Firebase, deixa passar.
-        } else {
-            addMsg('error', 'Aguarde 2 segundos enquanto sincronizo a memória do Firebase...');
-            return;
-        }
+        addMsg('error', 'Aguarde 2 segundos enquanto sincronizo a memória do Firebase...');
+        return;
     }
 
     if (isVoiceModeActive) updateVoiceOrb('thinking');
