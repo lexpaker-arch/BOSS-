@@ -721,10 +721,10 @@ async function carregarMemoriaFirebase() {
 }
 
 async function salvarMemoriaFirebase(resumo, fatosJson) {
-    if (!projetoAtivo || !window.db) return;
+    if (!window.db) return;
     try {
-        addLog(`Salvando memória no Firebase...`);
-        const docRef = window.doc(window.db, "projetos", projetoAtivo);
+        addLog(`Salvando memória no Firebase (global)...`);
+        const docRef = window.doc(window.db, "memoria_global", "core");
         const docSnap = await window.getDoc(docRef);
         let fatosAntigos = {};
         if(docSnap.exists() && docSnap.data().fatos_tecnicos) { fatosAntigos = docSnap.data().fatos_tecnicos; }
