@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v9.2)</title>
+<title>BOSS - EXODRIVE (v9.4)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -286,11 +286,15 @@
         <div class="modal-header"><span>MEMÓRIA DE LONGO PRAZO (FIREBASE)</span><button style="background:none;border:none;color:var(--text-main);cursor:pointer;font-size:20px;" onclick="fecharModal('modalMemoria')">×</button></div>
         <div class="modal-body">
             <div style="width:100%; margin-bottom:15px;">
-                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">FATOS TÉCNICOS</h4>
+                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">DIRETRIZ GLOBAL (TODOS OS PROJETOS)</h4>
+                <div id="memoriaGlobalList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:#F1C40F; line-height:1.8; background:rgba(0,0,0,0.3); padding:10px; border-radius:4px;"></div>
+            </div>
+            <div style="width:100%; margin-bottom:15px; border-top:1px solid #333; padding-top:15px;">
+                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">FATOS TÉCNICOS (PROJETO ATUAL)</h4>
                 <div id="memoriaDecisoesList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:var(--text-main); line-height:1.8;"></div>
             </div>
             <div style="width:100%; border-top: 1px solid #333; padding-top:15px;">
-                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">RESUMO DO HISTÓRICO</h4>
+                <h4 style="color:var(--accent); font-size:12px; margin-bottom:10px;">RESUMO DO HISTÓRICO (PROJETO ATUAL)</h4>
                 <div id="memoriaHistoricoList" style="width:100%; font-family:var(--font-mono); font-size:12px; color:#888; line-height:1.8; max-height:200px; overflow-y:auto;"></div>
             </div>
         </div>
@@ -381,6 +385,7 @@ let projetoAtivo = localStorage.getItem('boss_active_repo') || '';
 let todosOsHistoricos = JSON.parse(localStorage.getItem('boss_historico_full')) || {};
 let historicoCompleto = todosOsHistoricos[projetoAtivo] || [];
 let historicoRecenteNuvem = []; // Buffer de 50 interações
+let dbGlobalMemory = null; // Variável da Memória Global
 
 let memoriaDecisoes = JSON.parse(localStorage.getItem('boss_memoria_decisoes')) || [];
 let agendaInterna = JSON.parse(localStorage.getItem('boss_agenda_interna')) || []; 
@@ -394,7 +399,7 @@ let listaRepos = [];
 let cacheTrees = {}; 
 let fileCache = {};  
 let pendingCommit = null;
-let isMemoryLoaded = false; // Controle de Race Condition
+let isMemoryLoaded = false;
 
 let metricTokens = parseInt(localStorage.getItem('metric_tokens')) || 0;
 let lastTokenReset = localStorage.getItem('last_token_reset') || '';
@@ -561,6 +566,13 @@ function escapeHTML(str) {
 }
 
 function mostrarMemoria() {
+    const listGlobal = document.getElementById('memoriaGlobalList');
+    if (dbGlobalMemory && dbGlobalMemory.diario_bordo) {
+        listGlobal.innerHTML = `<div style="white-space:pre-wrap;">${escapeHTML(dbGlobalMemory.diario_bordo)}</div>`;
+    } else {
+        listGlobal.innerHTML = "<span style='color:var(--text-muted)'>Nenhuma diretriz global salva ainda.</span>";
+    }
+
     const listD = document.getElementById('memoriaDecisoesList');
     if (memoriaDecisoes.length === 0) { listD.innerHTML = "Nenhum fato salvo."; }
     else {
@@ -639,7 +651,7 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
         
         const textoCurto = texto.length > 300 ? texto.substring(0, 300) + '...' : texto;
         historicoRecenteNuvem.push({ role: tipo === 'user' ? 'user' : 'assistant', content: textoCurto, time: Date.now() });
-        if (historicoRecenteNuvem.length > 50) historicoRecenteNuvem.shift(); // Restaurado para 50
+        if (historicoRecenteNuvem.length > 50) historicoRecenteNuvem.shift();
         salvarHistoricoRecenteNuvem();
         atualizarTelinhaMemoria();
         if (proj === projetoAtivo) atualizarHUD();
@@ -650,7 +662,7 @@ function addMsg(tipo, texto, salvar = true, proj = projetoAtivo) {
 async function salvarHistoricoRecenteNuvem() {
     if (!projetoAtivo || !window.db) return;
     try {
-        const docRef = window.doc(window.db, "historico", projetoAtivo.replace(/\//g, '_'));
+        const docRef = window.doc(window.db, "historico", projetoAtivo);
         await window.setDoc(docRef, { mensagens: historicoRecenteNuvem }, { merge: true });
     } catch(e) { console.error("Erro ao salvar histórico recente: ", e); }
 }
@@ -690,17 +702,29 @@ async function carregarMemoriaFirebase() {
         addLog(`Buscando memória no Firebase...`);
         isMemoryLoaded = false;
         
+        // 1. Projeto Atual
         const docRef = window.doc(window.db, "projetos", projetoAtivo);
         const docSnap = await window.getDoc(docRef);
         if (docSnap.exists()) {
             dbMemory = docSnap.data();
             if (dbMemory.diario_bordo) {
-                setTimeout(() => addMsg('boss', `🧠 **Memória recuperada do Firebase**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
+                setTimeout(() => addMsg('boss', `🧠 **Memória do Projeto recuperada**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
             }
         } else {
             dbMemory = null;
         }
 
+        // 2. Memória Global
+        try {
+            const globalRef = window.doc(window.db, "memoria_global", "core");
+            const globalSnap = await window.getDoc(globalRef);
+            if (globalSnap.exists()) {
+                dbGlobalMemory = globalSnap.data();
+                addLog("Memória Global carregada com sucesso.");
+            }
+        } catch (eGlobal) { console.warn("Sem memória global", eGlobal); }
+
+        // 3. Histórico Recente
         const histRef = window.doc(window.db, "historico", projetoAtivo);
         const histSnap = await window.getDoc(histRef);
         if (histSnap.exists() && histSnap.data().mensagens) {
@@ -708,11 +732,10 @@ async function carregarMemoriaFirebase() {
             atualizarTelinhaMemoria();
             addLog(`Histórico sincronizado (${historicoRecenteNuvem.length} msgs).`);
         } else {
-            historicoRecenteNuvem = []; // Limpa se não houver
+            historicoRecenteNuvem = []; 
         }
 
         isMemoryLoaded = true;
-        addLog(`Memória carregada com sucesso!`);
     } catch (e) {
         console.error("Erro Firebase: ", e);
         isMemoryLoaded = true;
@@ -721,10 +744,12 @@ async function carregarMemoriaFirebase() {
 }
 
 async function salvarMemoriaFirebase(resumo, fatosJson) {
-    if (!window.db) return;
+    if (!projetoAtivo || !window.db) return;
     try {
-        addLog(`Salvando memória no Firebase (global)...`);
-        const docRef = window.doc(window.db, "memoria_global", "core");
+        addLog(`Salvando memória no Firebase...`);
+        
+        // 1. Salva no Projeto Atual
+        const docRef = window.doc(window.db, "projetos", projetoAtivo);
         const docSnap = await window.getDoc(docRef);
         let fatosAntigos = {};
         if(docSnap.exists() && docSnap.data().fatos_tecnicos) { fatosAntigos = docSnap.data().fatos_tecnicos; }
@@ -736,8 +761,16 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
             ultima_atualizacao: new Date().toISOString()
         }, { merge: true });
         
-        addLog(`Memória salva no Firebase!`);
+        // 2. Salva na Memória Global (Coleção "memoria_global", Documento "core")
+        const globalRef = window.doc(window.db, "memoria_global", "core");
+        await window.setDoc(globalRef, {
+            diario_bordo: resumo, // Ou você pode concatenar se quiser manter histórico, mas o merge substitui.
+            ultima_atualizacao: new Date().toISOString()
+        }, { merge: true });
+
+        addLog(`Memória salva no Firebase (Projeto + Global)!`);
         dbMemory = { diario_bordo: resumo, fatos_tecnicos: novosFatos };
+        dbGlobalMemory = { diario_bordo: resumo };
     } catch (e) {
         console.error("Erro ao salvar Firebase: ", e);
     }
@@ -772,8 +805,14 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 
 function buildSystemPrompt(isConversational = false, memoriaRag = "") {
     let memFirebaseStr = "";
+    
+    // Injeção da Memória Global
+    if (dbGlobalMemory && dbGlobalMemory.diario_bordo) {
+        memFirebaseStr += `- DIRETRIZ GLOBAL (Válida para TODOS os projetos): ${dbGlobalMemory.diario_bordo}\n\n`;
+    }
+
     if (dbMemory) {
-        if (dbMemory.diario_bordo) memFirebaseStr += `- Diário de Bordo Anterior: ${dbMemory.diario_bordo}\n`;
+        if (dbMemory.diario_bordo) memFirebaseStr += `- Diário de Bordo Anterior (Projeto): ${dbMemory.diario_bordo}\n`;
         if (dbMemory.fatos_tecnicos) memFirebaseStr += `- Fatos Técnicos (JSON): ${JSON.stringify(dbMemory.fatos_tecnicos)}\n`;
     }
 
@@ -927,6 +966,7 @@ function mudarProjetoManual(novoRepo) {
     document.getElementById('chat').innerHTML = ''; 
     historicoRecenteNuvem = []; 
     dbMemory = null;
+    dbGlobalMemory = null;
     addLog(`Foco alterado manualmente para ${projetoAtivo}`);
     carregarMemoriaFirebase();
     addMsg('boss', `Foco alterado para **${projetoAtivo.split('/')[1]}**. Pronto para trabalhar.`);
@@ -959,7 +999,7 @@ async function fetchGithubFile(repo, path) {
         if (data.content) { 
             const bytes = Uint8Array.from(atob(data.content), c => c.charCodeAt(0));
             let txt = new TextDecoder('utf-8').decode(bytes); 
-            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
+            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
             fileCache[key] = { original: txt, masked: masked };
             atualizarHUD(); 
             return masked; 
@@ -1046,9 +1086,10 @@ function testeDeFumaca() {
         if (html.includes('DEEPSEEK_URL')) sucessos.push("✅ DeepSeek OK");
         if (html.includes('VIN_DECODE')) sucessos.push("✅ VIN_DECODE OK");
         if (html.includes('DTC_LOOKUP')) sucessos.push("✅ DTC_LOOKUP OK");
-        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.2) OK");
+        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem OK");
         if (html.includes('voiceModeOverlay')) sucessos.push("✅ Modo Voz OK");
         if (html.includes('mudarProjetoManual')) sucessos.push("✅ Seletor Manual OK");
+        if (html.includes('dbGlobalMemory')) sucessos.push("✅ Memória Global OK");
         
         t.wrapper.remove();
         let msgFinal = "📋 **DIAGNÓSTICO**\n\n**OK:**\n" + sucessos.join('\n') + "\n\n**Falhas:**\n" + (erros.length ? erros.join('\n') : 'Nenhuma.');
@@ -1063,11 +1104,14 @@ async function enviar() {
     const texto = input.value.trim();
     if (!texto && !imagemAnexadaBase64 && !arquivoAnexado) return;
 
-    // PROTEÇÃO CONTRA RACE CONDITION: Se a memória ainda não carregou, bloqueia.
     if (!isMemoryLoaded && projetoDaVez) {
         addLog("Aguarde a memória sincronizar antes de enviar.");
-        addMsg('error', 'Aguarde 2 segundos enquanto sincronizo a memória do Firebase...');
-        return;
+        if (!dbMemory && historicoRecenteNuvem.length === 0) {
+            // Se realmente não tem nada, deixa passar
+        } else {
+            addMsg('error', 'Aguarde 2 segundos enquanto sincronizo a memória do Firebase...');
+            return;
+        }
     }
 
     if (isVoiceModeActive) updateVoiceOrb('thinking');
