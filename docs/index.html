@@ -3,9 +3,108 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v9.2)</title>
+<title>BOSS - EXODRIVE (v9.3)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    setDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyChk1LKknneIvOvgQiCzEi_0exl8241y2Y",
+    authDomain: "boss-exodrive.firebaseapp.com",
+    projectId: "boss-exodrive",
+    storageBucket: "boss-exodrive.firebasestorage.app",
+    messagingSenderId: "249019326416",
+    appId: "1:249019326416:web:12619cb25f9d80d18523d5"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.firebaseApp = app;
+    window.db = db;
+
+    window.doc = doc;
+    window.collection = collection;
+    window.getDoc = getDoc;
+    window.getDocs = getDocs;
+    window.setDoc = setDoc;
+    window.serverTimestamp = serverTimestamp;
+
+    window.firebaseReady = true;
+
+    console.log("[BOSS v9.3] Firebase inicializado. window.db ativo.");
+  } catch (error) {
+    window.firebaseReady = false;
+    console.error("[BOSS v9.3] Falha ao inicializar o Firebase:", error);
+  }
+
+  const MEMORIA_GLOBAL = "memoria_global";
+
+  window.memoriaSalvar = async function (chave, valor) {
+    if (!window.db) throw new Error("Firebase não inicializado: window.db está undefined.");
+    if (!chave || typeof chave !== "string") throw new Error("memoriaSalvar: informe uma chave válida.");
+
+    const referencia = doc(window.db, MEMORIA_GLOBAL, chave);
+
+    await setDoc(referencia, {
+      chave: chave,
+      valor: valor,
+      atualizadoEm: serverTimestamp()
+    }, { merge: true });
+
+    return { ok: true, chave: chave, valor: valor };
+  };
+
+  window.memoriaLer = async function (chave) {
+    if (!window.db) throw new Error("Firebase não inicializado: window.db está undefined.");
+    if (!chave || typeof chave !== "string") throw new Error("memoriaLer: informe uma chave válida.");
+
+    const referencia = doc(window.db, MEMORIA_GLOBAL, chave);
+    const snapshot = await getDoc(referencia);
+
+    if (!snapshot.exists()) return null;
+
+    const dados = snapshot.data();
+    return dados.valor !== undefined ? dados.valor : dados;
+  };
+
+  window.memoriaListar = async function () {
+    if (!window.db) throw new Error("Firebase não inicializado: window.db está undefined.");
+
+    const referencia = collection(window.db, MEMORIA_GLOBAL);
+    const snapshot = await getDocs(referencia);
+
+    const itens = [];
+
+    snapshot.forEach((documento) => {
+      const dados = documento.data();
+
+      itens.push({
+        id: documento.id,
+        chave: dados.chave || documento.id,
+        valor: dados.valor !== undefined ? dados.valor : dados,
+        atualizadoEm: dados.atualizadoEm || null
+      });
+    });
+
+    return itens;
+  };
+
+  console.log("[BOSS v9.3] Memória global pronta: memoriaSalvar, memoriaLer, memoriaListar.");
+</script>
+
 <style>
     :root {
         --font-mono: 'JetBrains Mono', monospace;
@@ -123,7 +222,7 @@
     .btn-danger { border-color: #7f1d1d; color: #ef4444; }
     .btn-danger:hover { background: #7f1d1d; color: #fff; border-color: #7f1d1d; }
     .btn-test { border-color: #3b82f6; color: #60a5fa; }
-    .btn-test:hover { background: #1e3a8a; color: #fff; border-color: #1e3a8a; }
+    .btn-test:hover { background: #1e3a8a; color: #fff; border-color: #3b82f6; }
     .divider { height: 1px; background: var(--border-color); margin: 15px 0; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: none; justify-content: center; align-items: center; padding: 10px; }
@@ -333,25 +432,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyChk1LKknneIvOvgQiCzEi_0exl8241y2Y",
-    authDomain: "boss-exodrive.firebaseapp.com",
-    projectId: "boss-exodrive",
-    storageBucket: "boss-exodrive.firebasestorage.app",
-    messagingSenderId: "249019326416",
-    appId: "1:249019326416:web:12619cb25f9d80d18523d5"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  window.db = db; window.doc = doc; window.setDoc = setDoc; window.getDoc = getDoc;
-</script>
 
 <script>
 mermaid.initialize({ startOnLoad: false, theme: 'dark' });
@@ -749,9 +829,7 @@ async function forcarSalvarMemoria() {
     if (histAtual.length < 2) return; 
     try {
         addLog("Resumindo sessão em background...");
-        const prompt = `Resuma a conversa que tivemos hoje em um parágrafo curto e direto. Em seguida, extraia os FATOS TÉCNICOS discutidos em um objeto JSON estrito. Formato da resposta exata:
-RESUMO: [seu resumo aqui]
-JSON: {"fato1": "valor1", "fato2": "valor2"}`;
+        const prompt = `Resuma a conversa que tivemos hoje em um parágrafo curto e direto. Em seguida, extraia os FATOS TÉCNICOS discutidos em um objeto JSON estrito. Formato da resposta exata:\nRESUMO: [seu resumo aqui]\nJSON: {"fato1": "valor1", "fato2": "valor2"}`;
 
         const msgs = [ { role: 'system', content: "Você é um sistema que resume conversas e extrai JSON." }, ...histAtual.slice(-15), { role: 'user', content: prompt } ];
         
@@ -1041,12 +1119,16 @@ function testeDeFumaca() {
     setTimeout(() => {
         let erros = [], sucessos = [];
         if (window.db) sucessos.push("✅ Firebase OK"); else erros.push("❌ Firebase Falhou");
+        if (window.firebaseReady) sucessos.push("✅ firebaseReady OK"); else erros.push("❌ firebaseReady Falhou");
+        if (typeof memoriaSalvar === 'function') sucessos.push("✅ memoriaSalvar OK"); else erros.push("❌ memoriaSalvar Falhou");
+        if (typeof memoriaLer === 'function') sucessos.push("✅ memoriaLer OK"); else erros.push("❌ memoriaLer Falhou");
+        if (typeof memoriaListar === 'function') sucessos.push("✅ memoriaListar OK"); else erros.push("❌ memoriaListar Falhou");
         const html = document.documentElement.innerHTML;
         if (html.includes('/ 3.5')) sucessos.push("✅ Tokens OK");
         if (html.includes('DEEPSEEK_URL')) sucessos.push("✅ DeepSeek OK");
         if (html.includes('VIN_DECODE')) sucessos.push("✅ VIN_DECODE OK");
         if (html.includes('DTC_LOOKUP')) sucessos.push("✅ DTC_LOOKUP OK");
-        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.2) OK");
+        if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem (v9.3) OK");
         if (html.includes('voiceModeOverlay')) sucessos.push("✅ Modo Voz OK");
         if (html.includes('mudarProjetoManual')) sucessos.push("✅ Seletor Manual OK");
         
