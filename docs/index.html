@@ -685,30 +685,34 @@ function buscarMemoriaAntiga(termo, proj = projetoAtivo) {
 }
 
 async function carregarMemoriaFirebase() {
-    if (!projetoAtivo || !window.db) return;
+    if (!window.db) return;
     try {
-        addLog(`Buscando memória no Firebase...`);
+        addLog(`Buscando memória global no Firebase...`);
         isMemoryLoaded = false;
-        
-        const docRef = window.doc(window.db, "projetos", projetoAtivo);
-        const docSnap = await window.getDoc(docRef);
-        if (docSnap.exists()) {
-            dbMemory = docSnap.data();
+
+        // 1) MEMÓRIA GLOBAL (independente de projeto)
+        const globalRef = window.doc(window.db, "memoria_global", "core");
+        const globalSnap = await window.getDoc(globalRef);
+        if (globalSnap.exists()) {
+            dbMemory = globalSnap.data();
             if (dbMemory.diario_bordo) {
-                setTimeout(() => addMsg('boss', `🧠 **Memória recuperada do Firebase**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
+                setTimeout(() => addMsg('boss', `🧠 **Memória global recuperada**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
             }
         } else {
             dbMemory = null;
         }
 
-        const histRef = window.doc(window.db, "historico", projetoAtivo);
-        const histSnap = await window.getDoc(histRef);
-        if (histSnap.exists() && histSnap.data().mensagens) {
-            historicoRecenteNuvem = histSnap.data().mensagens;
-            atualizarTelinhaMemoria();
-            addLog(`Histórico sincronizado (${historicoRecenteNuvem.length} msgs).`);
-        } else {
-            historicoRecenteNuvem = []; // Limpa se não houver
+        // 2) HISTÓRICO RECENTE (por projeto — se houver projeto ativo)
+        if (projetoAtivo) {
+            const histRef = window.doc(window.db, "historico", projetoAtivo);
+            const histSnap = await window.getDoc(histRef);
+            if (histSnap.exists() && histSnap.data().mensagens) {
+                historicoRecenteNuvem = histSnap.data().mensagens;
+                atualizarTelinhaMemoria();
+                addLog(`Histórico sincronizado (${historicoRecenteNuvem.length} msgs).`);
+            } else {
+                historicoRecenteNuvem = [];
+            }
         }
 
         isMemoryLoaded = true;
