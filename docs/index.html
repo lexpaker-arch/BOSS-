@@ -685,34 +685,30 @@ function buscarMemoriaAntiga(termo, proj = projetoAtivo) {
 }
 
 async function carregarMemoriaFirebase() {
-    if (!window.db) return;
+    if (!projetoAtivo || !window.db) return;
     try {
-        addLog(`Buscando memória global no Firebase...`);
+        addLog(`Buscando memória no Firebase...`);
         isMemoryLoaded = false;
-
-        // 1) MEMÓRIA GLOBAL (independente de projeto)
-        const globalRef = window.doc(window.db, "memoria_global", "core");
-        const globalSnap = await window.getDoc(globalRef);
-        if (globalSnap.exists()) {
-            dbMemory = globalSnap.data();
+        
+        const docRef = window.doc(window.db, "projetos", projetoAtivo);
+        const docSnap = await window.getDoc(docRef);
+        if (docSnap.exists()) {
+            dbMemory = docSnap.data();
             if (dbMemory.diario_bordo) {
-                setTimeout(() => addMsg('boss', `🧠 **Memória global recuperada**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
+                setTimeout(() => addMsg('boss', `🧠 **Memória recuperada do Firebase**\n\nÚltima sessão:\n${dbMemory.diario_bordo}`), 1000);
             }
         } else {
             dbMemory = null;
         }
 
-        // 2) HISTÓRICO RECENTE (por projeto — se houver projeto ativo)
-        if (projetoAtivo) {
-            const histRef = window.doc(window.db, "historico", projetoAtivo);
-            const histSnap = await window.getDoc(histRef);
-            if (histSnap.exists() && histSnap.data().mensagens) {
-                historicoRecenteNuvem = histSnap.data().mensagens;
-                atualizarTelinhaMemoria();
-                addLog(`Histórico sincronizado (${historicoRecenteNuvem.length} msgs).`);
-            } else {
-                historicoRecenteNuvem = [];
-            }
+        const histRef = window.doc(window.db, "historico", projetoAtivo);
+        const histSnap = await window.getDoc(histRef);
+        if (histSnap.exists() && histSnap.data().mensagens) {
+            historicoRecenteNuvem = histSnap.data().mensagens;
+            atualizarTelinhaMemoria();
+            addLog(`Histórico sincronizado (${historicoRecenteNuvem.length} msgs).`);
+        } else {
+            historicoRecenteNuvem = []; // Limpa se não houver
         }
 
         isMemoryLoaded = true;
@@ -963,7 +959,7 @@ async function fetchGithubFile(repo, path) {
         if (data.content) { 
             const bytes = Uint8Array.from(atob(data.content), c => c.charCodeAt(0));
             let txt = new TextDecoder('utf-8').decode(bytes); 
-            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret|api[_-]?key)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
+            let masked = txt.replace(/(storePassword|keyPassword|password|senha|token|secret)\s*[:=]\s*["']([^"']+)["']/gi, '$1 = "***"');
             fileCache[key] = { original: txt, masked: masked };
             atualizarHUD(); 
             return masked; 
