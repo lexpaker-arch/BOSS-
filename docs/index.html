@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BOSS - EXODRIVE (v9.4)</title>
+<title>BOSS - EXODRIVE (v9.5)</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -714,13 +714,16 @@ async function carregarMemoriaFirebase() {
             dbMemory = null;
         }
 
-        // 2. Memória Global
+        // 2. Memória Global (Caminho CORRIGIDO: memoria_global / core)
         try {
             const globalRef = window.doc(window.db, "memoria_global", "core");
             const globalSnap = await window.getDoc(globalRef);
             if (globalSnap.exists()) {
                 dbGlobalMemory = globalSnap.data();
                 addLog("Memória Global carregada com sucesso.");
+            } else {
+                addLog("Documento da memória global (core) não encontrado.");
+                dbGlobalMemory = null;
             }
         } catch (eGlobal) { console.warn("Sem memória global", eGlobal); }
 
@@ -764,7 +767,7 @@ async function salvarMemoriaFirebase(resumo, fatosJson) {
         // 2. Salva na Memória Global (Coleção "memoria_global", Documento "core")
         const globalRef = window.doc(window.db, "memoria_global", "core");
         await window.setDoc(globalRef, {
-            diario_bordo: resumo, // Ou você pode concatenar se quiser manter histórico, mas o merge substitui.
+            diario_bordo: resumo,
             ultima_atualizacao: new Date().toISOString()
         }, { merge: true });
 
@@ -1089,7 +1092,7 @@ function testeDeFumaca() {
         if (html.includes('historico", projetoAtivo')) sucessos.push("✅ Sincronia Nuvem OK");
         if (html.includes('voiceModeOverlay')) sucessos.push("✅ Modo Voz OK");
         if (html.includes('mudarProjetoManual')) sucessos.push("✅ Seletor Manual OK");
-        if (html.includes('dbGlobalMemory')) sucessos.push("✅ Memória Global OK");
+        if (html.includes('memoria_global')) sucessos.push("✅ Memória Global OK");
         
         t.wrapper.remove();
         let msgFinal = "📋 **DIAGNÓSTICO**\n\n**OK:**\n" + sucessos.join('\n') + "\n\n**Falhas:**\n" + (erros.length ? erros.join('\n') : 'Nenhuma.');
