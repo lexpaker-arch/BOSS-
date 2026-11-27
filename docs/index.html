@@ -714,9 +714,9 @@ async function carregarMemoriaFirebase() {
             dbMemory = null;
         }
 
-        // 2. Memória Global (Caminho CORRIGIDO: memoria_global / core)
+        // 2. Memória Global (CORRIGIDO PARA O SEU CAMINHO)
         try {
-            const globalRef = window.doc(window.db, "memoria_global", "core");
+            const globalRef = window.doc(window.db, "memoria_global", "core"); // <-- AQUI ESTÁ A CORREÇÃO
             const globalSnap = await window.getDoc(globalRef);
             if (globalSnap.exists()) {
                 dbGlobalMemory = globalSnap.data();
